@@ -2,16 +2,21 @@ package kr.polytech.lms.statistics.dashboard.service;
 
 import kr.polytech.lms.statistics.mapping.MajorIndustryMappingService;
 import kr.polytech.lms.statistics.sgis.service.SgisCompanyCacheService;
+import kr.polytech.lms.statistics.sgis.service.SgisAdministrativeCodeService;
 import kr.polytech.lms.statistics.student.excel.CampusStudentQuotaExcelService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.time.Year;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class IndustryAnalysisService {
@@ -31,35 +36,60 @@ public class IndustryAnalysisService {
             "전문서비스"
     );
 
+    private static final Logger log = LoggerFactory.getLogger(IndustryAnalysisService.class);
+
     private final MajorIndustryMappingService majorIndustryMappingService;
     private final SgisCompanyCacheService sgisCompanyCacheService;
     private final CampusStudentQuotaExcelService campusStudentQuotaExcelService;
+    private final SgisAdministrativeCodeService sgisAdministrativeCodeService;
 
     public IndustryAnalysisService(
             MajorIndustryMappingService majorIndustryMappingService,
             SgisCompanyCacheService sgisCompanyCacheService,
-            CampusStudentQuotaExcelService campusStudentQuotaExcelService
+            CampusStudentQuotaExcelService campusStudentQuotaExcelService,
+            SgisAdministrativeCodeService sgisAdministrativeCodeService
     ) {
         this.majorIndustryMappingService = majorIndustryMappingService;
         this.sgisCompanyCacheService = sgisCompanyCacheService;
         this.campusStudentQuotaExcelService = campusStudentQuotaExcelService;
+        this.sgisAdministrativeCodeService = sgisAdministrativeCodeService;
     }
 
     public IndustryAnalysisResponse analyze(
             String campus,
             String admCd,
+            String admNm,
             Integer statsYear
     ) throws IOException {
         String resolvedCampus = normalizeCampus(campus);
-        String resolvedAdmCd = resolveAdmCd(admCd);
-
         int desiredStatsYear = resolveStatsYear(statsYear);
-        int usedStatsYear = resolveAvailableStatsYear(desiredStatsYear, resolvedAdmCd);
+
+        String requestedAdmCd = normalizeRequestedAdmCd(admCd);
+        String requestedAdmNm = normalizeRequestedAdmNm(admNm);
+
+        SgisAdministrativeCodeService.Resolution sgisResolution =
+                sgisAdministrativeCodeService.resolveToSgisAdmCd(requestedAdmCd, requestedAdmNm);
+        String resolvedAdmCd = sgisResolution.sgisAdmCd();
+
+        if (!StringUtils.hasText(resolvedAdmCd)) {
+            throw new IllegalArgumentException("admCd는 필수입니다.");
+        }
+
+        AdmCdResolution admCdResolution = resolveAdmCdAndYear(resolvedAdmCd, desiredStatsYear);
+        String usedAdmCd = admCdResolution.usedAdmCd();
+        int usedStatsYear = admCdResolution.statsYear();
+
+        boolean admCdFallback = sgisResolution.mappingFallbackApplied() || admCdResolution.dataFallbackApplied();
+
+        // 왜: 행정구역 코드(요청) -> SGIS 코드(변환) -> 실제 사용 코드(데이터 존재 여부로 대체) 흐름을 한 줄로 남기면
+        //     "특정 캠퍼스만 0" 같은 문제에서 원인을 바로 좁힐 수 있습니다(민감정보 없음).
+        log.info("산업 통계 요청: campus={}, requestedAdmCd={}, requestedAdmNm={}, sgisAdmCd={}, usedAdmCd={}, year={}, fallback={}",
+                resolvedCampus, requestedAdmCd, requestedAdmNm, resolvedAdmCd, usedAdmCd, usedStatsYear, admCdFallback);
 
         Map<String, Long> campusCategoryCounts = countCampusStudentsByCategory(resolvedCampus);
         long campusTotal = campusCategoryCounts.values().stream().mapToLong(Long::longValue).sum();
 
-        Map<String, Long> regionCategoryCounts = countRegionCompaniesByCategory(usedStatsYear, resolvedAdmCd);
+        Map<String, Long> regionCategoryCounts = countRegionCompaniesByCategory(usedStatsYear, usedAdmCd);
         long regionTotal = regionCategoryCounts.values().stream().mapToLong(Long::longValue).sum();
 
         List<CategoryRow> rows = new ArrayList<>();
@@ -76,7 +106,9 @@ public class IndustryAnalysisService {
 
         return new IndustryAnalysisResponse(
                 resolvedCampus,
-                resolvedAdmCd,
+                usedAdmCd,
+                requestedAdmCd,
+                admCdFallback,
                 usedStatsYear,
                 campusTotal,
                 regionTotal,
@@ -164,12 +196,66 @@ public class IndustryAnalysisService {
         return campus.trim();
     }
 
-    private String resolveAdmCd(String admCd) {
-        // 왜: 지역 선택이 없을 때는 "서울(11)"을 기본으로 두어, 화면을 바로 확인할 수 있게 합니다.
+    private String normalizeRequestedAdmCd(String admCd) {
         if (!StringUtils.hasText(admCd) || "전체".equals(admCd)) {
-            return "11";
+            return null;
         }
         return admCd.trim();
+    }
+
+    private String normalizeRequestedAdmNm(String admNm) {
+        if (!StringUtils.hasText(admNm) || "전체".equals(admNm)) {
+            return null;
+        }
+        return admNm.trim();
+    }
+
+    private AdmCdResolution resolveAdmCdAndYear(String resolvedAdmCd, int desiredYear) throws IOException {
+        // 왜: 특정 행정구역 코드가 외부 API에 존재하지 않으면 result가 비어 0으로만 계산될 수 있습니다.
+        //      화면이 전부 0으로 깨져 보이지 않도록, "한 단계 상위 행정구역"으로 순차 대체해 데이터가 존재하는 코드를 찾습니다.
+        List<String> candidates = buildAdmCdFallbackCandidates(resolvedAdmCd);
+
+        for (String candidateAdmCd : candidates) {
+            int candidateYear = resolveAvailableStatsYear(desiredYear, candidateAdmCd);
+            Map<String, Long> counts = countRegionCompaniesByCategory(candidateYear, candidateAdmCd);
+            long total = counts.values().stream().mapToLong(Long::longValue).sum();
+            if (total > 0) {
+                boolean dataFallbackApplied = !candidateAdmCd.equals(resolvedAdmCd);
+                if (dataFallbackApplied) {
+                    log.info("산업 통계 행정구역 데이터 대체: resolvedAdmCd={}, usedAdmCd={}, year={}", resolvedAdmCd, candidateAdmCd, candidateYear);
+                }
+                return new AdmCdResolution(resolvedAdmCd, candidateAdmCd, dataFallbackApplied, candidateYear);
+            }
+        }
+
+        // 여기까지 왔다면(전국까지) 데이터가 없다는 뜻이라, 원인 파악을 위해 경고 로그를 남깁니다.
+        log.warn("산업 통계 행정구역 데이터 없음(대체 실패): resolvedAdmCd={}, desiredYear={}", resolvedAdmCd, desiredYear);
+        return new AdmCdResolution(resolvedAdmCd, resolvedAdmCd, false, desiredYear);
+    }
+
+    private List<String> buildAdmCdFallbackCandidates(String admCd) {
+        // 왜: 7자리(읍면동) → 5자리(시군구) → 2자리(시도) 순서로 대체합니다.
+        Set<String> candidates = new LinkedHashSet<>();
+
+        String current = StringUtils.hasText(admCd) ? admCd.trim() : null;
+        if (!StringUtils.hasText(current)) {
+            return List.of();
+        }
+
+        candidates.add(current);
+
+        if (current.matches("\\d+")) {
+            while (current.length() > 2) {
+                if (current.length() > 5) {
+                    current = current.substring(0, 5);
+                } else {
+                    current = current.substring(0, 2);
+                }
+                candidates.add(current);
+            }
+        }
+
+        return List.copyOf(candidates);
     }
 
     private double toPercent(long part, long total) {
@@ -182,6 +268,8 @@ public class IndustryAnalysisService {
     public record IndustryAnalysisResponse(
             String campus,
             String admCd,
+            String requestedAdmCd,
+            boolean admCdFallback,
             int statsYear,
             long campusStudentTotal,
             long regionCompanyTotal,
@@ -196,6 +284,14 @@ public class IndustryAnalysisService {
             long campusCount,
             double campusRatio,
             double gap
+    ) {
+    }
+
+    private record AdmCdResolution(
+            String resolvedAdmCd,
+            String usedAdmCd,
+            boolean dataFallbackApplied,
+            int statsYear
     ) {
     }
 }

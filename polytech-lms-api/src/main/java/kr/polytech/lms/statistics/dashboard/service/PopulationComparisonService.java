@@ -2,6 +2,7 @@ package kr.polytech.lms.statistics.dashboard.service;
 
 import kr.polytech.lms.statistics.kosis.client.dto.KosisPopulationRow;
 import kr.polytech.lms.statistics.kosis.service.KosisStatisticsService;
+import kr.polytech.lms.statistics.sgis.service.SgisAdministrativeCodeService;
 import kr.polytech.lms.statistics.student.excel.CampusStudentPopulationExcelService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,9 +11,11 @@ import org.springframework.util.StringUtils;
 
 import java.time.Year;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class PopulationComparisonService {
@@ -32,20 +35,24 @@ public class PopulationComparisonService {
 
     private final KosisStatisticsService kosisStatisticsService;
     private final CampusStudentPopulationExcelService campusStudentPopulationExcelService;
+    private final SgisAdministrativeCodeService sgisAdministrativeCodeService;
 
     private static final Logger log = LoggerFactory.getLogger(PopulationComparisonService.class);
 
     public PopulationComparisonService(
             KosisStatisticsService kosisStatisticsService,
-            CampusStudentPopulationExcelService campusStudentPopulationExcelService
+            CampusStudentPopulationExcelService campusStudentPopulationExcelService,
+            SgisAdministrativeCodeService sgisAdministrativeCodeService
     ) {
         this.kosisStatisticsService = kosisStatisticsService;
         this.campusStudentPopulationExcelService = campusStudentPopulationExcelService;
+        this.sgisAdministrativeCodeService = sgisAdministrativeCodeService;
     }
 
     public PopulationComparisonResponse compare(
             String campus,
             String admCd,
+            String admNm,
             Integer populationYear
     ) {
         if (!StringUtils.hasText(campus)) {
@@ -53,12 +60,30 @@ public class PopulationComparisonService {
         }
 
         String resolvedCampus = campus.trim();
-        String resolvedAdmCd = resolveAdmCd(admCd);
         int desiredPopulationYear = resolvePopulationYear(populationYear);
 
-        int usedPopulationYear = resolveAvailablePopulationYear(desiredPopulationYear, resolvedAdmCd);
+        String requestedAdmCd = normalizeRequestedAdmCd(admCd);
+        String requestedAdmNm = normalizeRequestedAdmNm(admNm);
 
-        Map<String, GenderCount> regionCounts = loadRegionPopulationGenderCounts(resolvedAdmCd, usedPopulationYear);
+        // 왜: SGIS 인구 API는 행안부 코드(41/28/30...)가 아니라 SGIS 코드(31/23/25...) 체계를 씁니다.
+        //     프론트는 캠퍼스 소속 행정구역을 "이름"까지 알고 있으므로, 이름 기반(stage API)으로 SGIS 코드를 찾아 변환합니다.
+        SgisAdministrativeCodeService.Resolution sgisResolution =
+                sgisAdministrativeCodeService.resolveToSgisAdmCd(requestedAdmCd, requestedAdmNm);
+
+        String resolvedAdmCd = sgisResolution.sgisAdmCd();
+
+        AdmCdResolution admCdResolution = resolveAdmCdAndYear(resolvedAdmCd, desiredPopulationYear);
+        String usedAdmCd = admCdResolution.usedAdmCd();
+        int usedPopulationYear = admCdResolution.populationYear();
+
+        boolean admCdFallback = sgisResolution.mappingFallbackApplied() || admCdResolution.dataFallbackApplied();
+
+        // 왜: "서울만 되고 나머지는 0" 같은 이슈는 대체로 admCd 변환/대체 단계에서 발생합니다.
+        //     1회 요청 기준으로 요청/변환/사용 코드를 한 줄로 남겨두면, 실제 호출이 어떤 값으로 나갔는지 빠르게 확인할 수 있습니다.
+        log.info("인구 통계 요청: campus={}, requestedAdmCd={}, requestedAdmNm={}, sgisAdmCd={}, usedAdmCd={}, year={}, fallback={}",
+                resolvedCampus, requestedAdmCd, requestedAdmNm, resolvedAdmCd, usedAdmCd, usedPopulationYear, admCdFallback);
+
+        Map<String, GenderCount> regionCounts = loadRegionPopulationGenderCounts(usedAdmCd, usedPopulationYear);
         long regionTotal = regionCounts.values().stream().mapToLong(GenderCount::total).sum();
 
         Map<String, GenderCount> campusCounts = loadCampusStudentAgeGenderCounts(resolvedCampus, usedPopulationYear);
@@ -92,7 +117,9 @@ public class PopulationComparisonService {
 
         return new PopulationComparisonResponse(
                 resolvedCampus,
-                resolvedAdmCd,
+                usedAdmCd,
+                requestedAdmCd,
+                admCdFallback,
                 usedPopulationYear,
                 campusTotal,
                 regionTotal,
@@ -152,11 +179,64 @@ public class PopulationComparisonService {
         return desiredYear;
     }
 
-    private String resolveAdmCd(String admCd) {
+    private String normalizeRequestedAdmCd(String admCd) {
+        // 왜: 인구 API에서 전국은 "adm_cd를 아예 보내지 않는 것"이 정상 동작이므로, 여기서는 null로 둡니다.
         if (!StringUtils.hasText(admCd) || "전체".equals(admCd)) {
-            return "11";
+            return null;
         }
         return admCd.trim();
+    }
+
+    private String normalizeRequestedAdmNm(String admNm) {
+        if (!StringUtils.hasText(admNm) || "전체".equals(admNm)) {
+            return null;
+        }
+        return admNm.trim();
+    }
+
+    private AdmCdResolution resolveAdmCdAndYear(String resolvedAdmCd, int desiredYear) {
+        // 왜: 특정 행정구역 코드가 외부 API에 존재하지 않거나(또는 해당 연도 데이터가 없어) 0으로만 내려오는 경우가 있습니다.
+        //      이때 화면이 전부 0으로 깨져 보이므로, "한 단계 상위 행정구역"으로 순차 대체해서 데이터가 존재하는 코드를 찾습니다.
+        List<String> candidates = buildAdmCdFallbackCandidates(resolvedAdmCd);
+
+        for (String candidateAdmCd : candidates) {
+            int candidateYear = resolveAvailablePopulationYear(desiredYear, candidateAdmCd);
+            long sample = safeSumPopulation(candidateYear, "32", "0", candidateAdmCd);
+            if (sample > 0) {
+                boolean dataFallbackApplied = !equalsNullable(candidateAdmCd, resolvedAdmCd);
+                if (dataFallbackApplied) {
+                    log.info("인구 통계 행정구역 데이터 대체: resolvedAdmCd={}, usedAdmCd={}, year={}", resolvedAdmCd, candidateAdmCd, candidateYear);
+                }
+                return new AdmCdResolution(resolvedAdmCd, candidateAdmCd, dataFallbackApplied, candidateYear);
+            }
+        }
+
+        // 여기까지 왔다면(전국까지) 데이터가 없다는 뜻이라, 원인 파악을 위해 경고 로그를 남깁니다.
+        log.warn("인구 통계 행정구역 데이터 없음(대체 실패): resolvedAdmCd={}, desiredYear={}", resolvedAdmCd, desiredYear);
+        return new AdmCdResolution(resolvedAdmCd, resolvedAdmCd, false, desiredYear);
+    }
+
+    private List<String> buildAdmCdFallbackCandidates(String admCd) {
+        // 왜: 7자리(읍면동) → 5자리(시군구) → 2자리(시도) → 전국(=adm_cd 미전달) 순서로 대체합니다.
+        Set<String> candidates = new LinkedHashSet<>();
+
+        String current = StringUtils.hasText(admCd) ? admCd.trim() : null;
+        candidates.add(current);
+
+        if (StringUtils.hasText(current) && current.matches("\\d+")) {
+            while (current.length() > 2) {
+                if (current.length() > 5) {
+                    current = current.substring(0, 5);
+                } else {
+                    current = current.substring(0, 2);
+                }
+                candidates.add(current);
+            }
+        }
+
+        // 전국(=adm_cd 미전달)
+        candidates.add(null);
+        return List.copyOf(candidates);
     }
 
     private double toPercent(long part, long total) {
@@ -164,6 +244,12 @@ public class PopulationComparisonService {
             return 0.0;
         }
         return (part * 100.0) / total;
+    }
+
+    private boolean equalsNullable(String a, String b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        return a.equals(b);
     }
 
     private long sumPopulation(List<KosisPopulationRow> rows) {
@@ -198,6 +284,8 @@ public class PopulationComparisonService {
     public record PopulationComparisonResponse(
             String campus,
             String admCd,
+            String requestedAdmCd,
+            boolean admCdFallback,
             int populationYear,
             long campusStudentSampleSize,
             long regionPopulationTotal,
@@ -226,5 +314,13 @@ public class PopulationComparisonService {
         long total() {
             return male + female;
         }
+    }
+
+    private record AdmCdResolution(
+            String resolvedAdmCd,
+            String usedAdmCd,
+            boolean dataFallbackApplied,
+            int populationYear
+    ) {
     }
 }

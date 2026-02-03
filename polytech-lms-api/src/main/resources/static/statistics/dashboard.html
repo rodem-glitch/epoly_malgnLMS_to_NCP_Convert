@@ -1802,7 +1802,9 @@
     const regionSelect = document.getElementById(regionSelectId);
 
     if (!campusName) {
-      regionSelect.innerHTML = '<option value="" disabled selected>캠퍼스를 선택해 주세요</option>';
+      // 전체 캠퍼스 선택 시 전국 전체 옵션 표시
+      regionSelect.innerHTML = '<option value="" selected>전국 전체</option>';
+      if (refreshCallback) refreshCallback();
       return;
     }
 
@@ -3684,7 +3686,7 @@
     setPopulationStatus("조회 중...");
 
     const populationRes = await fetch(
-      `/statistics/api/population/compare?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&populationYear=${encodeURIComponent(populationYear)}`
+      `/statistics/api/population/compare?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`
     );
     const populationData = await populationRes.json();
 
@@ -3696,8 +3698,13 @@
     const usedPopulationYear = populationData.populationYear ?? populationYear;
     const campusSampleSize = populationData.campusStudentSampleSize ?? 0;
     const campusNote = campusSampleSize > 0 ? "" : " (캠퍼스 학생 연령/성별 데이터 없음 → 0으로 표시)";
+
+    const requestedAdmCd = populationData.requestedAdmCd ?? admCd;
+    const usedAdmCd = populationData.admCd ?? admCd;
+    const showAdmCdChange = String(requestedAdmCd || "") !== String(usedAdmCd || "");
+    const admCdDesc = showAdmCdChange ? `${admLabel}(${requestedAdmCd} → ${usedAdmCd})` : `${admLabel}(${usedAdmCd})`;
     setPopulationStatus(
-      `캠퍼스=${campus || "전체"} / 행정구역=${admLabel}(${admCd}) / 인구연도=${usedPopulationYear} / 캠퍼스표본=${campusSampleSize}명${campusNote}`
+      `캠퍼스=${campus || "전체"} / 행정구역=${admCdDesc} / 인구연도=${usedPopulationYear} / 캠퍼스표본=${campusSampleSize}명${campusNote}`
     );
 
     // population charts
@@ -3761,10 +3768,10 @@
     // download buttons
     document.getElementById("downloadPopulationCsv").onclick = () => {
       // 왜: 서버에서 xlsx로 내려주면, 엑셀에서 바로 열 수 있고 한글 인코딩 이슈도 줄어듭니다.
-      window.location.href = `/statistics/api/population/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&populationYear=${encodeURIComponent(populationYear)}`;
+      window.location.href = `/statistics/api/population/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`;
     };
     document.getElementById("downloadPopulationCsvTop").onclick = () => {
-      window.location.href = `/statistics/api/population/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&populationYear=${encodeURIComponent(populationYear)}`;
+      window.location.href = `/statistics/api/population/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`;
     };
   }
 
@@ -3782,7 +3789,7 @@
     setIndustryStatus("조회 중...");
 
     const industryRes = await fetch(
-      `/statistics/api/industry/analysis?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&statsYear=${encodeURIComponent(statsYear)}`
+      `/statistics/api/industry/analysis?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`
     );
     const industryData = await industryRes.json();
 
@@ -3792,8 +3799,12 @@
     }
 
     const usedIndustryYear = industryData.statsYear ?? statsYear;
+    const requestedAdmCd = industryData.requestedAdmCd ?? admCd;
+    const usedAdmCd = industryData.admCd ?? admCd;
+    const showAdmCdChange = String(requestedAdmCd || "") !== String(usedAdmCd || "");
+    const admCdDesc = showAdmCdChange ? `${admLabel}(${requestedAdmCd} → ${usedAdmCd})` : `${admLabel}(${usedAdmCd})`;
     setIndustryStatus(
-      `캠퍼스=${campus || "전체"} / 행정구역=${admLabel}(${admCd}) / 산업연도=${usedIndustryYear}`
+      `캠퍼스=${campus || "전체"} / 행정구역=${admCdDesc} / 산업연도=${usedIndustryYear}`
     );
 
     // industry table + charts
@@ -3840,10 +3851,10 @@
 
     // download buttons
     document.getElementById("downloadIndustryCsv").onclick = () => {
-      window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&statsYear=${encodeURIComponent(statsYear)}`;
+      window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`;
     };
     document.getElementById("downloadIndustryCsvTop").onclick = () => {
-      window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&statsYear=${encodeURIComponent(statsYear)}`;
+      window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`;
     };
   }
 
@@ -3919,6 +3930,9 @@
     buildYearOptions("populationYear");
     buildYearOptions("industryYear");
     await loadMeta();
+    // 인구/산업 탭의 행정구역 드롭다운 초기화 (전체 캠퍼스 선택 시 "전국 전체" 표시)
+    updateRegionOptions("populationCampus", "populationRegion", null);
+    updateRegionOptions("industryCampus", "industryRegion", null);
     attachEvents();
     rawDataState.pageSize = Number(document.getElementById("rawDataPageSize").value || 50);
     initAiStatistics(); // AI 통계 기능 초기화

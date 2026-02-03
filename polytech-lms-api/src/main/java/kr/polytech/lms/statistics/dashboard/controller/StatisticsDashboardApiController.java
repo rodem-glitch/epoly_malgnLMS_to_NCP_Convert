@@ -7,6 +7,8 @@ import kr.polytech.lms.statistics.dashboard.service.StatisticsMetaService;
 import kr.polytech.lms.statistics.internalstats.InternalStatisticsService;
 import kr.polytech.lms.statistics.mapping.MajorIndustryMappingService;
 import kr.polytech.lms.statistics.student.excel.CampusStudentPopulationExcelService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,8 @@ import java.util.List;
 @RequestMapping("/statistics/api")
 public class StatisticsDashboardApiController {
     // 왜: 통계 화면(정적 HTML)이 필요한 데이터만 API로 받아서 렌더링할 수 있도록 JSON API를 제공합니다.
+
+    private static final Logger log = LoggerFactory.getLogger(StatisticsDashboardApiController.class);
 
     private final StatisticsMetaService statisticsMetaService;
     private final IndustryAnalysisService industryAnalysisService;
@@ -59,10 +63,13 @@ public class StatisticsDashboardApiController {
     public ResponseEntity<?> industryAnalysis(
             @RequestParam(name = "campus", required = false) String campus,
             @RequestParam(name = "admCd", required = false) String admCd,
+            @RequestParam(name = "admNm", required = false) String admNm,
             @RequestParam(name = "statsYear", required = false) Integer statsYear
     ) throws IOException {
         try {
-            return ResponseEntity.ok(industryAnalysisService.analyze(campus, admCd, statsYear));
+            // 왜: 실제 호출 파라미터를 로그로 남겨야 "특정 캠퍼스만 0" 같은 문제를 빠르게 재현/분석할 수 있습니다.
+            log.info("통계 API 호출(산업): campus={}, admCd={}, admNm={}, statsYear={}", campus, admCd, admNm, statsYear);
+            return ResponseEntity.ok(industryAnalysisService.analyze(campus, admCd, admNm, statsYear));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
         } catch (IllegalStateException e) {
@@ -74,10 +81,13 @@ public class StatisticsDashboardApiController {
     public ResponseEntity<?> populationCompare(
             @RequestParam(name = "campus") String campus,
             @RequestParam(name = "admCd", required = false) String admCd,
+            @RequestParam(name = "admNm", required = false) String admNm,
             @RequestParam(name = "populationYear", required = false) Integer populationYear
     ) throws IOException {
         try {
-            return ResponseEntity.ok(populationComparisonService.compare(campus, admCd, populationYear));
+            // 왜: 실제 호출 파라미터를 로그로 남겨야 "특정 캠퍼스만 0" 같은 문제를 빠르게 재현/분석할 수 있습니다.
+            log.info("통계 API 호출(인구): campus={}, admCd={}, admNm={}, populationYear={}", campus, admCd, admNm, populationYear);
+            return ResponseEntity.ok(populationComparisonService.compare(campus, admCd, admNm, populationYear));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
         } catch (IllegalStateException e) {
@@ -135,11 +145,12 @@ public class StatisticsDashboardApiController {
     public ResponseEntity<?> exportPopulationExcel(
             @RequestParam(name = "campus") String campus,
             @RequestParam(name = "admCd", required = false) String admCd,
+            @RequestParam(name = "admNm", required = false) String admNm,
             @RequestParam(name = "populationYear", required = false) Integer populationYear
     ) throws IOException {
         try {
             PopulationComparisonService.PopulationComparisonResponse response =
-                    populationComparisonService.compare(campus, admCd, populationYear);
+                    populationComparisonService.compare(campus, admCd, admNm, populationYear);
             byte[] bytes = statisticsExcelExportService.exportPopulation(response);
             String filename = "인구비율_%s_%s_%s.xlsx".formatted(campus, response.admCd(), response.populationYear());
             return toExcelResponse(filename, bytes);
@@ -154,11 +165,12 @@ public class StatisticsDashboardApiController {
     public ResponseEntity<?> exportIndustryExcel(
             @RequestParam(name = "campus", required = false) String campus,
             @RequestParam(name = "admCd", required = false) String admCd,
+            @RequestParam(name = "admNm", required = false) String admNm,
             @RequestParam(name = "statsYear", required = false) Integer statsYear
     ) throws IOException {
         try {
             IndustryAnalysisService.IndustryAnalysisResponse response =
-                    industryAnalysisService.analyze(campus, admCd, statsYear);
+                    industryAnalysisService.analyze(campus, admCd, admNm, statsYear);
             byte[] bytes = statisticsExcelExportService.exportIndustry(response);
             String filename = "산업비율_%s_%s_%s.xlsx".formatted(
                     response.campus() == null ? "전체" : response.campus(),
