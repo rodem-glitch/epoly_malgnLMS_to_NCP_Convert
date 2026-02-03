@@ -78,32 +78,6 @@ kollus:
   media-token-expire-time: ${KOLLUS_MEDIA_TOKEN_EXPIRE:PT5M}
   player-base-url: ${KOLLUS_PLAYER_BASE_URL:https://v.kr.kollus.com}
 
-stt:
-  provider: ${STT_PROVIDER:google}
-  language: ${STT_LANGUAGE:ko}
-  http-timeout: ${STT_HTTP_TIMEOUT:PT5M}
-  google:
-    # 왜: Speech-to-Text(v2)는 API Key가 아니라 서비스계정(OAuth) 인증을 주로 씁니다.
-    # - 로컬: `GOOGLE_APPLICATION_CREDENTIALS=C:\\path\\service-account.json`
-    # - 권한: Speech-to-Text 사용 + (GCS URI를 쓰면) 버킷 Object 접근 권한 필요
-    project-id: ${GCP_PROJECT_ID:}
-    location: ${GCP_LOCATION:global}
-    # `_`는 "기본(암묵) Recognizer"를 의미합니다(별도 리소스 생성 없이 사용 가능).
-    recognizer-id: ${GCP_SPEECH_RECOGNIZER_ID:_}
-    # 전사용 오디오를 올릴 GCS 버킷
-    gcs-bucket: ${GCP_SPEECH_GCS_BUCKET:}
-    # 버킷 안에 저장할 prefix(폴더처럼 사용)
-    gcs-prefix: ${GCP_SPEECH_GCS_PREFIX:contentsummary/stt}
-    # 전사 완료 후 업로드한 오디오를 남길지 여부(기본 false=삭제)
-    keep-uploaded-files: ${GCP_SPEECH_KEEP_UPLOADED:false}
-    # 문장부호를 자동으로 넣어주면 요약 품질이 좋아지는 편이라 기본 true로 둡니다.
-    enable-automatic-punctuation: ${GCP_SPEECH_ENABLE_PUNCTUATION:true}
-    # 장시간 음성용 모델(필요하면 변경)
-    model: ${GCP_SPEECH_MODEL:latest_long}
-    # 배치 전사(Operation) 폴링 주기/최대 대기시간
-    polling-interval: ${GCP_SPEECH_POLL_INTERVAL:PT2S}
-    polling-timeout: ${GCP_SPEECH_POLL_TIMEOUT:PT2H}
-
 gemini:
   # 왜: 요약/키워드 생성은 Gemini REST API를 직접 호출합니다.
   # - 키는 절대 Git에 올리지 말고 환경변수로만 주입하세요.
