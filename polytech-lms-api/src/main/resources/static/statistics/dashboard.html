@@ -1829,7 +1829,7 @@
     // 2개 옵션만 표시: 광역시 전체, 세부행정구역 (기본 선택)
     regionSelect.innerHTML = `
       <option value="${location.sido}">${sidoName} 전체</option>
-      <option value="${location.district}" selected>${districtName}</option>
+      <option value="${location.district}" selected>${sidoName} ${districtName}</option>
     `;
 
     // 데이터 새로고침
@@ -3330,11 +3330,8 @@
         select.appendChild(optGroup);
       });
 
-      // 기본값: 첫 캠퍼스(있으면)
-      const firstCampus = campusGroups?.[0]?.campuses?.[0];
-      if (firstCampus) {
-        select.value = firstCampus;
-      }
+      // 기본값: 전체 캠퍼스 (value="")
+      select.value = "";
     });
   }
 
