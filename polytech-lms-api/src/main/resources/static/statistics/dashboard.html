@@ -863,28 +863,8 @@
         <div class="filter-title"><i class="bi bi-funnel"></i> 필터 조건</div>
         <div class="filter-controls">
           <select id="populationCampus" class="form-select" style="min-width: 180px;" aria-label="캠퍼스 선택"></select>
-          <select id="populationAdmCd" class="form-select" style="min-width: 150px;" aria-label="시도 선택">
-            <option value="">전국 전체</option>
-            <option value="11" selected>서울특별시</option>
-            <option value="26">부산광역시</option>
-            <option value="27">대구광역시</option>
-            <option value="28">인천광역시</option>
-            <option value="29">광주광역시</option>
-            <option value="30">대전광역시</option>
-            <option value="31">울산광역시</option>
-            <option value="36">세종특별자치시</option>
-            <option value="41">경기도</option>
-            <option value="42">강원특별자치도</option>
-            <option value="43">충청북도</option>
-            <option value="44">충청남도</option>
-            <option value="45">전북특별자치도</option>
-            <option value="46">전라남도</option>
-            <option value="47">경상북도</option>
-            <option value="48">경상남도</option>
-            <option value="50">제주특별자치도</option>
-          </select>
-          <select id="populationDistrict" class="form-select" style="min-width: 140px;" aria-label="시군구 선택">
-            <option value="" selected>전체 (시군구)</option>
+          <select id="populationRegion" class="form-select" style="min-width: 200px;" aria-label="행정구역 선택">
+            <option value="" disabled selected>캠퍼스를 선택해 주세요</option>
           </select>
           <select id="populationYear" class="form-select" style="min-width: 110px;" aria-label="연도 선택"></select>
         </div>
@@ -1042,28 +1022,8 @@
         <div class="filter-title"><i class="bi bi-funnel"></i> 필터 조건</div>
         <div class="filter-controls">
           <select id="industryCampus" class="form-select" style="min-width: 180px;" aria-label="캠퍼스 선택"></select>
-          <select id="industryAdmCd" class="form-select" style="min-width: 150px;" aria-label="시도 선택">
-            <option value="">전국 전체</option>
-            <option value="11" selected>서울특별시</option>
-            <option value="26">부산광역시</option>
-            <option value="27">대구광역시</option>
-            <option value="28">인천광역시</option>
-            <option value="29">광주광역시</option>
-            <option value="30">대전광역시</option>
-            <option value="31">울산광역시</option>
-            <option value="36">세종특별자치시</option>
-            <option value="41">경기도</option>
-            <option value="42">강원특별자치도</option>
-            <option value="43">충청북도</option>
-            <option value="44">충청남도</option>
-            <option value="45">전북특별자치도</option>
-            <option value="46">전라남도</option>
-            <option value="47">경상북도</option>
-            <option value="48">경상남도</option>
-            <option value="50">제주특별자치도</option>
-          </select>
-          <select id="industryDistrict" class="form-select" style="min-width: 140px;" aria-label="시군구 선택">
-            <option value="" selected>전체 (시군구)</option>
+          <select id="industryRegion" class="form-select" style="min-width: 200px;" aria-label="행정구역 선택">
+            <option value="" disabled selected>캠퍼스를 선택해 주세요</option>
           </select>
           <select id="industryYear" class="form-select" style="min-width: 110px;" aria-label="연도 선택"></select>
         </div>
@@ -1803,11 +1763,77 @@
     });
   }
 
-  // 최종 행정구역 코드 반환 (시군구 선택 시 시군구 코드, 아니면 시도 코드)
-  function getSelectedAdmCd(sidoSelectId, districtSelectId) {
-    const districtCode = document.getElementById(districtSelectId).value;
-    if (districtCode) return districtCode;
-    return document.getElementById(sidoSelectId).value;
+  // 최종 행정구역 코드 반환 (통합 드롭다운용)
+  function getSelectedAdmCd(regionSelectId) {
+    return document.getElementById(regionSelectId).value;
+  }
+
+  // ==================== 시도 코드-이름 매핑 ====================
+  const SIDO_NAMES = {
+    "11": "서울특별시",
+    "26": "부산광역시",
+    "27": "대구광역시",
+    "28": "인천광역시",
+    "29": "광주광역시",
+    "30": "대전광역시",
+    "31": "울산광역시",
+    "36": "세종특별자치시",
+    "41": "경기도",
+    "42": "강원특별자치도",
+    "43": "충청북도",
+    "44": "충청남도",
+    "45": "전북특별자치도",
+    "46": "전라남도",
+    "47": "경상북도",
+    "48": "경상남도",
+    "50": "제주특별자치도"
+  };
+
+  // 시군구 코드로 이름 찾기
+  function getDistrictName(sidoCode, districtCode) {
+    const districts = DISTRICT_CODES[sidoCode] || [];
+    const found = districts.find(d => d.code === districtCode);
+    return found ? found.name : districtCode;
+  }
+
+  // 캠퍼스 선택 시 행정구역 드롭다운 업데이트 (광역시/세부행정구역 2개만 표시)
+  function updateRegionOptions(campusSelectId, regionSelectId, refreshCallback) {
+    const campusName = document.getElementById(campusSelectId).value;
+    const regionSelect = document.getElementById(regionSelectId);
+
+    if (!campusName) {
+      regionSelect.innerHTML = '<option value="" disabled selected>캠퍼스를 선택해 주세요</option>';
+      return;
+    }
+
+    // 캠퍼스 위치 찾기 (부분 일치 허용)
+    let location = CAMPUS_LOCATIONS[campusName];
+    if (!location) {
+      for (const [key, loc] of Object.entries(CAMPUS_LOCATIONS)) {
+        if (campusName.includes(key) || key.includes(campusName)) {
+          location = loc;
+          break;
+        }
+      }
+    }
+
+    if (!location) {
+      regionSelect.innerHTML = '<option value="" disabled selected>위치 정보 없음</option>';
+      return;
+    }
+
+    // 시도명과 시군구명 조회
+    const sidoName = SIDO_NAMES[location.sido] || location.sido;
+    const districtName = getDistrictName(location.sido, location.district);
+
+    // 2개 옵션만 표시: 광역시 전체, 세부행정구역 (기본 선택)
+    regionSelect.innerHTML = `
+      <option value="${location.sido}">${sidoName} 전체</option>
+      <option value="${location.district}" selected>${districtName}</option>
+    `;
+
+    // 데이터 새로고침
+    if (refreshCallback) refreshCallback();
   }
 
   // ==================== 캠퍼스-소재지 매핑 데이터 ====================
@@ -3649,9 +3675,8 @@
 
   async function refreshPopulation() {
     const campus = document.getElementById("populationCampus").value;
-    const admCd = getSelectedAdmCd("populationAdmCd", "populationDistrict");
-    const districtVal = document.getElementById("populationDistrict").value;
-    const admLabel = districtVal ? getSelectedOptionText("populationDistrict") : getSelectedOptionText("populationAdmCd");
+    const admCd = getSelectedAdmCd("populationRegion");
+    const admLabel = getSelectedOptionText("populationRegion");
     const populationYear = document.getElementById("populationYear").value;
 
     if (!campus) {
@@ -3748,9 +3773,8 @@
 
   async function refreshIndustry() {
     const campus = document.getElementById("industryCampus").value;
-    const admCd = getSelectedAdmCd("industryAdmCd", "industryDistrict");
-    const districtVal = document.getElementById("industryDistrict").value;
-    const admLabel = districtVal ? getSelectedOptionText("industryDistrict") : getSelectedOptionText("industryAdmCd");
+    const admCd = getSelectedAdmCd("industryRegion");
+    const admLabel = getSelectedOptionText("industryRegion");
     const statsYear = document.getElementById("industryYear").value;
 
     if (!campus) {
@@ -3829,31 +3853,23 @@
   function attachEvents() {
     // 왜: 인구/산업 탭이 분리되어, 각 탭의 필터 변경이 해당 탭만 갱신하도록 분리합니다.
     
-    // 인구 탭: 캠퍼스 선택 시 소재지 자동 선택
+    // 인구 탭: 캠퍼스 선택 시 행정구역 자동 선택 (2개 옵션만 표시)
     document.getElementById("populationCampus").addEventListener("change", () => {
-      autoSelectLocationByCampus("populationCampus", "populationAdmCd", "populationDistrict", refreshPopulation);
+      updateRegionOptions("populationCampus", "populationRegion", refreshPopulation);
     });
     
-    // 인구 탭: 시도 변경 시 시군구 목록 업데이트 후 데이터 갱신
-    document.getElementById("populationAdmCd").addEventListener("change", () => {
-      updateDistrictSelect("populationAdmCd", "populationDistrict");
-      refreshPopulation();
-    });
-    ["populationDistrict", "populationYear"].forEach((id) => {
+    // 인구 탭: 행정구역 변경 시 데이터 갱신
+    ["populationRegion", "populationYear"].forEach((id) => {
       document.getElementById(id).addEventListener("change", refreshPopulation);
     });
     
-    // 산업 탭: 캠퍼스 선택 시 소재지 자동 선택
+    // 산업 탭: 캠퍼스 선택 시 행정구역 자동 선택 (2개 옵션만 표시)
     document.getElementById("industryCampus").addEventListener("change", () => {
-      autoSelectLocationByCampus("industryCampus", "industryAdmCd", "industryDistrict", refreshIndustry);
+      updateRegionOptions("industryCampus", "industryRegion", refreshIndustry);
     });
     
-    // 산업 탭: 시도 변경 시 시군구 목록 업데이트 후 데이터 갱신
-    document.getElementById("industryAdmCd").addEventListener("change", () => {
-      updateDistrictSelect("industryAdmCd", "industryDistrict");
-      refreshIndustry();
-    });
-    ["industryDistrict", "industryYear"].forEach((id) => {
+    // 산업 탭: 행정구역/연도 변경 시 데이터 갱신
+    ["industryRegion", "industryYear"].forEach((id) => {
       document.getElementById(id).addEventListener("change", refreshIndustry);
     });
     
