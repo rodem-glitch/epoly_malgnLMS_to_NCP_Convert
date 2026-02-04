@@ -30,7 +30,9 @@
 - 개인정보 동의(게이트/버전):
   - 동의 화면 재사용: `public_html/member/privacy_agree.jsp` (`ag=sso|cert`)
   - 리다이렉트 안전: `returl`은 외부 URL 차단/검증 필수(오픈 리다이렉트 방지)
-  - 운영 준비: `TB_WEBPAGE`에 `consent_sso_20260120`, `consent_cert_20260120` 컨텐츠가 없으면 화면이 차단됨(폴백 금지 정책)
+  - 운영 준비: 이미지가 없으면 화면이 차단됨(폴백 금지 정책)
+    - SSO: `/common/images/consent/consent_sso_1.png` 또는 `/common/images/consent/consent_sso_2.png` (둘 다 없으면 차단)
+    - 증명서: `/common/images/consent/consent_cert_1.png` 또는 `/common/images/consent/consent_cert_2.png` (둘 다 없으면 차단)
   - 이력: `TB_AGREEMENT_LOG`에 `type/module` 조합으로 버전 관리(`sso_20260120`, `cert_20260120`)
 - React 배포 산출물: `public_html/tutor_lms/app` (빌드 누락/정적파일 캐시 이슈)
 - Spring Boot 설정/시크릿: `polytech-lms-api/src/main/resources/application.yml` (키/토큰/DB정보 노출 금지)

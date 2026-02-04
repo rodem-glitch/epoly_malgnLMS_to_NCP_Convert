@@ -6,17 +6,38 @@
 							<li>회원가입</li>
 						</ol>
 					</div>
+					<!--@if(consent_mode)-->
+					<h4 class="content_title hide">{{consent_title}}</h4>
+					<!--/if(consent_mode)-->
+					<!--@nif(consent_mode)-->
 					<h4 class="content_title">회원가입</h4>
+					<!--/nif(consent_mode)-->
 					<div class="content_body">
 						<form name="form1" method="POST" target="sysfrm" onsubmit="return goSubmit(this);">
 
 						<!--@if(consent_mode)-->
 						<h5 class="box_title">{{consent_title}}</h5>
 						<p class="box_tx">아래 내용을 확인하신 뒤 동의해 주세요.</p>
+						<style>
+							/* 왜: 동의서 문구는 이미지로 노출하므로, consent_mode에서만 보기 좋게 스타일을 보정합니다. */
+							/* 왜: 동의 화면은 새창/팝업에서 뜨는 경우가 많아, 상단 헤더/하단 푸터 등 불필요한 UI를 숨깁니다. */
+							#header_custom,
+							#header,
+							.sub_top,
+							#footer { display: none !important; }
+
+							/* 상단/하단이 사라지면 여백이 커지는 경우가 있어, 동의 화면에서는 컨텐츠 영역을 위로 당깁니다. */
+							#wrap { padding-top: 0 !important; }
+							#container { margin-top: 0 !important; }
+
+							.gray_box.top .g_box_in { height: auto; max-height: 70vh; }
+							#consent_text_root img { max-width: 100%; height: auto; display: block; margin: 0 0 12px 0; }
+							#consent_text_root img:last-child { margin-bottom: 0; }
+						</style>
 						<div class="gray_box top">
 							<h6 class="box_stitle">{{consent_box_title}}</h6>
 							<div class="g_box_in">
-								<div class="textin">
+								<div class="textin" id="consent_text_root">
 									{{consent_content}}
 								</div>
 							</div>

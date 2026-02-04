@@ -48,11 +48,15 @@
   - 동의 화면에서 동의 후 `returl`로 복귀
 - DB:
   - 동의 이력: `src/dao/AgreementLogDao.java` → `TB_AGREEMENT_LOG` (`type=sso`, `module=sso_20260120`, `agreement_yn=Y`, `site_id`, `user_id`)
-  - 동의 문구: `TB_WEBPAGE.code='consent_sso_20260120'` (운영에서 등록 필요)
+  - 동의 문구: 이미지 파일(`/common/images/consent/consent_sso_1.png` 또는 `/common/images/consent/consent_sso_2.png`) (둘 다 없으면 화면 차단)
 - 출력:
   - 동의 화면: `public_html/member/privacy_agree.jsp` (파라미터 `ag=sso`, `returl=...`)
   - 템플릿: `public_html/html/member/privacy_agree.html` (`consent_mode` 분기)
-- 확인(근거): 리다이렉트/저장/출력 분기 코드를 파일에서 확인(`public_html/mypage/new_main/index.jsp`, `public_html/member/privacy_agree.jsp`, `public_html/html/member/privacy_agree.html`)
+    - 화면 제목: `consent_mode`에서는 상단 "회원가입" 제목을 숨김(동의 화면 전용)
+    - 팝업 UI: `consent_mode`에서는 헤더/푸터/서브 배너를 숨김(동의만 집중)
+- 확인(근거):
+  - 리다이렉트/저장/출력 분기 코드를 파일에서 확인(`public_html/mypage/new_main/index.jsp`, `public_html/member/privacy_agree.jsp`, `public_html/html/member/privacy_agree.html`)
+  - 로컬 테스트 진입점: `public_html/mypage/new_main/sso_consent_test.jsp`
 - 최근 갱신: 2026-02-04
 
 ### FLOW-1002: 증명서(수료증/합격증) 발급 동의
@@ -65,7 +69,7 @@
   - 동의 화면에서 동의 후 원래 발급 URL(`returl`)로 복귀하여 발급 진행
 - DB:
   - 동의 이력: `src/dao/AgreementLogDao.java` → `TB_AGREEMENT_LOG` (`type=cert`, `module=cert_20260120`, `agreement_yn=Y`, `module_id=cuid(가능한 경우)`)
-  - 동의 문구: `TB_WEBPAGE.code='consent_cert_20260120'` (운영에서 등록 필요)
+  - 동의 문구: 이미지 파일(`/common/images/consent/consent_cert_1.png` 또는 `/common/images/consent/consent_cert_2.png`) (둘 다 없으면 화면 차단)
 - 출력:
   - 동의 화면: `public_html/member/privacy_agree.jsp` (파라미터 `ag=cert`, `mid=cuid`, `returl=...`)
   - 템플릿: `public_html/html/member/privacy_agree.html` (`consent_mode` 분기)

@@ -48,5 +48,6 @@
 ## 최근 작업(동의 게이트)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
-| SSO 첫 방문 동의(신규 메인) | `public_html/mypage/new_main/index.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG`, `TB_WEBPAGE(code=consent_sso_20260120)` | `public_html/html/member/privacy_agree.html` | `ag=sso`, `returl` 필수 |
-| 증명서(수료증/합격증) 발급 동의 | `public_html/mypage/certificate*.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG`, `TB_WEBPAGE(code=consent_cert_20260120)` | `public_html/html/member/privacy_agree.html` | `ag=cert`, `mid=cuid`(선택), `returl` 필수 |
+| SSO 첫 방문 동의(신규 메인) | `public_html/mypage/new_main/index.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | 동의서 이미지(`/common/images/consent/consent_sso_1.png` 또는 `/common/images/consent/consent_sso_2.png`) 필요(둘 다 없으면 차단), `ag=sso`, `returl` 필수 |
+| 증명서(수료증/합격증) 발급 동의 | `public_html/mypage/certificate*.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | 동의서 이미지(`/common/images/consent/consent_cert_1.png` 또는 `/common/images/consent/consent_cert_2.png`) 필요(둘 다 없으면 차단), `ag=cert`, `mid=cuid`(선택), `returl` 필수 |
+| (로컬 테스트) SSO 동의 화면 확인 | `public_html/mypage/new_main/sso_consent_test.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | localhost에서만 접근(운영 노출 방지), `force=Y`로 재확인 |

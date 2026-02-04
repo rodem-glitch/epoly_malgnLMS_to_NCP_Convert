@@ -168,30 +168,43 @@ p.setLayout(ch);
 p.setBody("member.privacy_agree");
 p.setVar("form_script", f.getScript());
 
-//동의 문구
-// 왜: 동의서(버전)는 배포 없이 운영에서 관리할 수 있어야 하므로, DB(TB_WEBPAGE) 컨텐츠로 관리합니다.
-String consentContent = "";
-String consentTitle = "";
-String consentBoxTitle = "";
-if(consentMode) {
-	String consentCode = "consent_" + ag + "_20260120";
-	consentContent = webpage.getOne(
-		"SELECT content FROM " + webpage.table
-		+ " WHERE code = '" + consentCode + "'"
-		+ " AND site_id = " + siteId
-		+ " AND status = 1"
-	);
-	if("".equals(consentContent)) {
-		m.errorLog("privacy_agree_missing_webpage: site_id=" + siteId + " code=" + consentCode);
-		m.jsError("동의서 내용이 등록되어 있지 않습니다. 관리자에게 문의해 주세요.");
-		return;
-	}
+	//동의 문구
+	// 왜: 현재 운영 요구사항은 동의서를 이미지(스캔본)로 노출하는 방식입니다.
+	//     따라서 정해진 경로에 이미지가 없으면 에러로 차단합니다(폴백 금지).
+	String consentContent = "";
+	String consentTitle = "";
+	String consentBoxTitle = "";
+	if(consentMode) {
+		// 이미지 파일명 규칙(운영에서 이미지만 올리면 됨):
+		// - SSO:  /common/images/consent/consent_sso_1.png, consent_sso_2.png
+		// - 증명서: /common/images/consent/consent_cert_1.png, consent_cert_2.png
+		String baseName = "consent_" + ag;
+		String img1 = "/common/images/consent/" + baseName + "_1.png";
+		String img2 = "/common/images/consent/" + baseName + "_2.png";
 
-	consentTitle = "sso".equals(ag) ? "SSO 첫 방문 동의" : "증명서 발급 동의";
-	consentBoxTitle = "개인정보 수집·이용 및 제공 동의";
-} else {
-	p.setVar("clause", webpage.getOne("SELECT content FROM " + webpage.table + " WHERE code = 'clause' AND site_id = " + siteId + " AND status = 1"));
-}
+		String real1 = application.getRealPath(img1);
+		String real2 = application.getRealPath(img2);
+		boolean exists1 = null != real1 && new java.io.File(real1).exists();
+		boolean exists2 = null != real2 && new java.io.File(real2).exists();
+		// 왜: 동의서는 이미지 1장 또는 2장 구성 모두 가능하므로, 1장이라도 있으면 표시합니다.
+		//     단, 이미지가 1장도 없으면(둘 다 없음) 동의 화면을 진행할 수 없으므로 차단합니다(폴백 금지).
+		if(!exists1 && !exists2) {
+			m.errorLog("privacy_agree_missing_consent_image: site_id=" + siteId + " ag=" + ag + " img1=" + img1 + " img2=" + img2);
+			m.jsError("동의서 이미지가 등록되어 있지 않습니다. 관리자에게 문의해 주세요.");
+			return;
+		}
+		StringBuilder consentHtml = new StringBuilder();
+		consentHtml.append("<div class='consent_doc'>");
+		if(exists1) consentHtml.append("<img src='").append(img1).append("' alt='' />");
+		if(exists2) consentHtml.append("<img src='").append(img2).append("' alt='' />");
+		consentHtml.append("</div>");
+		consentContent = consentHtml.toString();
+
+		consentTitle = "sso".equals(ag) ? "SSO 첫 방문 동의" : "증명서 발급 동의";
+		consentBoxTitle = "개인정보 수집·이용 및 제공 동의";
+	} else {
+		p.setVar("clause", webpage.getOne("SELECT content FROM " + webpage.table + " WHERE code = 'clause' AND site_id = " + siteId + " AND status = 1"));
+	}
 p.setLoop("receive_yn", m.arr2loop(user.receiveYn));
 
 p.setVar("consent_mode", consentMode);
