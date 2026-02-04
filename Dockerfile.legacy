@@ -48,29 +48,23 @@ RUN if [ "$(find classes -name '*.class' 2>/dev/null | wc -l)" -gt 0 ]; then \
 # Stage 2: Runtime - Tomcat Server
 # ============================================
 FROM tomcat:9-jdk8-openjdk-slim
-
 # Remove default Tomcat webapps
 RUN rm -rf /usr/local/tomcat/webapps/*
-
 # Create ROOT webapp directory
 RUN mkdir -p /usr/local/tomcat/webapps/ROOT
-
 # Copy web resources from public_html
 COPY public_html /usr/local/tomcat/webapps/ROOT/
-
 # Copy compiled classes from build stage
 COPY --from=build /build/classes /usr/local/tomcat/webapps/ROOT/WEB-INF/classes/
-
+# Copy mail API jar for runtime (fixes NoClassDefFoundError: javax/mail/Address)
+COPY --from=build /build/mail-api.jar /usr/local/tomcat/webapps/ROOT/WEB-INF/lib/
 # Set environment variables
 ENV CATALINA_OPTS="-Dfile.encoding=UTF-8 -Xms512m -Xmx1024m"
 ENV JAVA_OPTS="-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom"
-
 # Expose port 8080 (Cloud Run requirement)
 EXPOSE 8080
-
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8080/ || exit 1
-
 # Start Tomcat
 CMD ["catalina.sh", "run"]
