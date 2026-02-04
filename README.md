@@ -85,4 +85,4 @@ cd frontend && npm install && npm run dev
 
 ---
 
-**© 2025 NEWKL - AI 기반 교육 솔루션**
+**© 2026 NEWKL - AI 기반 교육 솔루션**
