@@ -1,0 +1,179 @@
+dao_file	dao_class	table	pk	note
+src\dao\ActionLogDao.java	ActionLogDao	TB_ACTION_LOG	id	
+src\dao\AgreementLogDao.java	AgreementLogDao	TB_AGREEMENT_LOG	id	
+src\dao\ApiLogDao.java	ApiLogDao	TB_API_LOG		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\Auth2LogDao.java	Auth2LogDao	TB_AUTH2_LOG		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\BannerDao.java	BannerDao	TB_BANNER		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\BizSMS.java	BizSMS	TB_UDS_LOG	cmid	
+src\dao\BoardDao.java	BoardDao	TB_BOARD		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\BookDao.java	BookDao	LM_BOOK	id	
+src\dao\BookMainDao.java	BookMainDao	LM_BOOK_MAIN	site_id,type,book_id	
+src\dao\BookPackageDao.java	BookPackageDao	LM_BOOK_PACKAGE	package_id,book_id	
+src\dao\BookRelateDao.java	BookRelateDao	LM_BOOK_RELATE	book_id,relate_id	
+src\dao\BookTargetDao.java	BookTargetDao	LM_BOOK_TARGET	book_id,group_id	
+src\dao\BookUserDao.java	BookUserDao	LM_BOOK_USER		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\CategoryDao.java	CategoryDao	TB_CATEGORY	id	
+src\dao\CertificateTemplateDao.java	CertificateTemplateDao	TB_CERTIFICATE_TEMPLATE	id	
+src\dao\ClBoardDao.java	ClBoardDao	CL_BOARD		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ClCommentDao.java	ClCommentDao	CL_COMMENT		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ClFileDao.java	ClFileDao	CL_FILE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ClPostDao.java	ClPostDao	CL_POST	id	
+src\dao\CodeDao.java	CodeDao	TB_CODE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\CommentDao.java	CommentDao	TB_COMMENT		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ContentDao.java	ContentDao	LM_CONTENT		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ContentLessonDao.java	ContentLessonDao	LM_CONTENT_LESSON	CONTENT_ID, CHPATER	
+src\dao\CouponDao.java	CouponDao	TB_COUPON		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\CouponUserDao.java	CouponUserDao	TB_COUPON_USER		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\CourseAutoDao.java	CourseAutoDao	LM_COURSE_AUTO	course_id,auto_id,site_id	
+src\dao\CourseBookDao.java	CourseBookDao	LM_COURSE_BOOK	course_id,book_id	
+src\dao\CourseCategoryDao.java	CourseCategoryDao	LM_COURSE_CATEGORY		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\CourseDao.java	CourseDao	LM_COURSE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\CourseLessonDao.java	CourseLessonDao	LM_COURSE_LESSON	course_id,lesson_id,chapter	
+src\dao\CourseLessonVideoDao.java	CourseLessonVideoDao	LM_COURSE_LESSON_VIDEO	course_id,lesson_id,video_id	
+src\dao\CourseLibraryDao.java	CourseLibraryDao	LM_COURSE_LIBRARY	course_id,library_id	
+src\dao\CourseMainDao.java	CourseMainDao	LM_COURSE_MAIN	site_id,type,course_id	
+src\dao\CourseManagerDao.java	CourseManagerDao	LM_COURSE_MANAGER	course_id,manager_id	
+src\dao\CourseModuleDao.java	CourseModuleDao	LM_COURSE_MODULE	course_id,module,module_id	
+src\dao\CoursePackageDao.java	CoursePackageDao	LM_COURSE_PACKAGE	package_id,course_id	
+src\dao\CoursePrecedeDao.java	CoursePrecedeDao	LM_COURSE_PRECEDE	course_id,precede_id	
+src\dao\CourseProgressDao.java	CourseProgressDao	LM_COURSE_PROGRESS	course_user_id,lesson_id	
+src\dao\CourseProgressVideoDao.java	CourseProgressVideoDao	LM_COURSE_PROGRESS_VIDEO	course_user_id,lesson_id,video_id	
+src\dao\CourseRelationDao.java	CourseRelationDao	LM_COURSE_RELATION	course_id,module,module_id	
+src\dao\CourseRenewDao.java	CourseRenewDao	LM_COURSE_RENEW	id	
+src\dao\CourseSectionDao.java	CourseSectionDao	LM_COURSE_SECTION	id	
+src\dao\CourseSessionDao.java	CourseSessionDao	LM_COURSE_SESSION	course_user_id,lesson_id	
+src\dao\CourseStepDao.java	CourseStepDao	LM_COURSE_STEP		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\CourseSurveyDao.java	CourseSurveyDao	LM_COURSE_SURVEY	id	
+src\dao\CourseTargetDao.java	CourseTargetDao	LM_COURSE_TARGET	group_id,course_id	
+src\dao\CourseTutorDao.java	CourseTutorDao	LM_COURSE_TUTOR	course_id,user_id,type	
+src\dao\CourseUserDao.java	CourseUserDao	LM_COURSE_USER		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\CourseUserLogDao.java	CourseUserLogDao	LM_COURSE_USER_LOG	id	
+src\dao\DeliveryDao.java	DeliveryDao	TB_DELIVERY		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\DoczoomDao.java	DoczoomDao			table 미발견, PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ExamDao.java	ExamDao	LM_EXAM		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ExamResultDao.java	ExamResultDao	LM_EXAM_RESULT	exam_id,exam_step,question_id,course_user_id	
+src\dao\ExamUserDao.java	ExamUserDao	LM_EXAM_USER	exam_id,course_user_id,exam_step	
+src\dao\FaqDao.java	FaqDao	TB_FAQ		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\FileDao.java	FileDao	TB_FILE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\FileLogDao.java	FileLogDao	TB_FILE_LOG	id	
+src\dao\FormmailDao.java	FormmailDao	TB_FORMMAIL	id	
+src\dao\ForumDao.java	ForumDao	LM_FORUM		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ForumPostDao.java	ForumPostDao	LM_FORUM_POST	id	
+src\dao\ForumUserDao.java	ForumUserDao	LM_FORUM_USER	forum_id,course_user_id	
+src\dao\FreepassCourseDao.java	FreepassCourseDao	TB_FREEPASS_COURSE	freepass_id,course_id	
+src\dao\FreepassDao.java	FreepassDao	TB_FREEPASS	id	
+src\dao\FreepassUserDao.java	FreepassUserDao	TB_FREEPASS_USER	id	
+src\dao\GroupDao.java	GroupDao	TB_GROUP	id	
+src\dao\GroupUserDao.java	GroupUserDao	TB_GROUP_USER	group_id,user_id	
+src\dao\HomeworkDao.java	HomeworkDao	LM_HOMEWORK		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\HomeworkTaskDao.java	HomeworkTaskDao	LM_HOMEWORK_TASK	id	
+src\dao\HomeworkUserDao.java	HomeworkUserDao	LM_HOMEWORK_USER	homework_id,course_user_id	
+src\dao\InfoLogDao.java	InfoLogDao	TB_INFO_LOG	id	
+src\dao\InfoUserDao.java	InfoUserDao	TB_INFO_USER	log_id,user_id	
+src\dao\JobBookmarkDao.java	JobBookmarkDao	TB_JOB_BOOKMARK	id	
+src\dao\JobRecommendDao.java	JobRecommendDao	TB_JOB_RECOMMEND	id	
+src\dao\JobSearchLogDao.java	JobSearchLogDao	TB_JOB_SEARCH_LOG	id	
+src\dao\KollusDao.java	KollusDao			table 미발견, PK 미발견(또는 DataObject 기본값 사용)
+src\dao\KollusFileDao.java	KollusFileDao	LM_KOLLUS_FILE	UPLOAD_FILE_KEY	
+src\dao\KollusLogDao.java	KollusLogDao	LM_KOLLUS_LOG		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\KollusMediaDao.java	KollusMediaDao	TB_KOLLUS_MEDIA	id	
+src\dao\KtalkDao.java	KtalkDao	TB_KTALK		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\KtalkTemplateDao.java	KtalkTemplateDao	TB_KTALK_TEMPLATE	id	
+src\dao\KtalkUserDao.java	KtalkUserDao	TB_KTALK_USER	id	
+src\dao\LayoutDao.java	LayoutDao	TB_LAYOUT		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\LessonDao.java	LessonDao	LM_LESSON		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\LibraryDao.java	LibraryDao	LM_LIBRARY		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\LibraryUserDao.java	LibraryUserDao	LM_LIBRARY_USER		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\LmCategoryDao.java	LmCategoryDao	LM_CATEGORY	id	
+src\dao\LmCategoryTargetDao.java	LmCategoryTargetDao	LM_CATEGORY_TARGET	category_id,group_id	
+src\dao\MailDao.java	MailDao	TB_MAIL		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\MailTemplateDao.java	MailTemplateDao	TB_MAIL_TEMPLATE	id	
+src\dao\MailUserDao.java	MailUserDao	TB_MAIL_USER	id	
+src\dao\MainpageDao.java	MainpageDao	TB_MAINPAGE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ManualDao.java	ManualDao	TB_MANUAL		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\MenuDao.java	MenuDao	TB_MENU		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\MenuLocaleDao.java	MenuLocaleDao	TB_MENU_LOCALE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\MessageDao.java	MessageDao	TB_MESSAGE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\MessageUserDao.java	MessageUserDao	TB_MESSAGE_USER	id	
+src\dao\ModuleDao.java	ModuleDao	TB_MODULE	id	
+src\dao\NewTemplate.java	NewTemplate			table 미발견, PK 미발견(또는 DataObject 기본값 사용)
+src\dao\NoticeDao.java	NoticeDao	TB_NOTICE	id	
+src\dao\NoticeLogDao.java	NoticeLogDao	TB_NOTICE_LOG	user_id,notice_id,log_type	
+src\dao\OpenAiDao.java	OpenAiDao	TB_OPENAI	id	
+src\dao\OrderDao.java	OrderDao	TB_ORDER		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\OrderItemDao.java	OrderItemDao	TB_ORDER_ITEM		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PageDao.java	PageDao	TB_PAGE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PaymentDao.java	PaymentDao	TB_PAYMENT		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PlaceCategoryDao.java	PlaceCategoryDao	LM_PLACE_CATEGORY	place_id,category_id	
+src\dao\PlaceDao.java	PlaceDao	LM_PLACE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PollDao.java	PollDao	TB_POLL		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PollUserDao.java	PollUserDao	TB_POLL_USER		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PolyCourseDao.java	PolyCourseDao	LM_POLY_COURSE	course_code,open_year,open_term,bunban_code,group_code	
+src\dao\PolyCourseGradeDao.java	PolyCourseGradeDao	LM_POLY_COURSE_GRADE	site_id,course_code,open_year,open_term,bunban_code,group_code,member_key	
+src\dao\PolyCourseProfDao.java	PolyCourseProfDao	LM_POLY_COURSE_PROF	course_code,open_year,open_term,bunban_code,group_code,member_key	
+src\dao\PolyCourseSettingDao.java	PolyCourseSettingDao	LM_POLY_COURSE_SETTING	site_id,course_code,open_year,open_term,bunban_code,group_code	
+src\dao\PolyMemberDao.java	PolyMemberDao	LM_POLY_MEMBER	member_key	
+src\dao\PolyMemberKeyDao.java	PolyMemberKeyDao	LM_POLY_MEMBER_KEY	alias_key	
+src\dao\PolyProfessorDao.java	PolyProfessorDao	LM_POLY_PROFESSOR	member_key	
+src\dao\PolyStudentDao.java	PolyStudentDao	LM_POLY_STUDENT	course_code,open_year,open_term,bunban_code,group_code,member_key	
+src\dao\PolySyncLogDao.java	PolySyncLogDao	LM_POLY_SYNC_LOG	sync_key	
+src\dao\PopupDao.java	PopupDao	TB_POPUP		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PostDao.java	PostDao	TB_POST		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PostLogDao.java	PostLogDao	TB_POST_LOG	user_id,post_id,log_type	
+src\dao\PostTemplateDao.java	PostTemplateDao	TB_POST_TEMPLATE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\PubtreeDao.java	PubtreeDao			table 미발견, PK 미발견(또는 DataObject 기본값 사용)
+src\dao\QnaDao.java	QnaDao	TB_QNA		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\QuestionCategoryDao.java	QuestionCategoryDao	LM_QUESTION_CATEGORY	id	
+src\dao\QuestionDao.java	QuestionDao	LM_QUESTION		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\RefundDao.java	RefundDao	TB_REFUND		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ScheduleDao.java	ScheduleDao	TB_SCHEDULE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\SearchLogDao.java	SearchLogDao	TB_SEARCH_LOG	id	
+src\dao\SendAutoDao.java	SendAutoDao	TB_SEND_AUTO	id	
+src\dao\SessionDao.java	SessionDao			table 미발견, PK 미발견(또는 DataObject 기본값 사용)
+src\dao\ShortcutDao.java	ShortcutDao	TB_SHORTCUT	id	
+src\dao\SiteConfigDao.java	SiteConfigDao	TB_SITE_CONFIG	site_id,key	
+src\dao\SiteDao.java	SiteDao	TB_SITE	id	
+src\dao\SitemapDao.java	SitemapDao	TB_SITEMAP		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\SiteMenuDao.java	SiteMenuDao	TB_SITE_MENU	SITE_ID, MENU_ID	
+src\dao\SiteSkinDao.java	SiteSkinDao	TB_SITE_SKIN	id	
+src\dao\SmsAutoDao.java	SmsAutoDao	TB_SMS_AUTO		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\SmsDao.java	SmsDao	TB_SMS		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\SmsTemplateDao.java	SmsTemplateDao	TB_SMS_TEMPLATE	id	
+src\dao\SmsUserDao.java	SmsUserDao	TB_SMS_USER	id	
+src\dao\SnsLogin.java	SnsLogin			table 미발견, PK 미발견(또는 DataObject 기본값 사용)
+src\dao\StudentRecoPromptDao.java	StudentRecoPromptDao	TB_STUDENT_RECO_PROMPT	id	
+src\dao\SubjectDao.java	SubjectDao	LM_SUBJECT	id	
+src\dao\SubjectPlanDao.java	SubjectPlanDao	LM_SUBJECT_PLAN	subject_id	
+src\dao\SurveyCategoryDao.java	SurveyCategoryDao	LM_SURVEY_CATEGORY	id	
+src\dao\SurveyDao.java	SurveyDao	LM_SURVEY	id	
+src\dao\SurveyItemDao.java	SurveyItemDao	LM_SURVEY_ITEM	survey_id,question_id	
+src\dao\SurveyQuestionDao.java	SurveyQuestionDao	LM_SURVEY_QUESTION	id	
+src\dao\SurveyResultDao.java	SurveyResultDao	LM_SURVEY_RESULT	survey_id,survey_question_id,course_user_id	
+src\dao\SurveyUserDao.java	SurveyUserDao	LM_SURVEY_USER	survey_id,course_user_id	
+src\dao\TagDao.java	TagDao	TB_TAG		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\TagModuleDao.java	TagModuleDao	TB_TAG_MODULE	tag_id,module,module_id	
+src\dao\TutorDao.java	TutorDao	TB_TUTOR	user_id	
+src\dao\TwowayLogDao.java	TwowayLogDao	LM_COURSE_USER_LOG	id	
+src\dao\UserDao.java	UserDao	TB_USER	id	
+src\dao\UserDeptDao.java	UserDeptDao	TB_USER_DEPT	id	
+src\dao\UserLogDao.java	UserLogDao	TB_USER_LOG	id	
+src\dao\UserLoginDao.java	UserLoginDao	TB_USER_LOGIN		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\UserMemoDao.java	UserMemoDao	TB_USER_MEMO	id	
+src\dao\UserMenuDao.java	UserMenuDao	TB_USER_MENU	USER_ID, MENU_ID	
+src\dao\UserOutDao.java	UserOutDao	TB_USER_OUT	user_id	
+src\dao\UserSessionDao.java	UserSessionDao	TB_USER_SESSION	user_id,session_type	
+src\dao\UserSiteDao.java	UserSiteDao	TB_USER_SITE	user_id,site_id	
+src\dao\UserSleepDao.java	UserSleepDao	TB_USER_SLEEP	id	
+src\dao\VideoDao.java	VideoDao	TB_VIDEO	id	
+src\dao\VimeoDao.java	VimeoDao	TB_VIMEO	id	
+src\dao\WebpageDao.java	WebpageDao	TB_WEBPAGE		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\WebtvDao.java	WebtvDao	LM_WEBTV		PK 미발견(또는 DataObject 기본값 사용)
+src\dao\WebtvLiveDao.java	WebtvLiveDao	LM_WEBTV_LIVE	id	
+src\dao\WebtvLogDao.java	WebtvLogDao	LM_WEBTV_LOG	id	
+src\dao\WebtvPlaylistDao.java	WebtvPlaylistDao	LM_WEBTV_PLAYLIST	site_id,category_id,webtv_id	
+src\dao\WebtvRecommDao.java	WebtvRecommDao	LM_WEBTV_RECOMM	webtv_id,user_id	
+src\dao\WebtvTargetDao.java	WebtvTargetDao	LM_WEBTV_TARGET	webtv_id,group_id	
+src\dao\WecandeoDao.java	WecandeoDao			table 미발견, PK 미발견(또는 DataObject 기본값 사용)
+src\dao\WishlistDao.java	WishlistDao	TB_WISHLIST	user_id,module,module_id	
+src\dao\WordFilterDao.java	WordFilterDao	TB_WORD_FILTER	id	
+src\dao\ZipcodeDao.java	ZipcodeDao	TB_ZIPCODE	seq	

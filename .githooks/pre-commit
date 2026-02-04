@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+
+# 왜: RPG-라이트(저장소 지도)를 "사람이 까먹어도" 항상 최신으로 유지하기 위해
+#     커밋 전에 자동으로 생성 스크립트를 돌리고, 결과물을 스테이징합니다.
+
+if command -v powershell.exe >/dev/null 2>&1; then
+  PS=powershell.exe
+elif command -v pwsh >/dev/null 2>&1; then
+  PS=pwsh
+else
+  echo "[RPG] PowerShell(powershell.exe/pwsh)을 찾지 못했습니다. generate.ps1 실행이 불가합니다." >&2
+  exit 1
+fi
+
+echo "[RPG] pre-commit: 문서/인덱스 자동 갱신"
+"$PS" -NoProfile -ExecutionPolicy Bypass -File tools/rpg/generate.ps1
+
+git add docs/rpg docs/rpg/generated || true
+
