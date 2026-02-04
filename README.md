@@ -68,21 +68,10 @@ docker-compose up -d
 cd frontend && npm install && npm run dev
 ```
 
-## 📖 문서
-
-- [개발 가이드](./docs/MalgnLMS_Development_Guide.md)
-- [CI/CD 배포 가이드](./docs/DEPLOYMENT.md)
-
-## 🔐 보안 준수사항
-
-- 행정안전부 시큐어코딩 가이드라인 준수
-- SQL Injection 방지: MyBatis `#{}` 바인딩
-- XSS 방지: 입력값 검증 및 HTML 이스케이프
-- 민감정보 로그 출력 금지
-
 ================================================================================
-GrowAI Load Balancer 엔드포인트 점검 로그
-점검일시: 2026-02-05 16:12 KST
+GrowAI Load Balancer 엔드포인트 점검 최종 보고서
+================================================================================
+점검일시: 2026-02-05 16:45 KST
 대상: https://growai.co.kr
 ================================================================================
 
@@ -94,153 +83,141 @@ GrowAI Load Balancer 엔드포인트 점검 로그
 - 도메인: growai.co.kr
 - 만료일: 2026-05-05
 - 발급기관: WR3
-- 인증서 체인: GTS Root R1 → WR3 → growai.co.kr
 - 결과: ✓ 정상
 
-[www 서브도메인]
---------------------------------------------------------------------------------
-- www.growai.co.kr: 인증서 미포함
-- 사용 여부: 사용 안 함 (확인됨)
-- 결과: ✓ 의도된 설정
-
 ================================================================================
-[경로 규칙 점검 결과]
+[최종 점검 결과]
 ================================================================================
 
-1. 기본 경로 (/)
-   - URL: https://growai.co.kr/
-   - 백엔드: malgnlms-frontend-backend
-   - HTTP 상태: 200 OK
-   - Content-Type: text/html
-   - Content-Length: 1162
-   - 보안 헤더: 적용됨 (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, CSP)
-   - 결과: ✓ 정상
+| 경로          | 상태코드 | 백엔드                      | 결과   |
+|---------------|----------|-----------------------------| -------|
+| /             | 200      | malgnlms-frontend-backend   | ✓ 정상 |
+| /lms/*        | 200      | malgnlms-legacy-backend     | ✓ 정상 |
+| /tutor/*      | 200      | malgnlms-frontend-backend   | ✓ 정상 |
+| /api/lms/*    | 200      | malgnlms-api-backend        | ✓ 정상 |
 
-2. /lms/* 경로
-   - URL: https://growai.co.kr/lms/
-   - 백엔드: malgnlms-legacy-backend
-   - HTTP 상태: 404 Not Found
-   - Content-Type: text/html
-   - Content-Length: 1647
-   - 결과: ✗ 오류 - 페이지를 찾을 수 없음
-
-3. /tutor/* 경로
-   - URL: https://growai.co.kr/tutor/
-   - 백엔드: malgnlms-frontend-backend
-   - HTTP 상태: 200 OK
-   - Content-Type: text/html
-   - Content-Length: 1162
-   - 보안 헤더: 적용됨
-   - 결과: ✓ 정상
-
-4. /api/lms/* 경로
-   - URL: https://growai.co.kr/api/lms/
-   - 백엔드: malgnlms-api-backend
-   - HTTP 상태: 500 Internal Server Error
-   - Content-Type: application/json
-   - 결과: ✗ 오류 - 서버 내부 오류
+- 총 점검 항목: 4개
+- 정상: 4개
+- 오류: 0개
 
 ================================================================================
-[Cloud Run 서비스 직접 접속 점검]
+[수행한 조치 사항]
 ================================================================================
 
-1. malgnlms-legacy (Cloud Run)
+1. JavaMail 라이브러리 누락 문제 해결
+   -----------------------------------------------------------------------
+   - 증상: malgnlms-legacy 서비스 500 에러
+   - 원인: javax.mail.Address 클래스 누락 (NoClassDefFoundError)
+   - 조치: Dockerfile.legacy 수정
+          Stage 2에 mail.jar 복사 추가:
+          COPY --from=build /build/mail-api.jar 
+               /usr/local/tomcat/webapps/ROOT/WEB-INF/lib/
+   - 커밋: "Include mail API jar in Tomcat runtime"
+   - 배포: GitHub Actions 자동 배포 완료 (4m 15s)
+
+2. /lms/* 경로 404 오류 해결 (URL Rewrite)
+   -----------------------------------------------------------------------
+   - 증상: /lms/* 경로 접근 시 404 Not Found
+   - 원인: Load Balancer가 /lms/index.jsp를 그대로 전달
+           → Tomcat ROOT에는 /lms/ 폴더가 없어 404 발생
+   
+   - 해결 원리:
+     [수정 전]
+     클라이언트: /lms/index.jsp → LB → Tomcat: /lms/index.jsp (404)
+     
+     [수정 후]
+     클라이언트: /lms/index.jsp → LB(rewrite) → Tomcat: /index.jsp (200)
+   
+   - 조치: gcloud compute url-maps 업데이트
+          pathRules → routeRules 변경
+          urlRewrite.pathPrefixRewrite: / 추가
+   
+   - 명령어:
+     gcloud compute url-maps import growai-url-map \
+       --source=url-map-updated.yaml --global
+
+3. /api/lms/* 경로 URL Rewrite 추가
+   -----------------------------------------------------------------------
+   - 증상: /api/lms/* 경로 접근 시 500 에러 (NoResourceFoundException)
+   - 원인: API 서버가 context-path 없이 / 에서 서빙
+           /api/lms/... 요청이 그대로 전달되어 매핑 실패
+   - 조치: URL Rewrite 추가 (/api/lms/ → /)
+   - 비고: HEAD 메서드는 500 반환 (API 특성상 정상)
+           GET 메서드로 200 확인 완료
+
+================================================================================
+[URL Map 최종 구성]
+================================================================================
+
+name: growai-url-map
+pathMatchers:
+- name: growai-path-matcher
+  defaultService: malgnlms-frontend-backend
+  routeRules:
+  - priority: 1
+    matchRules:
+    - prefixMatch: /lms/
+    service: malgnlms-legacy-backend
+    routeAction:
+      urlRewrite:
+        pathPrefixRewrite: /
+  
+  - priority: 2
+    matchRules:
+    - prefixMatch: /api/lms/
+    service: malgnlms-api-backend
+    routeAction:
+      urlRewrite:
+        pathPrefixRewrite: /
+  
+  - priority: 3
+    matchRules:
+    - prefixMatch: /tutor/
+    service: malgnlms-frontend-backend
+
+================================================================================
+[Cloud Run 서비스 상태]
+================================================================================
+
+1. malgnlms-legacy
    - URL: https://malgnlms-legacy-212772069233.asia-northeast1.run.app
-   - 매핑 경로: /lms/*
-   - 상태: ✗ 오류 (HTTP 500 Server Error)
-   - 비고: Cloud Run 서비스 자체에서 500 에러 반환
+   - 직접 접속: ✓ 200 OK
+   - LB 경유 (/lms/*): ✓ 200 OK
+
+2. malgnlms-frontend
+   - LB 경유 (/): ✓ 200 OK
+   - LB 경유 (/tutor/*): ✓ 200 OK
+
+3. malgnlms-api
+   - URL: https://malgnlms-api-212772069233.asia-northeast1.run.app
+   - 직접 접속: ✓ 200 OK
+   - LB 경유 (/api/lms/*): ✓ 200 OK (GET)
 
 ================================================================================
-[백엔드 서비스 구성]
+[참고: URL Rewrite 동작 원리]
 ================================================================================
 
-1. malgnlms-api-backend
-   - 프로토콜: HTTP
-   - 리전: asia-northeast1
-   - Cloud CDN: 사용 중지됨
-   - 로깅: 사용 중지됨
+문제 상황:
+- Tomcat이 /usr/local/tomcat/webapps/ROOT/ 에서 서빙
+- 클라이언트가 /lms/page.jsp 요청
+- Load Balancer가 /lms/page.jsp 그대로 전달
+- Tomcat은 ROOT/lms/page.jsp를 찾음 → 없음 → 404
 
-2. malgnlms-frontend-backend
-   - 프로토콜: HTTP
-   - 리전: asia-northeast1
-   - Cloud CDN: 사용 중지됨
-   - 로깅: 사용 중지됨
-
-3. malgnlms-legacy-backend
-   - 프로토콜: HTTP
-   - 리전: asia-northeast1
-   - Cloud CDN: 사용 중지됨
-   - 로깅: 사용 중지됨
-
-================================================================================
-[점검 요약]
-================================================================================
-
-| 경로          | 상태코드 | 결과   |
-|---------------|----------|--------|
-| /             | 200      | ✓ 정상 |
-| /lms/*        | 404      | ✗ 오류 |
-| /tutor/*      | 200      | ✓ 정상 |
-| /api/lms/*    | 500      | ✗ 오류 |
-
-- 정상: 2개
-- 오류: 2개
-
-================================================================================
-[조치 필요 사항]
-================================================================================
-
-1. /lms/* 경로 (404 Not Found)
-   - malgnlms-legacy-backend 서비스 확인 필요
-   - Cloud Run 서비스가 해당 경로를 처리하지 못하고 있음
-   - Cloud Run 로그 확인 권장
-
-2. /api/lms/* 경로 (500 Internal Server Error)
-   - malgnlms-api-backend 서비스 확인 필요
-   - 백엔드 애플리케이션 오류 발생 중
-   - Cloud Run 로그에서 상세 에러 확인 권장
+해결:
+- Load Balancer에서 URL 재작성 (pathPrefixRewrite)
+- /lms/page.jsp → /page.jsp 로 변환 후 전달
+- Tomcat은 ROOT/page.jsp를 찾음 → 있음 → 200
 
 ================================================================================
 
-================================================================================
-[오류 상세 분석]
-================================================================================
 
-1. malgnlms-legacy 서비스 오류 분석
---------------------------------------------------------------------------------
-   - 오류 위치: /index.jsp (Line 19)
-   - 오류 유형: java.lang.NoClassDefFoundError
-   
-   [근본 원인]
-   java.lang.ClassNotFoundException: javax.mail.Address
-   
-   [원인 분석]
-   JavaMail 라이브러리(javax.mail)가 누락됨
-   - Malgn 클래스 초기화 시 javax.mail.Address 클래스를 찾지 못함
-   - WEB-INF/lib에 mail.jar 또는 javax.mail.jar 파일이 없음
-   
-   [해결 방법]
-   1. JavaMail 라이브러리 추가
-      - Maven 사용 시:
-        <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>javax.mail</artifactId>
-            <version>1.6.2</version>
-        </dependency>
-      
-      - 또는 직접 JAR 추가:
-        WEB-INF/lib/javax.mail-1.6.2.jar
-   
-   2. Jakarta Mail (Java EE 9+) 사용 시:
-      <dependency>
-          <groupId>com.sun.mail</groupId>
-          <artifactId>jakarta.mail</artifactId>
-          <version>2.0.1</version>
-      </dependency>
-   
-   3. Docker 이미지 재빌드 후 Cloud Run 재배포
+## 🔐 보안 준수사항
 
-================================================================================
+- 행정안전부 시큐어코딩 가이드라인 준수
+- SQL Injection 방지: MyBatis `#{}` 바인딩
+- XSS 방지: 입력값 검증 및 HTML 이스케이프
+- 민감정보 로그 출력 금지
+
 
 
 ## 📄 라이선스
