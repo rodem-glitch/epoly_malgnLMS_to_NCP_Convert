@@ -46,10 +46,6 @@ public class CampusStudentPopulationExcelService {
             int baseYear
     ) {
         String resolvedCampus = normalizeCampus(campus);
-        if (!StringUtils.hasText(resolvedCampus)) {
-            throw new IllegalArgumentException("campus는 필수입니다.");
-        }
-
         Cache loaded = getOrLoadCache();
         return loaded.countByAgeBandAndGender(resolvedCampus, year, term, baseYear);
     }
@@ -607,7 +603,8 @@ public class CampusStudentPopulationExcelService {
             // 1) 집계형 데이터가 있으면 그걸 우선 사용합니다.
             if (!aggregates.isEmpty()) {
                 for (AgeAggregateRow row : aggregates) {
-                    if (!campus.equals(row.campus())) {
+                    // 왜: campus가 비어있으면(=전체 캠퍼스) 캠퍼스 필터 없이 전부 합산합니다.
+                    if (StringUtils.hasText(campus) && !campus.equals(row.campus())) {
                         continue;
                     }
                     if (StringUtils.hasText(year) && StringUtils.hasText(row.year()) && !year.equals(row.year())) {
@@ -625,7 +622,7 @@ public class CampusStudentPopulationExcelService {
 
             // 2) 학생 로스터(1행=1학생) 기반으로 연령대를 계산합니다.
             for (StudentRow row : students) {
-                if (!campus.equals(row.campus())) {
+                if (StringUtils.hasText(campus) && !campus.equals(row.campus())) {
                     continue;
                 }
                 if (StringUtils.hasText(year) && StringUtils.hasText(row.year()) && !year.equals(row.year())) {

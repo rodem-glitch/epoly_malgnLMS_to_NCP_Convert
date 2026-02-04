@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.polytech.lms.statistics.kosis.client.KosisClient;
 import kr.polytech.lms.statistics.kosis.config.KosisProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
@@ -11,6 +13,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Component
@@ -22,6 +26,8 @@ public class SgisClient {
     private final KosisProperties properties;
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+
+    private static final Logger log = LoggerFactory.getLogger(SgisClient.class);
 
     public SgisClient(
             KosisClient kosisClient,
@@ -38,12 +44,21 @@ public class SgisClient {
         validateCompanyRequest(year, admCd, classCode);
 
         String accessToken = kosisClient.getAccessToken();
+        boolean nationwide = "00".equals(admCd);
+
+        // 왜: SGIS 사업체 통계는 전국(adm_cd=00) 요청을 그대로 보내면 result가 비어(=0으로 계산)지는 케이스가 있어,
+        //     전국일 때는 하위 행정구역 결과를 받아 합산(low_search=1)하는 방식으로 처리합니다.
+        int lowSearch = nationwide ? 1 : 0;
+        if (nationwide) {
+            log.debug("SGIS 사업체 통계 전국 조회: year={}, admCd={}, classCode={}, low_search={} (하위 결과 합산)",
+                    year, admCd, classCode, lowSearch);
+        }
 
         URI uri = UriComponentsBuilder.fromHttpUrl(properties.getCompanyUrl())
                 .queryParam("accessToken", accessToken)
                 .queryParam("year", year)
                 .queryParam("adm_cd", admCd)
-                .queryParam("low_search", 0)
+                .queryParam("low_search", lowSearch)
                 .queryParam("class_deg", 10)
                 .queryParam("class_code", classCode)
                 .build(true)
@@ -67,9 +82,15 @@ public class SgisClient {
             return new CompanyStats(null, null);
         }
 
-        JsonNode first = result.get(0);
-        Long corpCnt = parseNullableLong(first.path("corp_cnt").asText(null));
-        Long totWorker = parseNullableLong(first.path("tot_worker").asText(null));
+        List<Long> corpCnts = new ArrayList<>();
+        List<Long> totWorkers = new ArrayList<>();
+        for (JsonNode node : result) {
+            corpCnts.add(parseNullableLong(node.path("corp_cnt").asText(null)));
+            totWorkers.add(parseNullableLong(node.path("tot_worker").asText(null)));
+        }
+
+        Long corpCnt = sumNullableLongs(corpCnts);
+        Long totWorker = sumNullableLongs(totWorkers);
         return new CompanyStats(corpCnt, totWorker);
     }
 
@@ -105,6 +126,21 @@ public class SgisClient {
         } catch (NumberFormatException e) {
             throw new IllegalStateException("SGIS 숫자 파싱에 실패했습니다. 값=" + normalized, e);
         }
+    }
+
+    private Long sumNullableLongs(List<Long> values) {
+        if (values == null || values.isEmpty()) {
+            return null;
+        }
+
+        boolean hasAny = false;
+        long sum = 0L;
+        for (Long v : values) {
+            if (v == null) continue;
+            hasAny = true;
+            sum += v;
+        }
+        return hasAny ? sum : null;
     }
 
     public record CompanyStats(Long corpCnt, Long totWorker) {

@@ -79,7 +79,7 @@ public class StatisticsDashboardApiController {
 
     @GetMapping("/population/compare")
     public ResponseEntity<?> populationCompare(
-            @RequestParam(name = "campus") String campus,
+            @RequestParam(name = "campus", required = false) String campus,
             @RequestParam(name = "admCd", required = false) String admCd,
             @RequestParam(name = "admNm", required = false) String admNm,
             @RequestParam(name = "populationYear", required = false) Integer populationYear
@@ -97,10 +97,11 @@ public class StatisticsDashboardApiController {
 
     @GetMapping("/internal/employment/top")
     public ResponseEntity<?> topEmploymentRates(
-            @RequestParam(name = "campus") String campus,
+            @RequestParam(name = "campus", required = false) String campus,
             @RequestParam(name = "top", defaultValue = "10") int top
     ) {
         try {
+            log.info("통계 API 호출(내부-취업 TOP): campus={}, top={}", campus, top);
             return ResponseEntity.ok(internalStatisticsService.getTopEmploymentRates(campus, top));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
@@ -111,10 +112,11 @@ public class StatisticsDashboardApiController {
 
     @GetMapping("/internal/admission/top")
     public ResponseEntity<?> topAdmissionFillRates(
-            @RequestParam(name = "campus") String campus,
+            @RequestParam(name = "campus", required = false) String campus,
             @RequestParam(name = "top", defaultValue = "10") int top
     ) {
         try {
+            log.info("통계 API 호출(내부-입학 TOP): campus={}, top={}", campus, top);
             return ResponseEntity.ok(internalStatisticsService.getTopAdmissionFillRates(campus, top));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
@@ -125,15 +127,18 @@ public class StatisticsDashboardApiController {
 
     @GetMapping("/internal/export")
     public ResponseEntity<?> exportInternalExcel(
-            @RequestParam(name = "campus") String campus
+            @RequestParam(name = "campus", required = false) String campus
     ) {
         try {
+            String campusLabel = (campus == null || campus.isBlank() || "전체".equals(campus.trim()) || "전체 캠퍼스".equals(campus.trim()))
+                    ? "전체"
+                    : campus.trim();
             byte[] bytes = statisticsExcelExportService.exportInternal(
-                    campus,
+                    campusLabel,
                     internalStatisticsService.getEmploymentRates(campus),
                     internalStatisticsService.getAdmissionFillRates(campus)
             );
-            return toExcelResponse("내부통계_" + campus + ".xlsx", bytes);
+            return toExcelResponse("내부통계_" + campusLabel + ".xlsx", bytes);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
         } catch (IllegalStateException e) {
@@ -143,7 +148,7 @@ public class StatisticsDashboardApiController {
 
     @GetMapping("/population/export")
     public ResponseEntity<?> exportPopulationExcel(
-            @RequestParam(name = "campus") String campus,
+            @RequestParam(name = "campus", required = false) String campus,
             @RequestParam(name = "admCd", required = false) String admCd,
             @RequestParam(name = "admNm", required = false) String admNm,
             @RequestParam(name = "populationYear", required = false) Integer populationYear
@@ -152,7 +157,11 @@ public class StatisticsDashboardApiController {
             PopulationComparisonService.PopulationComparisonResponse response =
                     populationComparisonService.compare(campus, admCd, admNm, populationYear);
             byte[] bytes = statisticsExcelExportService.exportPopulation(response);
-            String filename = "인구비율_%s_%s_%s.xlsx".formatted(campus, response.admCd(), response.populationYear());
+            String campusLabel = (campus == null || campus.isBlank() || "전체".equals(campus.trim()) || "전체 캠퍼스".equals(campus.trim()))
+                    ? "전체"
+                    : campus.trim();
+            String admCdLabel = (response.admCd() == null || response.admCd().isBlank()) ? "전국" : response.admCd();
+            String filename = "인구비율_%s_%s_%s.xlsx".formatted(campusLabel, admCdLabel, response.populationYear());
             return toExcelResponse(filename, bytes);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));

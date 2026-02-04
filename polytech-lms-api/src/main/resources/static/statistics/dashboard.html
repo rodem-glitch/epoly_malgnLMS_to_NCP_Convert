@@ -1802,8 +1802,11 @@
     const regionSelect = document.getElementById(regionSelectId);
 
     if (!campusName) {
-      // 전체 캠퍼스 선택 시 전국 전체 옵션 표시
-      regionSelect.innerHTML = '<option value="" selected>전국 전체</option>';
+      // 왜: "전체 캠퍼스"는 캠퍼스 필터만 풀고, 행정구역은 "전국 전체" 기본값으로 둡니다.
+      // - 인구(KOSIS): adm_cd를 비워두면(=미전달) 전국으로 처리됩니다.
+      // - 산업(SGIS): adm_cd가 필수이므로, 전국은 "00" 코드로 보냅니다. (SGIS 기준 전국 코드)
+      const nationwideAdmCd = regionSelectId === "industryRegion" ? "00" : "";
+      regionSelect.innerHTML = `<option value="${nationwideAdmCd}" selected>전국 전체</option>`;
       if (refreshCallback) refreshCallback();
       return;
     }
@@ -3550,11 +3553,7 @@
 
   async function refreshInternal() {
     const campus = document.getElementById("internalCampus").value;
-
-    if (!campus) {
-      setInternalStatus("캠퍼스를 선택해 주세요.");
-      return;
-    }
+    const campusLabel = campus || "전체";
 
     setInternalStatus("조회 중...");
 
@@ -3593,7 +3592,7 @@
     }
 
     // 왜: 내부 통계는 "학기(내부 DB)" 기준이 아니라, 현재 엑셀 집계 데이터를 기준으로 표시합니다.
-    setInternalStatus(`캠퍼스=${campus} / 기준=엑셀 집계`);
+    setInternalStatus(`캠퍼스=${campusLabel} / 기준=엑셀 집계`);
 
     document.getElementById("downloadInternalCsv").onclick = () => {
       // 왜: 브라우저에서 CSV를 만들면 한글/인코딩 이슈가 생길 수 있어, 서버에서 xlsx로 내려줍니다.
@@ -3677,11 +3676,6 @@
     const admCd = getSelectedAdmCd("populationRegion");
     const admLabel = getSelectedOptionText("populationRegion");
     const populationYear = document.getElementById("populationYear").value;
-
-    if (!campus) {
-      setPopulationStatus("캠퍼스를 선택해 주세요.");
-      return;
-    }
 
     setPopulationStatus("조회 중...");
 
@@ -3781,11 +3775,6 @@
     const admLabel = getSelectedOptionText("industryRegion");
     const statsYear = document.getElementById("industryYear").value;
 
-    if (!campus) {
-      setIndustryStatus("캠퍼스를 선택해 주세요.");
-      return;
-    }
-
     setIndustryStatus("조회 중...");
 
     const industryRes = await fetch(
@@ -3860,6 +3849,16 @@
 
   function attachEvents() {
     // 왜: 인구/산업 탭이 분리되어, 각 탭의 필터 변경이 해당 탭만 갱신하도록 분리합니다.
+
+    // 왜: Chart.js는 "숨겨진 탭(display: none)" 안에서 최초 렌더링되면 폭/높이를 0으로 계산해 빈 화면처럼 보일 수 있습니다.
+    //     (초기 로딩은 기본 탭=입학·양성·취업이라 인구/산업 탭이 숨겨진 상태에서 refresh가 먼저 실행됨)
+    //     탭이 실제로 보여지는 시점에 한 번 더 refresh를 호출해, 차트가 정상 크기로 그려지게 합니다.
+    document.getElementById("tab-population").addEventListener("shown.bs.tab", () => {
+      refreshPopulation();
+    });
+    document.getElementById("tab-industry").addEventListener("shown.bs.tab", () => {
+      refreshIndustry();
+    });
     
     // 인구 탭: 캠퍼스 선택 시 행정구역 자동 선택 (2개 옵션만 표시)
     document.getElementById("populationCampus").addEventListener("change", () => {

@@ -41,6 +41,28 @@ public class SgisAdministrativeCodeService {
             Map.entry("50", "39")  // 제주
     );
 
+    // 왜: 전국(전체) 산업 통계처럼 "시도 단위로 합산"이 필요할 때, SGIS 시도 코드를 안정적으로 제공하기 위함입니다.
+    // - Map 순서는 구현에 따라 달라질 수 있어 List로 고정합니다.
+    private static final List<String> ALL_SGIS_SIDO_CODES = List.of(
+            "11", // 서울
+            "21", // 부산
+            "22", // 대구
+            "23", // 인천
+            "24", // 광주
+            "25", // 대전
+            "26", // 울산
+            "29", // 세종
+            "31", // 경기
+            "32", // 강원
+            "33", // 충북
+            "34", // 충남
+            "35", // 전북
+            "36", // 전남
+            "37", // 경북
+            "38", // 경남
+            "39"  // 제주
+    );
+
     private final SgisAddressClient sgisAddressClient;
 
     // 왜: stage 목록은 자주 바뀌지 않으므로, 시도 단위로 한 번만 가져와 캐시합니다.
@@ -100,6 +122,10 @@ public class SgisAdministrativeCodeService {
         log.info("SGIS 행정구역 매칭 실패 → 시도 단위로 대체합니다. requestedAdmCd={}, requestedAdmNm={}, sgisSidoCd={}",
                 rawCd, rawNm, sgisSidoCd);
         return new Resolution(rawCd, rawNm, sgisSidoCd, true);
+    }
+
+    public List<String> getAllSgisSidoCodes() {
+        return ALL_SGIS_SIDO_CODES;
     }
 
     private StageRow findStageByName(String sgisSidoCd, String fullAddr) throws Exception {

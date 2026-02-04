@@ -56,11 +56,11 @@ public class PopulationComparisonService {
             String admNm,
             Integer populationYear
     ) {
-        if (!StringUtils.hasText(campus)) {
-            throw new IllegalArgumentException("campus는 필수입니다.");
-        }
-
-        String resolvedCampus = campus.trim();
+        // 왜: 화면 기본값이 "전체 캠퍼스"이므로, campus가 비어있을 수 있습니다.
+        //     이 경우에는 엑셀 기반 캠퍼스 학생 분포를 "전체 합산"으로 계산합니다.
+        String resolvedCampus = StringUtils.hasText(campus) && !"전체".equals(campus) && !"전체 캠퍼스".equals(campus)
+                ? campus.trim()
+                : null;
         int desiredPopulationYear = resolvePopulationYear(populationYear);
 
         String requestedAdmCd = normalizeRequestedAdmCd(admCd);

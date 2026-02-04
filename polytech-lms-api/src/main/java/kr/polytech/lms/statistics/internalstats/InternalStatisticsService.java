@@ -88,7 +88,27 @@ public class InternalStatisticsService {
     }
 
     public List<DepartmentRate> getEmploymentRates(String campus) {
-        String resolvedCampus = requireCampus(campus);
+        String resolvedCampus = normalizeCampus(campus);
+
+        // 왜: 화면 기본값이 "전체 캠퍼스"라서, campus가 비어있을 수 있습니다.
+        //     이 경우에는 (학과명 기준) 취업자수/대상자수를 합산해 전체 취업률을 계산합니다.
+        if (!StringUtils.hasText(resolvedCampus)) {
+            Map<String, double[]> sumsByDept = new LinkedHashMap<>();
+            for (EmploymentRow r : getOrLoadEmploymentRows()) {
+                if (!StringUtils.hasText(r.dept()) || r.employed() == null || r.employTarget() == null) {
+                    continue;
+                }
+                double[] sums = sumsByDept.computeIfAbsent(r.dept(), k -> new double[]{0.0, 0.0});
+                sums[0] += r.employed();
+                sums[1] += r.employTarget();
+            }
+
+            return sumsByDept.entrySet().stream()
+                    .filter(e -> e.getValue()[1] > 0)
+                    .map(e -> new DepartmentRate(e.getKey(), (e.getValue()[0] / e.getValue()[1]) * 100.0))
+                    .sorted(Comparator.comparingDouble(DepartmentRate::rate).reversed())
+                    .toList();
+        }
 
         return getOrLoadEmploymentRows().stream()
                 .filter(r -> resolvedCampus.equals(r.campus()))
@@ -104,7 +124,32 @@ public class InternalStatisticsService {
     }
 
     public List<DepartmentRate> getAdmissionFillRates(String campus) {
-        String resolvedCampus = requireCampus(campus);
+        String resolvedCampus = normalizeCampus(campus);
+
+        // 왜: 화면 기본값이 "전체 캠퍼스"라서, campus가 비어있을 수 있습니다.
+        //     이 경우에는 (학과명 기준) usedCount/정원을 합산해 전체 충원률을 계산합니다.
+        if (!StringUtils.hasText(resolvedCampus)) {
+            Map<String, double[]> sumsByDept = new LinkedHashMap<>();
+            for (AdmissionRow r : getOrLoadAdmissionRows()) {
+                if (!StringUtils.hasText(r.dept()) || r.quota() == null || r.usedCount() == null) {
+                    continue;
+                }
+                double[] sums = sumsByDept.computeIfAbsent(r.dept(), k -> new double[]{0.0, 0.0});
+                sums[0] += r.usedCount();
+                sums[1] += r.quota();
+            }
+
+            return sumsByDept.entrySet().stream()
+                    .filter(e -> e.getValue()[1] > 0)
+                    .map(e -> {
+                        double rate = (e.getValue()[0] / e.getValue()[1]) * 100.0;
+                        // 왜: 지원(접수) 기반 비율은 100%를 초과할 수 있어, 화면/기존 로직과 동일하게 100 상한을 둡니다.
+                        rate = Math.min(rate, 100.0);
+                        return new DepartmentRate(e.getKey(), rate);
+                    })
+                    .sorted(Comparator.comparingDouble(DepartmentRate::rate).reversed())
+                    .toList();
+        }
 
         return getOrLoadAdmissionRows().stream()
                 .filter(r -> resolvedCampus.equals(r.campus()))
@@ -395,6 +440,9 @@ public class InternalStatisticsService {
 
     private String normalizeCampus(String campus) {
         String v = campus == null ? "" : campus.trim();
+        if (!StringUtils.hasText(v) || "전체".equals(v) || "전체 캠퍼스".equals(v)) {
+            return null;
+        }
         if (v.endsWith("캠퍼스")) {
             return v.substring(0, v.length() - "캠퍼스".length()).trim();
         }

@@ -153,6 +153,30 @@ public class IndustryAnalysisService {
             categoryCounts.put(category, 0L);
         }
 
+        if ("00".equals(admCd)) {
+            // 왜: SGIS 사업체 통계는 전국(adm_cd=00) 요청이 0으로만 내려오는 환경이 있어,
+            //     전국은 시도 단위로 합산해서 계산합니다. (정의상 전국=모든 시도의 합)
+            List<String> sgisSidoCodes = sgisAdministrativeCodeService.getAllSgisSidoCodes();
+
+            for (String category : CATEGORY_ORDER) {
+                List<String> classCodes = classCodesByCategory.getOrDefault(category, List.of());
+                long sum = 0L;
+                for (String classCode : classCodes) {
+                    for (String sidoCd : sgisSidoCodes) {
+                        Long totWorker = sgisCompanyCacheService
+                                .getCompanyStats(String.valueOf(year), sidoCd, classCode)
+                                .totWorker();
+                        if (totWorker != null) {
+                            sum += totWorker;
+                        }
+                    }
+                }
+                categoryCounts.put(category, sum);
+            }
+
+            return categoryCounts;
+        }
+
         for (String category : CATEGORY_ORDER) {
             List<String> classCodes = classCodesByCategory.getOrDefault(category, List.of());
             long sum = 0L;
@@ -171,8 +195,10 @@ public class IndustryAnalysisService {
     private int resolveAvailableStatsYear(int desiredYear, String admCd) throws IOException {
         // 왜: SGIS 사업체 통계는 "최신 연도"가 바로 제공되지 않는 경우가 있어, 사용 가능한 연도로 자동 보정합니다.
         // - 예: 2024가 N/A면 2023으로 내려가서 조회
+        // - 전국(00)은 시도 합산이라 호출 수가 많아질 수 있어, 연도 탐색은 대표 시도(서울=11)로만 빠르게 확인합니다.
+        String probeAdmCd = "00".equals(admCd) ? "11" : admCd;
         for (int y = desiredYear; y >= desiredYear - 5; y--) {
-            Map<String, Long> counts = countRegionCompaniesByCategory(y, admCd);
+            Map<String, Long> counts = countRegionCompaniesByCategory(y, probeAdmCd);
             long total = counts.values().stream().mapToLong(Long::longValue).sum();
             if (total > 0) {
                 return y;

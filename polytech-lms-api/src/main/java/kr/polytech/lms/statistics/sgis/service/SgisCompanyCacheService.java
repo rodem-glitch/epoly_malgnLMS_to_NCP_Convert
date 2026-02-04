@@ -40,6 +40,7 @@ public class SgisCompanyCacheService {
         if (cached.isPresent()) {
             SgisCompany entity = cached.get();
 
+            boolean nationwide = "00".equals(resolvedAdmCd);
             if (entity.getTotWorker() != null || entity.getCorpCnt() != null) {
                 // 왜: 과거에는 corp_cnt만 저장했던 이력(마이그레이션)이 있을 수 있어,
                 //     tot_worker가 비어있으면 한 번 더 호출해서 채웁니다.
@@ -52,6 +53,13 @@ public class SgisCompanyCacheService {
             }
 
             // 왜: 둘 다 NULL이면(=N/A 등) 다시 호출해도 동일할 가능성이 높아서 negative cache로 취급합니다.
+            //     단, 전국(adm_cd=00)은 조회 방식(low_search)이 바뀌면 값이 생길 수 있어 1회 재조회합니다.
+            if (nationwide) {
+                SgisClient.CompanyStats refreshed = sgisClient.fetchCompanyStats(resolvedYear, resolvedAdmCd, resolvedClassCode);
+                sgisCompanyRepository.save(new SgisCompany(id, refreshed.corpCnt(), refreshed.totWorker()));
+                return refreshed;
+            }
+
             return new SgisClient.CompanyStats(null, null);
         }
 
