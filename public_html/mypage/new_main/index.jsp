@@ -13,6 +13,29 @@
 // 비로그인 접속 허용: 계속 학습하기 섹션만 비활성화
 // -------------------------------------------------------------------
 
+//SSO 첫 방문 동의 체크
+// 왜: SSO 연동 사이트에서 첫 방문(신규 메인 진입) 시 개인정보 수집·이용 및 제공 동의를 받아야 합니다.
+//     새 페이지를 만들지 않고 기존 동의 화면(member/privacy_agree.jsp)을 재사용합니다.
+if(userId > 0 && siteinfo.b("sso_yn")) {
+	AgreementLogDao agreementLog = new AgreementLogDao(p, siteId);
+	String consentModule = "sso_20260120";
+	boolean agreed = "Y".equals(agreementLog.getOne(
+		"SELECT agreement_yn FROM " + agreementLog.table
+		+ " WHERE user_id = " + userId
+		+ " AND type = 'sso'"
+		+ " AND module = '" + consentModule + "'"
+		+ " ORDER BY reg_date DESC"
+	));
+	if(!agreed) {
+		String qs = m.qs("");
+		String cur = request.getRequestURI() + ("".equals(qs) ? "" : "?" + qs);
+		String pek = m.encrypt("PRIVACY_" + userId + "_AGREE_" + m.time("yyyyMMdd"));
+		m.log("agreement_gate_" + siteId, "path=/mypage/new_main/index.jsp user_id=" + userId + " type=sso module=" + consentModule);
+		m.redirect("/member/privacy_agree.jsp?id=" + userId + "&ek=" + pek + "&ag=sso&returl=" + m.urlencode(cur));
+		return;
+	}
+}
+
 //객체
 UserDao user = new UserDao();
 UserDeptDao userDept = new UserDeptDao();

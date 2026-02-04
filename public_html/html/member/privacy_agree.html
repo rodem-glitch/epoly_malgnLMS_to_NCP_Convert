@@ -10,6 +10,21 @@
 					<div class="content_body">
 						<form name="form1" method="POST" target="sysfrm" onsubmit="return goSubmit(this);">
 
+						<!--@if(consent_mode)-->
+						<h5 class="box_title">{{consent_title}}</h5>
+						<p class="box_tx">아래 내용을 확인하신 뒤 동의해 주세요.</p>
+						<div class="gray_box top">
+							<h6 class="box_stitle">{{consent_box_title}}</h6>
+							<div class="g_box_in">
+								<div class="textin">
+									{{consent_content}}
+								</div>
+							</div>
+							<p class="check"><label><input type="checkbox" name="agree_yn2" value="Y" required="required" />위 내용에 동의합니다.</label></p>
+						</div>
+						<!--/if(consent_mode)-->
+
+						<!--@nif(consent_mode)-->
 						<h5 class="box_title">약관동의</h5>
 						<p class="box_tx">회원가입을 위해서 아래 개인정보 및 이용에 대한 안내를 읽고 동의해 주세요.</p>
 						<div class="gray_box top">
@@ -77,6 +92,7 @@
 								</tbody>
 							</table>
 						</div>
+						<!--/nif(consent_mode)-->
 						<div class="board btn">
 							<input type="submit" class="button gray" value="동의합니다." />
 							<input type="button" class="button white" onclick="history.go(-1)" value="동의하지 않습니다." />

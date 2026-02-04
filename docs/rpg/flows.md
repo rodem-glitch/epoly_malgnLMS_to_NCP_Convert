@@ -37,3 +37,37 @@
 - 확인(근거): (어떤 화면/URL/테스트로 확인했는지)
 - 최근 갱신: (YYYY-MM-DD)
 
+---
+
+### FLOW-1001: SSO 첫 방문 동의(신규 메인)
+- 사용자 동작(의도): SSO 로그인 후 `/mypage/new_main/index.jsp` 첫 방문
+- 진입점: `public_html/mypage/new_main/index.jsp`
+- 처리(핵심):
+  - 로그인 상태(`userId > 0`) + SSO 사용(`siteinfo.sso_yn=Y`)일 때만 동작
+  - `TB_AGREEMENT_LOG`에 `type='sso'`, `module='sso_20260120'` 동의 이력이 없으면 동의 화면으로 리다이렉트
+  - 동의 화면에서 동의 후 `returl`로 복귀
+- DB:
+  - 동의 이력: `src/dao/AgreementLogDao.java` → `TB_AGREEMENT_LOG` (`type=sso`, `module=sso_20260120`, `agreement_yn=Y`, `site_id`, `user_id`)
+  - 동의 문구: `TB_WEBPAGE.code='consent_sso_20260120'` (운영에서 등록 필요)
+- 출력:
+  - 동의 화면: `public_html/member/privacy_agree.jsp` (파라미터 `ag=sso`, `returl=...`)
+  - 템플릿: `public_html/html/member/privacy_agree.html` (`consent_mode` 분기)
+- 확인(근거): 리다이렉트/저장/출력 분기 코드를 파일에서 확인(`public_html/mypage/new_main/index.jsp`, `public_html/member/privacy_agree.jsp`, `public_html/html/member/privacy_agree.html`)
+- 최근 갱신: 2026-02-04
+
+### FLOW-1002: 증명서(수료증/합격증) 발급 동의
+- 사용자 동작(의도): 마이페이지에서 증명서 발급 버튼 클릭
+- 진입점:
+  - 발급 목록: `public_html/mypage/certificate_list.jsp`
+  - 실제 발급: `public_html/mypage/certificate.jsp`, `public_html/mypage/certificate_course.jsp`, `public_html/mypage/certificate_template.jsp`
+- 처리(핵심):
+  - 발급 JSP 진입 시 `TB_AGREEMENT_LOG`에 `type='cert'`, `module='cert_20260120'` 동의 이력이 없으면 동의 화면으로 리다이렉트
+  - 동의 화면에서 동의 후 원래 발급 URL(`returl`)로 복귀하여 발급 진행
+- DB:
+  - 동의 이력: `src/dao/AgreementLogDao.java` → `TB_AGREEMENT_LOG` (`type=cert`, `module=cert_20260120`, `agreement_yn=Y`, `module_id=cuid(가능한 경우)`)
+  - 동의 문구: `TB_WEBPAGE.code='consent_cert_20260120'` (운영에서 등록 필요)
+- 출력:
+  - 동의 화면: `public_html/member/privacy_agree.jsp` (파라미터 `ag=cert`, `mid=cuid`, `returl=...`)
+  - 템플릿: `public_html/html/member/privacy_agree.html` (`consent_mode` 분기)
+- 확인(근거): 발급 진입점과 동의 게이트 분기 코드를 파일에서 확인(`public_html/mypage/certificate*.jsp`, `public_html/member/privacy_agree.jsp`)
+- 최근 갱신: 2026-02-04

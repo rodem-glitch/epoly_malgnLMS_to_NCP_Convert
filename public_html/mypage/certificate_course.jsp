@@ -5,6 +5,26 @@ int id = m.ri("cuid");
 String type = m.rs("type");
 if(id == 0) { m.jsErrClose(_message.get("alert.common.required_key")); return; }
 
+//증명서 발급 동의 체크
+// 왜: 증명서/합격증에는 개인정보가 포함될 수 있으므로, 발급 시점에 별도 동의를 받습니다.
+AgreementLogDao agreementLog = new AgreementLogDao(p, siteId);
+String consentModule = "cert_20260120";
+boolean certAgreed = "Y".equals(agreementLog.getOne(
+	"SELECT agreement_yn FROM " + agreementLog.table
+	+ " WHERE user_id = " + userId
+	+ " AND type = 'cert'"
+	+ " AND module = '" + consentModule + "'"
+	+ " ORDER BY reg_date DESC"
+));
+if(!certAgreed) {
+	String qs = m.qs("");
+	String cur = request.getRequestURI() + ("".equals(qs) ? "" : "?" + qs);
+	String pek = m.encrypt("PRIVACY_" + userId + "_AGREE_" + m.time("yyyyMMdd"));
+	m.log("agreement_gate_" + siteId, "path=/mypage/certificate_course.jsp user_id=" + userId + " type=cert module=" + consentModule + " module_id=" + id);
+	m.redirect("/member/privacy_agree.jsp?id=" + userId + "&ek=" + pek + "&ag=cert&mid=" + id + "&returl=" + m.urlencode(cur));
+	return;
+}
+
 /*
 if("pdf".equals(type)) {
 	String url = "http://" + request.getServerName() + ":8080/mypage/certificate_course.jsp?cuid=" + id;

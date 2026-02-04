@@ -27,10 +27,14 @@
 - 상태값 관례: `status`의 의미(테이블마다 다를 수 있으니 항상 확인)
 - 템플릿 렌더링: JSP의 `p.setVar()/p.setLoop()` ↔ 템플릿 `.html` 변수/루프 매칭
 - 파일 업로드/경로: `public_html/data/` 및 저장 경로/권한
+- 개인정보 동의(게이트/버전):
+  - 동의 화면 재사용: `public_html/member/privacy_agree.jsp` (`ag=sso|cert`)
+  - 리다이렉트 안전: `returl`은 외부 URL 차단/검증 필수(오픈 리다이렉트 방지)
+  - 운영 준비: `TB_WEBPAGE`에 `consent_sso_20260120`, `consent_cert_20260120` 컨텐츠가 없으면 화면이 차단됨(폴백 금지 정책)
+  - 이력: `TB_AGREEMENT_LOG`에 `type/module` 조합으로 버전 관리(`sso_20260120`, `cert_20260120`)
 - React 배포 산출물: `public_html/tutor_lms/app` (빌드 누락/정적파일 캐시 이슈)
 - Spring Boot 설정/시크릿: `polytech-lms-api/src/main/resources/application.yml` (키/토큰/DB정보 노출 금지)
 
 ## 갱신 기준(강제)
 - 권한/세션/결제/수료/통계/업로드처럼 “운영 영향이 큰” 부분을 수정했으면,
   무엇이 위험했고 무엇을 확인했는지(근거)를 1~2줄로 추가합니다.
-

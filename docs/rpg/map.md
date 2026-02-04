@@ -45,3 +45,8 @@
 |---|---|---|---|---|
 | (예: 관리자 과정 목록) | `public_html/sysop/course/course_list.jsp` | `src/dao/CourseDao.java` | `public_html/sysop/html/course/course_list.html` |  |
 
+## 최근 작업(동의 게이트)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| SSO 첫 방문 동의(신규 메인) | `public_html/mypage/new_main/index.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG`, `TB_WEBPAGE(code=consent_sso_20260120)` | `public_html/html/member/privacy_agree.html` | `ag=sso`, `returl` 필수 |
+| 증명서(수료증/합격증) 발급 동의 | `public_html/mypage/certificate*.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG`, `TB_WEBPAGE(code=consent_cert_20260120)` | `public_html/html/member/privacy_agree.html` | `ag=cert`, `mid=cuid`(선택), `returl` 필수 |
