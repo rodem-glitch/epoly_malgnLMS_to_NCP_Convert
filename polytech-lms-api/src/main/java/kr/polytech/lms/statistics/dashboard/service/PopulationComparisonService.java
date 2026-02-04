@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.Year;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -198,6 +199,7 @@ public class PopulationComparisonService {
         // 왜: 특정 행정구역 코드가 외부 API에 존재하지 않거나(또는 해당 연도 데이터가 없어) 0으로만 내려오는 경우가 있습니다.
         //      이때 화면이 전부 0으로 깨져 보이므로, "한 단계 상위 행정구역"으로 순차 대체해서 데이터가 존재하는 코드를 찾습니다.
         List<String> candidates = buildAdmCdFallbackCandidates(resolvedAdmCd);
+        log.debug("인구 통계 행정구역 대체 후보: resolvedAdmCd={}, candidates={}", resolvedAdmCd, candidates);
 
         for (String candidateAdmCd : candidates) {
             int candidateYear = resolveAvailablePopulationYear(desiredYear, candidateAdmCd);
@@ -236,7 +238,10 @@ public class PopulationComparisonService {
 
         // 전국(=adm_cd 미전달)
         candidates.add(null);
-        return List.copyOf(candidates);
+
+        // 왜: 전국을 의미하는 null을 후보에 포함하므로, List.copyOf()를 쓰면 null 원소 때문에 NPE가 발생합니다.
+        //     (List.copyOf / List.of는 null 원소를 허용하지 않음)
+        return Collections.unmodifiableList(new ArrayList<>(candidates));
     }
 
     private double toPercent(long part, long total) {
