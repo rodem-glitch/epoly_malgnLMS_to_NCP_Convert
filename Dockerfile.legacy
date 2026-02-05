@@ -7,7 +7,7 @@
 # ============================================
 
 # ============================================
-# Stage 1: Build - Compile Java Sources
+# Stage 1: Build - Compile Java Sources & Get Dependencies
 # ============================================
 FROM maven:3.8-openjdk-8 AS build
 
@@ -21,11 +21,27 @@ RUN curl -o servlet-api.jar \
     curl -o mail-api.jar \
     https://repo1.maven.org/maven2/javax/mail/mail/1.4.7/mail-1.4.7.jar
 
-# Download Cloud SQL Socket Factory for MySQL (Cloud Run 연결용)
-RUN curl -o mysql-socket-factory.jar \
-    https://repo1.maven.org/maven2/com/google/cloud/sql/mysql-socket-factory-connector-j-8/1.21.1/mysql-socket-factory-connector-j-8-1.21.1.jar && \
-    curl -o mysql-connector.jar \
+# Download MySQL Connector
+RUN curl -o mysql-connector.jar \
     https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar
+
+# Download Cloud SQL Socket Factory with all dependencies using Maven
+RUN mkdir -p cloudsql-deps && \
+    echo '<?xml version="1.0" encoding="UTF-8"?>' > pom.xml && \
+    echo '<project xmlns="http://maven.apache.org/POM/4.0.0">' >> pom.xml && \
+    echo '  <modelVersion>4.0.0</modelVersion>' >> pom.xml && \
+    echo '  <groupId>temp</groupId>' >> pom.xml && \
+    echo '  <artifactId>deps</artifactId>' >> pom.xml && \
+    echo '  <version>1.0</version>' >> pom.xml && \
+    echo '  <dependencies>' >> pom.xml && \
+    echo '    <dependency>' >> pom.xml && \
+    echo '      <groupId>com.google.cloud.sql</groupId>' >> pom.xml && \
+    echo '      <artifactId>mysql-socket-factory-connector-j-8</artifactId>' >> pom.xml && \
+    echo '      <version>1.21.1</version>' >> pom.xml && \
+    echo '    </dependency>' >> pom.xml && \
+    echo '  </dependencies>' >> pom.xml && \
+    echo '</project>' >> pom.xml && \
+    mvn dependency:copy-dependencies -DoutputDirectory=cloudsql-deps -q
 
 # Copy WEB-INF libraries (including malgn-1.13.0.jar)
 COPY public_html/WEB-INF/lib ./lib
@@ -71,9 +87,11 @@ COPY --from=build /build/classes /usr/local/tomcat/webapps/ROOT/WEB-INF/classes/
 # Copy mail API jar for runtime (fixes NoClassDefFoundError: javax/mail/Address)
 COPY --from=build /build/mail-api.jar /usr/local/tomcat/webapps/ROOT/WEB-INF/lib/
 
-# Copy Cloud SQL Socket Factory and MySQL Connector for Cloud Run
-COPY --from=build /build/mysql-socket-factory.jar /usr/local/tomcat/webapps/ROOT/WEB-INF/lib/
+# Copy MySQL Connector
 COPY --from=build /build/mysql-connector.jar /usr/local/tomcat/webapps/ROOT/WEB-INF/lib/
+
+# Copy Cloud SQL Socket Factory and all dependencies
+COPY --from=build /build/cloudsql-deps/*.jar /usr/local/tomcat/webapps/ROOT/WEB-INF/lib/
 
 # Copy context.xml to Tomcat conf directory for JNDI DataSource
 RUN mkdir -p /usr/local/tomcat/conf/Catalina/localhost
