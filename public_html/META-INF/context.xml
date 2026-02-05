@@ -5,7 +5,7 @@
 -->
 <Context>
     <!-- Cloud SQL MySQL DataSource (Socket Factory 방식) -->
-    <Resource name="jdbc/lms"
+    <Resource name="jdbc/malgn"
               auth="Container"
               type="javax.sql.DataSource"
               factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
