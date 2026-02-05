@@ -359,7 +359,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
       <div className="flex gap-6">
         {/* Left Sidebar - Vertical Tabs (Fixed Position) */}
         <div className="w-64 flex-shrink-0">
-          <div className="fixed w-64" style={{ maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
+          <div className="fixed w-64" style={{ maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto' }}>
             {/* 목록으로 돌아가기 버튼 */}
             <button
               onClick={onBack}
