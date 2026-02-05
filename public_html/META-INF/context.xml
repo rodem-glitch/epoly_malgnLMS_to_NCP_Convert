@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   MalgnLMS Legacy - Tomcat Context Configuration
-  Cloud SQL 연결을 위한 JNDI DataSource 설정
+  Cloud SQL 연결 (Unix Socket 방식 - Cloud Run)
 -->
 <Context>
-    <!-- Cloud SQL MySQL DataSource (Socket Factory 방식) -->
+    <!-- Cloud SQL MySQL DataSource (Unix Socket 방식) -->
     <Resource name="jdbc/malgn"
               auth="Container"
               type="javax.sql.DataSource"
               factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
               driverClassName="com.mysql.cj.jdbc.Driver"
-              url="jdbc:mysql:///lms?cloudSqlInstance=gen-lang-client-0725900816:asia-northeast3:mysql-dev&amp;socketFactory=com.google.cloud.sql.mysql.SocketFactory&amp;useSSL=false&amp;allowPublicKeyRetrieval=true&amp;useUnicode=true&amp;characterEncoding=UTF-8"
+              url="jdbc:mysql://localhost/lms?unixSocket=/cloudsql/gen-lang-client-0725900816:asia-northeast3:mysql-dev&amp;useSSL=false&amp;allowPublicKeyRetrieval=true&amp;useUnicode=true&amp;characterEncoding=UTF-8"
               username="root"
               password="1004"
               maxActive="20"
