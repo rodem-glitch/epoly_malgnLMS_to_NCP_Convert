@@ -18,27 +18,22 @@ spring:
       - org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration
       - org.springframework.ai.autoconfigure.embedding.EmbeddingClientAutoConfiguration
 
-  # H2 In-Memory Database (Cloud Run 초기 배포용)
-  # 실제 운영 시 Cloud SQL로 교체 필요
+  # MySQL (Cloud SQL) Database
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:lmsdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    driver-class-name: ${DB_DRIVER:org.h2.Driver}
-    username: ${DB_USERNAME:sa}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/lms?useSSL=false&allowPublicKeyRetrieval=true}
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    username: ${DB_USERNAME:lms}
     password: ${DB_PASSWORD:}
-
-  h2:
-    console:
-      enabled: false
 
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:create-drop}
+      ddl-auto: ${JPA_DDL_AUTO:update}
     properties:
       hibernate:
         format_sql: false
         show_sql: false
-    # H2 Dialect 명시
-    database-platform: org.hibernate.dialect.H2Dialect
+    # MySQL Dialect
+    database-platform: org.hibernate.dialect.MySQLDialect
 
   devtools:
     restart:
