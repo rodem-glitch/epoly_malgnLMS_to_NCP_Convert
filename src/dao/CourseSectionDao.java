@@ -33,7 +33,7 @@ public class CourseSectionDao extends DataObject {
 
 		DataSet cllist = courseLesson.find("course_id = " + newCourseId + " AND status != -1");
 		while(cllist.next()) {
-			courseLesson.item("section_id", sectionMap.containsKey(cllist.i("section_id")) ? sectionMap.get(cllist.i("section_id")) : 0);
+			courseLesson.item("section_id", (int)(sectionMap.containsKey(cllist.i("section_id")) ? sectionMap.get(cllist.i("section_id")) : 0));
 			if(!courseLesson.update("course_id = " + newCourseId + " AND lesson_id = " + cllist.i("lesson_id"))) return false;
 		}
 
