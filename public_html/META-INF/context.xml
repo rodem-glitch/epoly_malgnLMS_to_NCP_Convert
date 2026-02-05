@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MalgnLMS Legacy - Tomcat Context Configuration
+  Cloud SQL 연결을 위한 JNDI DataSource 설정
+-->
+<Context>
+    <!-- Cloud SQL MySQL DataSource (Socket Factory 방식) -->
+    <Resource name="jdbc/lms"
+              auth="Container"
+              type="javax.sql.DataSource"
+              factory="org.apache.tomcat.jdbc.pool.DataSourceFactory"
+              driverClassName="com.mysql.cj.jdbc.Driver"
+              url="jdbc:mysql:///lms?cloudSqlInstance=gen-lang-client-0725900816:asia-northeast3:mysql-dev&amp;socketFactory=com.google.cloud.sql.mysql.SocketFactory&amp;useSSL=false&amp;allowPublicKeyRetrieval=true&amp;useUnicode=true&amp;characterEncoding=UTF-8"
+              username="root"
+              password="1004"
+              maxActive="20"
+              maxIdle="10"
+              minIdle="5"
+              maxWait="10000"
+              validationQuery="SELECT 1"
+              testOnBorrow="true"
+              testWhileIdle="true"
+              timeBetweenEvictionRunsMillis="30000"
+              removeAbandoned="true"
+              removeAbandonedTimeout="60"
+              logAbandoned="true"/>
+</Context>
