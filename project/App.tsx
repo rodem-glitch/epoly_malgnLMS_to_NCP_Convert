@@ -231,44 +231,43 @@ export default function App() {
   }, [applyRoute]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh bg-background text-foreground">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div className="px-8 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <GraduationCap className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-gray-900">교수자 LMS</h1>
-                <p className="text-sm text-gray-500">Learning Management System</p>
-              </div>
+      <header className="bg-card border-b border-border sticky top-0 z-50">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2 rounded-lg">
+              <GraduationCap className="w-7 h-7 text-white" />
             </div>
-            
-            {/* 새로고침 버튼 */}
-            <button
-              onClick={handleRefresh}
-              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="현재 화면 새로고침"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </button>
+            <div className="leading-tight">
+              <h1 className="text-base font-semibold text-balance">교수자 LMS</h1>
+              <p className="text-sm text-muted-foreground text-pretty">Learning Management System</p>
+            </div>
           </div>
+
+          {/* 새로고침 버튼 */}
+          <button
+            onClick={handleRefresh}
+            className="p-2 text-muted-foreground hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+            title="현재 화면 새로고침"
+            aria-label="현재 화면 새로고침"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
-      <div className="flex">
-        {/* Left Navigation Sidebar - Fixed Position */}
-        <aside className="w-64 bg-white border-r border-gray-200 fixed top-[73px] left-0 h-[calc(100vh-73px)] overflow-y-auto z-40">
-          <nav className="p-4 flex flex-col gap-2">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 gap-6 px-6 py-6">
+        {/* Left Navigation Sidebar */}
+        <aside className="sticky top-24 h-[calc(100dvh-6rem)] w-64 shrink-0 overflow-y-auto rounded-xl border border-border bg-card p-3">
+          <nav className="flex flex-col gap-2 text-sm">
             <button
               onClick={() => applyMenu('dashboard')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                 activeMenu === 'dashboard'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
               <GraduationCap className="w-5 h-5" />
@@ -281,7 +280,7 @@ export default function App() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                 activeMenu === 'explore'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
               <Compass className="w-5 h-5" />
@@ -293,7 +292,7 @@ export default function App() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                 activeMenu === 'courses'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
               <BookOpen className="w-5 h-5" />
@@ -304,7 +303,7 @@ export default function App() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                 activeMenu === 'assignment-manage'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
               <ClipboardCheck className="w-5 h-5" />
@@ -315,7 +314,7 @@ export default function App() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                 activeMenu === 'qna-manage'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
               <MessageSquare className="w-5 h-5" />
@@ -326,7 +325,7 @@ export default function App() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                 activeMenu === 'create-course'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
               <FolderPlus className="w-5 h-5" />
@@ -340,7 +339,7 @@ export default function App() {
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-left ${
                   isContentLibrarySubMenu
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    : 'text-sidebar-foreground hover:bg-muted'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -362,7 +361,7 @@ export default function App() {
                     className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
                       activeMenu === 'content-all'
                         ? 'bg-blue-100 text-blue-700 font-medium'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
@@ -373,7 +372,7 @@ export default function App() {
                     className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
                       activeMenu === 'content-favorites'
                         ? 'bg-blue-100 text-blue-700 font-medium'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
@@ -390,7 +389,7 @@ export default function App() {
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-left ${
                   isExamSubMenu
                     ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    : 'text-sidebar-foreground hover:bg-muted'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -412,7 +411,7 @@ export default function App() {
                     className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
                       activeMenu === 'exam-categories'
                         ? 'bg-blue-100 text-blue-700 font-medium'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
@@ -423,7 +422,7 @@ export default function App() {
                     className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
                       activeMenu === 'exam-questions'
                         ? 'bg-blue-100 text-blue-700 font-medium'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
@@ -434,7 +433,7 @@ export default function App() {
                     className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
                       activeMenu === 'exam-management'
                         ? 'bg-blue-100 text-blue-700 font-medium'
-                        : 'text-gray-600 hover:bg-gray-100'
+                        : 'text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
@@ -450,7 +449,7 @@ export default function App() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                 activeMenu === 'subject-create'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
               <BookPlus className="w-5 h-5" />
@@ -461,7 +460,7 @@ export default function App() {
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
                 activeMenu === 'statistics'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
               <BarChart3 className="w-5 h-5" />
@@ -470,73 +469,68 @@ export default function App() {
           </nav>
         </aside>
 
-        {/* Sidebar Spacer - Fixed 사이드바를 위한 공간 확보 */}
-        <div className="w-64 flex-shrink-0"></div>
-
         {/* Main Content Area */}
-        <main className="flex-1 p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Empty content area - 추후 추가될 컨텐츠 영역 */}
-            {activeMenu === 'dashboard' ? (
-              <Dashboard
-                key={refreshKey}
-                onNavigate={(menu) => applyMenu(menu)}
-                onOpenCourse={handleOpenCourseFromDashboard}
-              />
-            ) : activeMenu === 'explore' ? (
-              <CourseExplorer key={refreshKey} />
-            ) : activeMenu === 'courses' ? (
-              <MyCoursesList
-                key={refreshKey}
-                routeSubPath={routeState.subPath}
-                routeParams={routeState.params}
-                onRouteChange={handleCoursesRouteChange}
-              />
-            ) : activeMenu === 'assignment-manage' ? (
-              <AssignmentManagePage
-                key={refreshKey}
-                onOpenCourse={handleOpenCourseFromDashboard}
-              />
-            ) : activeMenu === 'qna-manage' ? (
-              <QnaManagePage
-                key={refreshKey}
-                onOpenCourse={handleOpenCourseFromDashboard}
-              />
-            ) : activeMenu === 'create-course' ? (
-              <CreateCourseForm
-                key={refreshKey}
-                initialStep={createCourseStep}
-                onStepChange={handleCreateCourseStepChange}
-                onCreated={() => applyMenu('explore')}
-              />
-            ) : activeMenu === 'content-all' ? (
-              <ContentLibraryPage key={refreshKey} activeTab="all" />
-            ) : activeMenu === 'content-favorites' ? (
-              <ContentLibraryPage key={`${refreshKey}-fav`} activeTab="favorites" />
-            ) : activeMenu === 'exam-categories' ? (
-              <QuestionCategoryPage key={refreshKey} />
-            ) : activeMenu === 'exam-questions' ? (
-              <QuestionBankPage key={refreshKey} />
-            ) : activeMenu === 'exam-management' ? (
-              <ExamManagementPage key={refreshKey} />
-            ) : activeMenu === 'subject-create' ? (
-              <CreateSubjectWizard
-                key={refreshKey}
-                initialStep={subjectStep}
-                onStepChange={handleSubjectStepChange}
-              />
-            ) : activeMenu === 'statistics' ? (
-              <StatisticsPage key={refreshKey} />
-            ) : (
-              <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-16 text-center">
-                <div className="text-gray-400">
-                  <GraduationCap className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">컨텐츠 영역</p>
-                  <p className="text-sm mt-2">메뉴를 선택하면 관련 내용이 표시됩니다</p>
-                </div>
+        <main className="min-w-0 flex-1">
+          {/* Empty content area - 추후 추가될 컨텐츠 영역 */}
+          {activeMenu === 'dashboard' ? (
+            <Dashboard
+              key={refreshKey}
+              onNavigate={(menu) => applyMenu(menu)}
+              onOpenCourse={handleOpenCourseFromDashboard}
+            />
+          ) : activeMenu === 'explore' ? (
+            <CourseExplorer key={refreshKey} />
+          ) : activeMenu === 'courses' ? (
+            <MyCoursesList
+              key={refreshKey}
+              routeSubPath={routeState.subPath}
+              routeParams={routeState.params}
+              onRouteChange={handleCoursesRouteChange}
+            />
+          ) : activeMenu === 'assignment-manage' ? (
+            <AssignmentManagePage
+              key={refreshKey}
+              onOpenCourse={handleOpenCourseFromDashboard}
+            />
+          ) : activeMenu === 'qna-manage' ? (
+            <QnaManagePage
+              key={refreshKey}
+              onOpenCourse={handleOpenCourseFromDashboard}
+            />
+          ) : activeMenu === 'create-course' ? (
+            <CreateCourseForm
+              key={refreshKey}
+              initialStep={createCourseStep}
+              onStepChange={handleCreateCourseStepChange}
+              onCreated={() => applyMenu('explore')}
+            />
+          ) : activeMenu === 'content-all' ? (
+            <ContentLibraryPage key={refreshKey} activeTab="all" />
+          ) : activeMenu === 'content-favorites' ? (
+            <ContentLibraryPage key={`${refreshKey}-fav`} activeTab="favorites" />
+          ) : activeMenu === 'exam-categories' ? (
+            <QuestionCategoryPage key={refreshKey} />
+          ) : activeMenu === 'exam-questions' ? (
+            <QuestionBankPage key={refreshKey} />
+          ) : activeMenu === 'exam-management' ? (
+            <ExamManagementPage key={refreshKey} />
+          ) : activeMenu === 'subject-create' ? (
+            <CreateSubjectWizard
+              key={refreshKey}
+              initialStep={subjectStep}
+              onStepChange={handleSubjectStepChange}
+            />
+          ) : activeMenu === 'statistics' ? (
+            <StatisticsPage key={refreshKey} />
+          ) : (
+            <div className="bg-card rounded-xl border-2 border-dashed border-border p-16 text-center">
+              <div className="text-muted-foreground">
+                <GraduationCap className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">컨텐츠 영역</p>
+                <p className="text-sm mt-2">메뉴를 선택하면 관련 내용이 표시됩니다</p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

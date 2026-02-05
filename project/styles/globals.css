@@ -4,43 +4,44 @@
 
 :root {
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
+  /* 왜: 학생 메인(/mypage/new_main)의 “밝은 회색 배경 + 흰 카드 + 파란 포인트” 톤을 교수자 UI의 기본 토큰으로 맞춥니다. */
+  --background: #f9fafb;
+  --foreground: #101828;
   --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
+  --card-foreground: #101828;
+  --popover: #ffffff;
+  --popover-foreground: #101828;
+  --primary: #2b58e6;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #101828;
+  --muted: #f3f4f6;
+  --muted-foreground: #475467;
+  --accent: #f3f4f6;
+  --accent-foreground: #101828;
   --destructive: #d4183d;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
-  --input: transparent;
-  --input-background: #f3f3f5;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --input-background: #ffffff;
   --switch-background: #cbced4;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
+  --ring: #2b58e6;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #344054;
+  --sidebar-primary: #2b58e6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #101828;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #2b58e6;
 }
 
 .dark {
@@ -120,17 +121,17 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   
-  /* Custom blue color override */
-  --color-blue-50: #e8f0f7;
-  --color-blue-100: #cfe1ef;
-  --color-blue-200: #9fc3df;
-  --color-blue-300: #6fa5cf;
-  --color-blue-400: #3f87bf;
-  --color-blue-500: #0f69af;
-  --color-blue-600: #0d4991;
-  --color-blue-700: #0a3a73;
-  --color-blue-800: #082b55;
-  --color-blue-900: #051c37;
+  /* 왜: 기존 코드에서 bg-blue-600/bg-blue-50 등을 많이 쓰므로, 팔레트를 학생 메인 톤(포인트 #2b58e6)으로 맞춥니다. */
+  --color-blue-50: #eff4ff;
+  --color-blue-100: #dbe6ff;
+  --color-blue-200: #b7cdff;
+  --color-blue-300: #93b3ff;
+  --color-blue-400: #6f9aff;
+  --color-blue-500: #4b80ff;
+  --color-blue-600: #2b58e6;
+  --color-blue-700: #2348c2;
+  --color-blue-800: #1b3897;
+  --color-blue-900: #12286d;
 }
 
 @layer base {
@@ -140,6 +141,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

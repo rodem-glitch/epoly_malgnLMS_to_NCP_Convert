@@ -1,18 +1,18 @@
 ﻿# RPG-라이트: 저장소 지도 (`map.md`)
 
-최근 갱신: 2026-02-04
+최근 갱신: 2026-02-05
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-04 11:25
+최근 자동 갱신: 2026-02-05 10:19
 
-- JSP 총합(전체): 1224
-- JSP(public_html): 1223 (sysop: 715, api: 18)
+- JSP 총합(전체): 1225
+- JSP(public_html): 1224 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 927
 - DAO(src/dao): 178
-- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 105
-- polytech-lms-api(Java/Spring Boot) Java 파일 수: 143
+- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 109
+- polytech-lms-api(Java/Spring Boot) Java 파일 수: 158
 
 생성된 인덱스:
 - docs/rpg/generated/jsp_setBody_index.tsv
@@ -51,3 +51,9 @@
 | SSO 첫 방문 동의(신규 메인) | `public_html/mypage/new_main/index.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | 동의서 이미지(`/common/images/consent/consent_sso_1.png` 또는 `/common/images/consent/consent_sso_2.png`) 필요(둘 다 없으면 차단), `ag=sso`, `returl` 필수 |
 | 증명서(수료증/합격증) 발급 동의 | `public_html/mypage/certificate*.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | 동의서 이미지(`/common/images/consent/consent_cert_1.png` 또는 `/common/images/consent/consent_cert_2.png`) 필요(둘 다 없으면 차단), `ag=cert`, `mid=cuid`(선택), `returl` 필수 |
 | (로컬 테스트) SSO 동의 화면 확인 | `public_html/mypage/new_main/sso_consent_test.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | localhost에서만 접근(운영 노출 방지), `force=Y`로 재확인 |
+
+## 최근 작업(교수자 UI 톤 맞춤)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스(React) | 산출물 | 비고 |
+|---|---|---|---|---|
+| 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
+| (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
