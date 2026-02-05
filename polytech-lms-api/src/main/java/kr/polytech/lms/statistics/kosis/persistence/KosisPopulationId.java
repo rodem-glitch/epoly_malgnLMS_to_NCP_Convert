@@ -10,7 +10,7 @@ import java.util.Objects;
 public class KosisPopulationId implements Serializable {
     // 왜: KOSIS 인구 통계는 (year, age_type, gender, adm_cd) 조합으로 한 행이 유일해질 수 있어 복합키로 둡니다.
 
-    @Column(name = "year", nullable = false, length = 4)
+    @Column(name = "\"year\"", nullable = false, length = 4)
     private String year;
 
     @Column(name = "age_type", nullable = false, length = 8)

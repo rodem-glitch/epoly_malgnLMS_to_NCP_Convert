@@ -10,7 +10,7 @@ import java.util.Objects;
 public class SgisCompanyId implements Serializable {
     // 왜: (연도, 행정구역코드, 산업코드) 조합이 동일하면 동일한 통계(사업체 수)로 취급합니다.
 
-    @Column(name = "year", length = 4, nullable = false)
+    @Column(name = "\"year\"", length = 4, nullable = false)
     private String year;
 
     @Column(name = "adm_cd", length = 20, nullable = false)
