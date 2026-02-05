@@ -61,7 +61,7 @@ dependencies {
     runtimeOnly "com.mysql:mysql-connector-j"
     // 왜: Cloud Run 초기 배포 테스트 및 로컬 개발용 인메모리 DB
     // H2 제거됨 - MySQL 사용
-    implementation "com.google.cloud:google-cloud-sql-connector-mysql"
+    implementation "com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.21.1"
     testImplementation "org.springframework.boot:spring-boot-starter-test"
     // 왜: Gradle 9 테스트 실행기에서 JUnit Platform Launcher가 런타임 클래스패스에 없으면 테스트 자체가 시작되지 않습니다.
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
