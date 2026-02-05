@@ -25,7 +25,7 @@ function TechInfoModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
     >
       <div className="bg-white rounded-2xl max-w-[720px] w-[90%] max-h-[85vh] overflow-y-auto shadow-2xl">
         {/* 헤더 */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl">
+        <div className="bg-blue-600 text-white px-6 py-5 flex items-center justify-between rounded-t-2xl">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">

@@ -679,7 +679,7 @@ export default function Component() {
                   <img alt="" className="absolute inset-0 max-w-none object-50%-50% object-cover pointer-events-none size-full" src={img2} />
                 </div>
                 <div className="content-stretch flex h-[40px] items-center px-[10px] py-0 relative shrink-0 w-[134px]" data-name="DIV-8">
-                  <div className="bg-clip-text bg-gradient-to-r flex flex-col font-['Pretendard:Bold',sans-serif] from-[#5c0f63] justify-center leading-[16px] not-italic relative shrink-0 text-[12px] text-nowrap to-[#3e578d]" style={{ WebkitTextFillColor: "transparent" }}>
+                  <div className="flex flex-col justify-center leading-[16px] relative shrink-0 text-[12px] text-nowrap font-semibold text-blue-700">
                     <p className="mb-0">한국폴리텍대학</p>
                     <p>미래형 직업교육 플랫폼</p>
                   </div>

@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-04
+최근 갱신: 2026-02-05
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-04 11:25
+최근 자동 갱신: 2026-02-05 10:19
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -75,3 +75,25 @@
   - 템플릿: `public_html/html/member/privacy_agree.html` (`consent_mode` 분기)
 - 확인(근거): 발급 진입점과 동의 게이트 분기 코드를 파일에서 확인(`public_html/mypage/certificate*.jsp`, `public_html/member/privacy_agree.jsp`)
 - 최근 갱신: 2026-02-04
+
+### FLOW-2001: 교수자 LMS(React) 진입/라우팅 및 UI 톤 적용
+- 사용자 동작(의도): 교수자가 `/tutor_lms/`로 접속하여 교수자 기능을 사용
+- 진입점: `public_html/tutor_lms/index.jsp`
+- 처리(핵심):
+  - 미로그인(`userId == 0`)이면 로그인 화면으로 이동
+  - 운영자(S/A)는 통과, 그 외는 `TB_USER.tutor_yn='Y'` 교수자만 통과
+  - `public_html/tutor_lms/app/index.html` 정적 빌드 파일이 없으면 “빌드 필요” 안내 페이지를 출력
+  - 정상일 때 `app/index.html`로 리다이렉트(React SPA)
+- 클라이언트(React):
+  - 진입 파일: `public_html/tutor_lms/app/index.html`
+  - 라우팅: 해시 라우팅(`#/<menuId>...`)을 `project/App.tsx`가 파싱하여 메뉴별 화면을 조건 렌더링
+  - 메뉴 ID: `dashboard`, `explore`, `courses`, `assignment-manage`, `qna-manage`, `create-course`, `content-all`, `content-favorites`, `exam-categories`, `exam-questions`, `exam-management`, `subject-create`, `statistics`
+- UI(학생 메인 톤):
+  - 토큰/팔레트: `project/styles/globals.css` (배경 #f9fafb, 포인트 #2b58e6, 보더 #e5e7eb)
+  - 레이아웃: `project/App.tsx` (헤더/사이드바/콘텐츠 컨테이너를 카드 기반으로 정리)
+- 출력:
+  - 빌드 산출물: `public_html/tutor_lms/app/assets/*`
+- 확인(근거):
+  - 권한/리다이렉트/빌드 안내 분기 코드를 파일에서 확인(`public_html/tutor_lms/index.jsp`)
+  - 로컬 빌드로 산출물 갱신 확인(`cd project && npm run build`)
+- 최근 갱신: 2026-02-05
