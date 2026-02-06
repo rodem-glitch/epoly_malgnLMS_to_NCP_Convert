@@ -1,5 +1,5 @@
 # ============================================
-# MalgnLMS Legacy - Dockerfile
+# GrowAILMS Legacy - Dockerfile
 # ============================================
 # Java 8 + JSP + Malgnsoft Framework
 # Servlet Container: Apache Tomcat 9

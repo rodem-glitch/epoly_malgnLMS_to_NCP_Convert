@@ -12,7 +12,7 @@
 - 템플릿 HTML(public_html/**/html): 927
 - DAO(src/dao): 178
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 109
-- polytech-lms-api(Java/Spring Boot) Java 파일 수: 158
+- growailms-api(Java/Spring Boot) Java 파일 수: 158
 
 생성된 인덱스:
 - docs/rpg/generated/jsp_setBody_index.tsv
@@ -38,7 +38,7 @@
 - 관리자 공통 초기화: `public_html/sysop/init.jsp`
 - Resin 루트 설정: `resin/resin.xml` (root-directory=`public_html`)
 - React UI 빌드 설정: `project/vite.config.ts` (outDir=`public_html/tutor_lms/app`)
-- Spring Boot API 빌드 설정: `polytech-lms-api/build.gradle`
+- Spring Boot API 빌드 설정: `growailms-api/build.gradle`
 
 ## 모듈 지도(예시 형식)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |

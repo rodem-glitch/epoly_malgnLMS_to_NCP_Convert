@@ -1,7 +1,7 @@
 # AGENTS.md (Repository Root)
 
 ## 목적 / 범위
-- 이 문서는 MalgnLMS 저장소에서 에이전트가 작업할 때 지켜야 할 기본 규칙을 정의합니다.
+- 이 문서는 GrowAILMS 저장소에서 에이전트가 작업할 때 지켜야 할 기본 규칙을 정의합니다.
 - **[핵심 규칙] 모든 답변과 문서(진행 계획, md 파일 등)는 반드시 한글로 작성합니다.**
 - 루트 `AGENTS.md` 규칙은 전체에 적용되며, 하위 폴더의 `AGENTS.md`가 있으면 해당 폴더 규칙이 우선합니다.
 
@@ -16,7 +16,7 @@
   - 변경이 꼭 필요하면, 먼저 사용자에게 이유를 설명하고 **명시적으로 승인**을 받은 뒤 진행합니다.
 
 ## 프로젝트 구조/아키텍처 요약
-- MalgnLMS는 Malgnsoft 공통 라이브러리 기반의 JSP + DAO 레거시 구조입니다.
+- GrowAILMS는 Malgnsoft 공통 라이브러리 기반의 JSP + DAO 레거시 구조입니다.
 - 대부분의 기능은 `public_html/.../*.jsp`가 컨트롤러/로직 역할을 하고, DB 접근은 `src/dao/*Dao.java`가 담당합니다.
 - 화면은 JSP에서 `Page p`에 변수/루프를 세팅한 뒤, 대응되는 `.html` 템플릿을 `p.display()`로 렌더링합니다.
 - `malgnsoft.db`/`malgnsoft.util` 패키지는 JAR로 포함된 공통 라이브러리이며, `DataObject`, `DataSet`, `Page`, `Malgn`, `Form`, `Auth` 등이 핵심입니다.
@@ -32,7 +32,7 @@
   - `public_html/inc/`, `public_html/common/`: 공통 include, JS/CSS/이미지.
   - `public_html/api/`: 외부/내부 API용 JSP 엔드포인트.
   - `public_html/data/`: 업로드/생성 파일 저장 위치(실서버에서는 doc_root 하위).
-- `var/log/malgnlms/`: 에러/접속 등 로그.
+- `var/log/growailms/`: 에러/접속 등 로그.
 - `resin/`, `resin.xml`: Resin WAS 설정(로컬/배포 환경별).
 
 ## 요청 처리 흐름(일반 패턴)

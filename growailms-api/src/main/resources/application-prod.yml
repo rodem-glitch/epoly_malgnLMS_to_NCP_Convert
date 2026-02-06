@@ -1,0 +1,159 @@
+# ============================================
+# GrowAILMS Production Profile (Cloud Run)
+# ============================================
+
+server:
+  port: ${PORT:8080}
+  error:
+    include-stacktrace: never
+    include-exception: false
+
+spring:
+  application:
+    name: growailms-api
+
+  # 외부 서비스 자동 구성 비활성화 (Cloud Run 초기 배포용)
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration
+      - org.springframework.ai.autoconfigure.embedding.EmbeddingClientAutoConfiguration
+
+  # MySQL (Cloud SQL) Database
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/lms?useSSL=false&allowPublicKeyRetrieval=true}
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    username: ${DB_USERNAME:lms}
+    password: ${DB_PASSWORD:}
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    properties:
+      hibernate:
+        format_sql: false
+        show_sql: false
+    # MySQL Dialect
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+
+  # AI/벡터 설정 (prod에서는 환경변수로 주입)
+  ai:
+    model:
+      embedding:
+        text: google-genai
+    google:
+      genai:
+        embedding:
+          api-key: ${GOOGLE_API_KEY:disabled}
+          text:
+            options:
+              model: ${GOOGLE_EMBEDDING_MODEL:gemini-embedding-001}
+              task-type: ${GOOGLE_EMBEDDING_TASK:RETRIEVAL_DOCUMENT}
+    vectorstore:
+      qdrant:
+        host: ${QDRANT_HOST:localhost}
+        port: ${QDRANT_GRPC_PORT:6334}
+        api-key: ${QDRANT_API_KEY:}
+        collection-name: ${QDRANT_COLLECTION:video_summary_vectors_gemini}
+        use-tls: ${QDRANT_USE_TLS:false}
+        initialize-schema: false
+
+# 외부 서비스 설정 (환경변수로 주입)
+kollus:
+  api-base-url: ${KOLLUS_API_BASE_URL:https://api.kr.kollus.com}
+  access-token: ${KOLLUS_ACCESS_TOKEN:disabled}
+  security-key: ${KOLLUS_SECURITY_KEY:}
+  channel-key: ${KOLLUS_CHANNEL_KEY:}
+  client-user-id: ${KOLLUS_CLIENT_USER_ID:contentsummary}
+  http-timeout: ${KOLLUS_HTTP_TIMEOUT:PT60S}
+  media-token-expire-time: ${KOLLUS_MEDIA_TOKEN_EXPIRE:PT5M}
+  player-base-url: ${KOLLUS_PLAYER_BASE_URL:https://v.kr.kollus.com}
+
+gemini:
+  api-key: ${GEMINI_API_KEY:disabled}
+  base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+  model: ${GEMINI_MODEL:gemini-3-flash-preview}
+  temperature: ${GEMINI_TEMPERATURE:0.2}
+  max-output-tokens: ${GEMINI_MAX_OUTPUT_TOKENS:4096}
+  http-timeout: ${GEMINI_HTTP_TIMEOUT:PT60S}
+
+contentsummary:
+  transcription:
+    tmp-dir: ${CONTENTSUMMARY_TMP_DIR:}
+    keep-temp-files: false
+  worker:
+    enabled: false
+
+kosis:
+  consumer-key: ${KOSIS_CONSUMER_KEY:}
+  consumer-secret: ${KOSIS_CONSUMER_SECRET:}
+  auth-url: ${KOSIS_AUTH_URL:https://sgisapi.mods.go.kr/OpenAPI3/auth/authentication.json}
+  population-url: ${KOSIS_POPULATION_URL:https://sgisapi.mods.go.kr/OpenAPI3/stats/searchpopulation.json}
+  industry-code-url: ${KOSIS_INDUSTRY_CODE_URL:https://sgisapi.mods.go.kr/OpenAPI3/stats/industrycode.json}
+  company-url: ${KOSIS_COMPANY_URL:https://sgisapi.mods.go.kr/OpenAPI3/stats/company.json}
+
+work24:
+  api-url: ${WORK24_API_URL:https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L01.do}
+  auth-key: ${WORK24_AUTH_KEY:}
+  code-api-url: ${WORK24_CODE_API_URL:https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo21L01.do}
+  occupation-csv-path: ${WORK24_OCCUPATION_CSV_PATH:}
+  cache:
+    enabled: false
+    ttl-minutes: 1440
+
+jobkorea:
+  enabled: false
+  api-url: ${JOBKOREA_API_URL:http://www.jobkorea.co.kr/Service_JK/Data/JK_GI_XML_List.asp}
+  api-key: ${JOBKOREA_API_KEY:}
+  oem-code: ${JOBKOREA_OEM_CODE:}
+  cache:
+    enabled: false
+    ttl-minutes: 1440
+  reclassification:
+    enabled: false
+
+statistics:
+  mapping:
+    major-industry-file: ${STATISTICS_MAJOR_INDUSTRY_FILE:}
+  data:
+    employment-file: ${STATISTICS_EMPLOYMENT_FILE:}
+    admission-file: ${STATISTICS_ADMISSION_FILE:}
+    student-population-file: ${STATISTICS_STUDENT_POPULATION_FILE:}
+  ai:
+    enabled: false
+    api-key: ${STATISTICS_AI_API_KEY:}
+    model: ${STATISTICS_AI_MODEL:gemini-3-flash-preview}
+    debug: false
+    catalog-file: ${STATISTICS_AI_CATALOG:classpath:data-catalog.yml}
+
+vector:
+  search:
+    max-top-k: ${VECTOR_SEARCH_MAX_TOP_K:300}
+
+# Actuator 설정 (Cloud Run health check용)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+  health:
+    db:
+      enabled: true
+    diskspace:
+      enabled: false
+
+# 로깅 최적화
+logging:
+  level:
+    root: WARN
+    kr.polytech: INFO
+    org.springframework: WARN
+    org.hibernate: WARN

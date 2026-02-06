@@ -9,8 +9,8 @@
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
-- Spring Boot 설정: polytech-lms-api/src/main/resources/application.yml, application-local.yml
-- Spring Boot DB/외부연동: polytech-lms-api/build.gradle 의존성(JPA/MySQL/Google/Spring AI 등)
+- Spring Boot 설정: growailms-api/src/main/resources/application.yml, application-local.yml
+- Spring Boot DB/외부연동: growailms-api/build.gradle 의존성(JPA/MySQL/Google/Spring AI 등)
 <!-- @generated:end -->
 
 ## 자동 생성(권장)
@@ -38,7 +38,7 @@
 - 교수자(React) CSP/외부 리소스:
   - `project/index.html`에 CSP 메타가 있어, 기본적으로 외부 CSS/폰트 로드가 막힙니다(보안상 장점).
   - 학생 메인(`public_html/html/css/custom.css`)은 Pretendard를 CDN으로 불러오지만, 교수자 앱에서 같은 방식으로 적용하려면 CSP 완화 또는 폰트 파일 자체 호스팅이 필요합니다(보안/배포 영향).
-- Spring Boot 설정/시크릿: `polytech-lms-api/src/main/resources/application.yml` (키/토큰/DB정보 노출 금지)
+- Spring Boot 설정/시크릿: `growailms-api/src/main/resources/application.yml` (키/토큰/DB정보 노출 금지)
 
 ## 갱신 기준(강제)
 - 권한/세션/결제/수료/통계/업로드처럼 “운영 영향이 큰” 부분을 수정했으면,

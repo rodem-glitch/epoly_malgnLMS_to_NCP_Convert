@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  MalgnLMS Legacy - Tomcat Context Configuration
+  GrowAILMS Legacy - Tomcat Context Configuration
   Cloud SQL 연결 (Socket Factory 방식)
 -->
 <Context>

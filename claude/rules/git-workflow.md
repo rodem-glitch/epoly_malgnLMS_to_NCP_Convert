@@ -1,7 +1,7 @@
 # Git Workflow - 커밋/정리 규칙
 
 이 문서는 `everything-claude-code/rules/git-workflow.md`의 “작은 단위로 계획→리뷰→커밋” 흐름을 참고해,
-MalgnLMS에 맞게 정리한 것입니다.
+GrowAILMS에 맞게 정리한 것입니다.
 
 ---
 

@@ -9,7 +9,7 @@
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
-- Spring Boot API: polytech-lms-api/build.gradle (Boot 3.2.5, Java 17)
+- Spring Boot API: growailms-api/build.gradle (Boot 3.2.5, Java 17)
 <!-- @generated:end -->
 
 ## 자동 생성(권장)
