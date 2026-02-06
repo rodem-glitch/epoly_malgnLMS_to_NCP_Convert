@@ -1,6 +1,7 @@
 package kr.polytech.lms.statistics.dashboard.controller;
 
 import kr.polytech.lms.statistics.dashboard.service.IndustryAnalysisService;
+import kr.polytech.lms.statistics.dashboard.service.MemberKeyPopulationService;
 import kr.polytech.lms.statistics.dashboard.service.PopulationComparisonService;
 import kr.polytech.lms.statistics.dashboard.service.StatisticsExcelExportService;
 import kr.polytech.lms.statistics.dashboard.service.StatisticsMetaService;
@@ -33,6 +34,7 @@ public class StatisticsDashboardApiController {
 
     private final StatisticsMetaService statisticsMetaService;
     private final IndustryAnalysisService industryAnalysisService;
+    private final MemberKeyPopulationService memberKeyPopulationService;
     private final PopulationComparisonService populationComparisonService;
     private final InternalStatisticsService internalStatisticsService;
     private final StatisticsExcelExportService statisticsExcelExportService;
@@ -41,6 +43,7 @@ public class StatisticsDashboardApiController {
     public StatisticsDashboardApiController(
             StatisticsMetaService statisticsMetaService,
             IndustryAnalysisService industryAnalysisService,
+            MemberKeyPopulationService memberKeyPopulationService,
             PopulationComparisonService populationComparisonService,
             InternalStatisticsService internalStatisticsService,
             StatisticsExcelExportService statisticsExcelExportService,
@@ -48,6 +51,7 @@ public class StatisticsDashboardApiController {
     ) {
         this.statisticsMetaService = statisticsMetaService;
         this.industryAnalysisService = industryAnalysisService;
+        this.memberKeyPopulationService = memberKeyPopulationService;
         this.populationComparisonService = populationComparisonService;
         this.internalStatisticsService = internalStatisticsService;
         this.statisticsExcelExportService = statisticsExcelExportService;
@@ -88,6 +92,21 @@ public class StatisticsDashboardApiController {
             // 왜: 실제 호출 파라미터를 로그로 남겨야 "특정 캠퍼스만 0" 같은 문제를 빠르게 재현/분석할 수 있습니다.
             log.info("통계 API 호출(인구): campus={}, admCd={}, admNm={}, populationYear={}", campus, admCd, admNm, populationYear);
             return ResponseEntity.ok(populationComparisonService.compare(campus, admCd, admNm, populationYear));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiError(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/population/member-key-campus")
+    public ResponseEntity<?> populationMemberKeyCampus(
+            @RequestParam(name = "campus", required = false) String campus
+    ) {
+        try {
+            // 왜: 학번 기반 통계는 캠퍼스 필터만 사용하므로 실제 요청값을 로그에 남겨 장애 분석 시간을 줄입니다.
+            log.info("통계 API 호출(학번인구-캠퍼스전용): campus={}", campus);
+            return ResponseEntity.ok(memberKeyPopulationService.summarizeByYearAndCampus(campus));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiError(e.getMessage()));
         } catch (IllegalStateException e) {

@@ -44,9 +44,13 @@
   - 위험: `src`/`build`가 갈라지면 화면에서 카드가 숨김인데 소스는 노출(또는 반대)처럼 동작이 달라짐
   - 확인 기준: 노출/비활성 제어값(`memberKeyPopulationCard`, `enableMemberKeyPopulation`)을 두 파일에서 동일하게 맞추고 UI에서 즉시 확인
 - 학번 기반 연도 보정(인구 통계):
-  - 파일: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+  - 파일: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/MemberKeyPopulationService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java`
   - 위험: 학번 2자리 연도 확장값이 미래 연도로 표시되면(예: 2099) 그래프/표 해석이 틀어짐
-  - 확인 기준: `normalizeMemberKeyYear()`에서 현재 연도 초과 시 `19YY`로 보정되고, 보정 후 데이터로 차트/표가 함께 렌더링되는지 확인
+  - 확인 기준: `normalizeMemberKeyYear()`에서 현재 연도 초과 시 `19YY`로 보정되고, 백엔드 `/statistics/api/population/member-key-campus` 응답이 성공(200)하는지 함께 확인
+- 학번 기반 과정구분 집계(인구 통계):
+  - 파일: `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/MemberKeyPopulationService.java`, `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+  - 위험: 과정구분(학번 5~6자리) 집계가 빠지면 연도별 총원만 보여 과정별 인원 분석이 불가능함
+  - 확인 기준: SQL이 `GROUP BY 연도+캠퍼스+과정구분`으로 집계되고, 첫 번째 차트(`memberKeyPopulationChart`)가 과정구분 스택으로 그려지며 표 `과정구분` 컬럼이 채워지는지 확인
 
 ## 갱신 기준(강제)
 - 권한/세션/결제/수료/통계/업로드처럼 “운영 영향이 큰” 부분을 수정했으면,

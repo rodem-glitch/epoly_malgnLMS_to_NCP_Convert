@@ -106,9 +106,12 @@
   - 비활성 플래그(`enableMemberKeyPopulation`)를 `true`로 원복해 API 호출 재개
   - 학번 기반 통계는 캠퍼스 기준 통계이므로 캠퍼스 값만 전달
   - 학번 연도(2자리) 확장값이 현재 연도보다 크면 `19YY`로 보정해 표/그래프 연도 불일치 방지
+  - 학번의 과정구분(5~6자리) 기준 집계를 추가해 첫 번째 그래프 막대를 과정구분 스택으로 세분화
 - DB:
   - 프런트는 `/statistics/api/population/member-key-campus` 엔드포인트만 호출
-  - 실제 테이블/뷰 매핑은 백엔드 저장소 구현 기준(`MemberKeyPopulation*`)을 따름
+  - 백엔드는 `StatisticsDashboardApiController` → `MemberKeyPopulationService` → `MemberKeyPopulationJdbcRepository` 흐름으로 처리
+  - 집계 기준 테이블: `LM_POLY_MEMBER` (`MEMBER_KEY`, `CAMPUS_CODE`, `CAMPUS_NAME`)
+  - SQL 집계 단위: `연도 + 캠퍼스 + 과정구분` (과정구분=`SUBSTRING(MEMBER_KEY, 5, 2)`)
 - 출력:
   - 차트: `memberKeyPopulationChart`
   - 표: `memberKeyPopulationTableBody`
@@ -117,4 +120,5 @@
   - `src` 파일에서 카드 숨김 스타일 제거, 플래그 `true` 반영 확인
   - `build/resources` 파일도 동일하게 반영해 실행 중 화면과 소스 불일치 제거
   - `refreshMemberKeyPopulation()`에서 응답 행 기준으로 연도 보정 후 차트/표 재구성 확인
+  - `./gradlew.bat compileJava`로 API 엔드포인트/서비스/저장소 컴파일 성공 확인
 - 최근 갱신: 2026-02-06
