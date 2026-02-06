@@ -97,3 +97,41 @@
   - 권한/리다이렉트/빌드 안내 분기 코드를 파일에서 확인(`public_html/tutor_lms/index.jsp`)
   - 로컬 빌드로 산출물 갱신 확인(`cd project && npm run build`)
 - 최근 갱신: 2026-02-05
+
+### FLOW-3001: 교수자 통계 > 산업별 통계(산업분포 분석)
+- 사용자 동작(의도): 교수자 통계 화면에서 캠퍼스/행정구역/연도를 선택해 “행정구역(종사자) vs 캠퍼스(학생)” 산업 분포를 비교
+- 진입점:
+  - 화면: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html` (`/statistics`, `/statistics/dashboard` → `/statistics/dashboard.html`)
+  - API: `GET /statistics/api/industry/analysis?campus=...&admCd=...&admNm=...&statsYear=...`
+- 처리(핵심):
+  - `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/controller/StatisticsDashboardApiController.java`에서 요청 로그 후 서비스 호출
+  - `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/IndustryAnalysisService.java`
+    - 캠퍼스 파라미터가 비어 있으면 `campus=null`로 간주(전체 캠퍼스)
+    - 행정구역 코드는 `SgisAdministrativeCodeService`로 SGIS 코드로 변환(전국 전체는 `admCd=00`)
+    - 요청 연도부터 최대 5년 범위를 역탐색하고, 최소 연도(2000년) 아래로는 내려가지 않도록 보정
+    - 전국(`admCd=00`)은 1) SGIS 시도코드 합산 → 2) 로컬 시도코드 합산 → 3) `adm_cd` 미전달(non) 전국 시도 리스트 합산 순으로 계산
+- DB/외부:
+  - 외부(SGIS): `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/sgis/client/SgisClient.java`
+  - 캐시(DB): `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/sgis/service/SgisCompanyCacheService.java` → `SgisCompanyRepository` (시도/전국 코드의 null 캐시 + 0,0 캐시 1회 재조회)
+  - 내부 매핑/입학정원: `MajorIndustryMappingService`, `CampusStudentQuotaExcelService`
+- 출력: JSON(카테고리별 지역 종사자/캠퍼스 학생 인원 및 비율, GAP)
+- 확인(근거):
+  - 실제 호출/파라미터는 `dashboard.html`의 fetch 코드에서 확인(산업 탭 필터)
+  - 로컬 컴파일/테스트: `polytech-lms-api`에서 `GRADLE_USER_HOME`를 작업 폴더로 지정 후 `gradlew test` 성공
+- 최근 갱신: 2026-02-06
+
+### FLOW-3002: 교수자 통계 > 인구별 통계(표/차트 동기화)
+- 사용자 동작(의도): 캠퍼스/행정구역/연도 필터를 변경하면 차트와 표가 같은 응답으로 즉시 갱신
+- 진입점:
+  - 화면: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+  - API: `GET /statistics/api/population/compare?campus=...&admCd=...&admNm=...&populationYear=...`
+- 처리(핵심):
+  - `refreshPopulation()`에서 필터 변경마다 API 호출
+  - 새 요청 시작 시 이전 인구 API 요청을 `AbortController`로 중단해 지연 응답 누적을 방지
+  - 응답 반영 시 `populationTableData`, `genderTableData` 저장 직후 `renderPopulationTable()`, `renderGenderTable()`를 즉시 호출해 표를 함께 갱신
+  - `populationRequestSeq`로 최신 요청만 반영하여, 느린 이전 응답이 화면을 덮지 않도록 차단
+- 출력:
+  - 차트(`populationChart`, `populationGenderChart`)와 표(`populationTableBody`, `genderTableBody`)가 동일 시점 데이터로 동기화
+- 확인(근거):
+  - `dashboard.html`의 `refreshPopulation()` 내부에서 최신 요청 체크 및 표 즉시 렌더 호출 코드 확인
+- 최근 갱신: 2026-02-06

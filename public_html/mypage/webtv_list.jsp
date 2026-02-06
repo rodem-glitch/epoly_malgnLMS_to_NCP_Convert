@@ -49,7 +49,7 @@ while(list.next()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.webtv_list");
 
 p.setLoop("list", list);

@@ -37,6 +37,11 @@ public class IndustryAnalysisService {
     );
 
     private static final Logger log = LoggerFactory.getLogger(IndustryAnalysisService.class);
+    private static final int SGIS_COMPANY_MIN_YEAR = 2000;
+    private static final List<String> LOCAL_SIDO_CODES = List.of(
+            "11", "26", "27", "28", "29", "30", "31", "36",
+            "41", "42", "43", "44", "45", "46", "47", "48", "50"
+    );
 
     private final MajorIndustryMappingService majorIndustryMappingService;
     private final SgisCompanyCacheService sgisCompanyCacheService;
@@ -174,6 +179,55 @@ public class IndustryAnalysisService {
                 categoryCounts.put(category, sum);
             }
 
+            long sgisTotal = categoryCounts.values().stream().mapToLong(Long::longValue).sum();
+            if (sgisTotal > 0L) {
+                return categoryCounts;
+            }
+
+            // 왜: 시도코드 체계 차이로 합계가 0이 되는 경우를 막기 위해 로컬 시도코드 체계로 1회 더 합산합니다.
+            categoryCounts.replaceAll((k, v) -> 0L);
+            for (String category : CATEGORY_ORDER) {
+                List<String> classCodes = classCodesByCategory.getOrDefault(category, List.of());
+                long sum = 0L;
+                for (String classCode : classCodes) {
+                    for (String sidoCd : LOCAL_SIDO_CODES) {
+                        Long totWorker = sgisCompanyCacheService
+                                .getCompanyStats(String.valueOf(year), sidoCd, classCode)
+                                .totWorker();
+                        if (totWorker != null) {
+                            sum += totWorker;
+                        }
+                    }
+                }
+                categoryCounts.put(category, sum);
+            }
+
+            long localTotal = categoryCounts.values().stream().mapToLong(Long::longValue).sum();
+            if (localTotal > 0L) {
+                log.info("산업 통계 전국 합산 코드체계 전환: year={}, total={}", year, localTotal);
+                return categoryCounts;
+            }
+
+            // 왜: 문서상 adm_cd 미전달(non) 조회는 "전국 시도 리스트"를 내려주므로, 최종 보정으로 사용합니다.
+            categoryCounts.replaceAll((k, v) -> 0L);
+            for (String category : CATEGORY_ORDER) {
+                List<String> classCodes = classCodesByCategory.getOrDefault(category, List.of());
+                long sum = 0L;
+                for (String classCode : classCodes) {
+                    Long totWorker = sgisCompanyCacheService
+                            .getCompanyStatsNationwideList(String.valueOf(year), classCode)
+                            .totWorker();
+                    if (totWorker != null) {
+                        sum += totWorker;
+                    }
+                }
+                categoryCounts.put(category, sum);
+            }
+            long nationwideListTotal = categoryCounts.values().stream().mapToLong(Long::longValue).sum();
+            if (nationwideListTotal > 0L) {
+                log.info("산업 통계 전국 합산(adm_cd non): year={}, total={}", year, nationwideListTotal);
+            }
+
             return categoryCounts;
         }
 
@@ -195,16 +249,19 @@ public class IndustryAnalysisService {
     private int resolveAvailableStatsYear(int desiredYear, String admCd) throws IOException {
         // 왜: SGIS 사업체 통계는 "최신 연도"가 바로 제공되지 않는 경우가 있어, 사용 가능한 연도로 자동 보정합니다.
         // - 예: 2024가 N/A면 2023으로 내려가서 조회
+        // - 조회 연도부터 최대 5년 범위에서 역순 탐색하되, 문서 최소 연도(2000년) 아래로는 내려가지 않습니다.
         // - 전국(00)은 시도 합산이라 호출 수가 많아질 수 있어, 연도 탐색은 대표 시도(서울=11)로만 빠르게 확인합니다.
         String probeAdmCd = "00".equals(admCd) ? "11" : admCd;
-        for (int y = desiredYear; y >= desiredYear - 5; y--) {
+        int startYear = Math.max(desiredYear, SGIS_COMPANY_MIN_YEAR);
+        int endYear = Math.max(SGIS_COMPANY_MIN_YEAR, startYear - 5);
+        for (int y = startYear; y >= endYear; y--) {
             Map<String, Long> counts = countRegionCompaniesByCategory(y, probeAdmCd);
             long total = counts.values().stream().mapToLong(Long::longValue).sum();
             if (total > 0) {
                 return y;
             }
         }
-        return desiredYear;
+        return endYear;
     }
 
     private int resolveStatsYear(Integer statsYear) {
@@ -240,9 +297,11 @@ public class IndustryAnalysisService {
         // 왜: 특정 행정구역 코드가 외부 API에 존재하지 않으면 result가 비어 0으로만 계산될 수 있습니다.
         //      화면이 전부 0으로 깨져 보이지 않도록, "한 단계 상위 행정구역"으로 순차 대체해 데이터가 존재하는 코드를 찾습니다.
         List<String> candidates = buildAdmCdFallbackCandidates(resolvedAdmCd);
+        int lastTriedYear = Math.max(desiredYear, SGIS_COMPANY_MIN_YEAR);
 
         for (String candidateAdmCd : candidates) {
             int candidateYear = resolveAvailableStatsYear(desiredYear, candidateAdmCd);
+            lastTriedYear = candidateYear;
             Map<String, Long> counts = countRegionCompaniesByCategory(candidateYear, candidateAdmCd);
             long total = counts.values().stream().mapToLong(Long::longValue).sum();
             if (total > 0) {
@@ -255,8 +314,9 @@ public class IndustryAnalysisService {
         }
 
         // 여기까지 왔다면(전국까지) 데이터가 없다는 뜻이라, 원인 파악을 위해 경고 로그를 남깁니다.
-        log.warn("산업 통계 행정구역 데이터 없음(대체 실패): resolvedAdmCd={}, desiredYear={}", resolvedAdmCd, desiredYear);
-        return new AdmCdResolution(resolvedAdmCd, resolvedAdmCd, false, desiredYear);
+        log.warn("산업 통계 행정구역 데이터 없음(대체 실패): resolvedAdmCd={}, desiredYear={}, lastTriedYear={}",
+                resolvedAdmCd, desiredYear, lastTriedYear);
+        return new AdmCdResolution(resolvedAdmCd, resolvedAdmCd, false, lastTriedYear);
     }
 
     private List<String> buildAdmCdFallbackCandidates(String admCd) {

@@ -2200,6 +2200,10 @@
   let populationGapChartInstance = null;
   let populationGenderChartInstance = null;
   let populationGenderGapChartInstance = null;
+  // 왜: 필터 연속 변경 시 이전 응답이 늦게 도착해 최신 화면을 덮지 않도록 요청 순서를 추적합니다.
+  let populationRequestSeq = 0;
+  // 왜: 이전 요청을 중단해 지연 응답 누적을 줄입니다.
+  let populationAbortController = null;
   let industryChartInstance = null;
   let industryGapChartInstance = null;
   let internalEmploymentChartInstance = null;
@@ -3672,6 +3676,13 @@
   }
 
   async function refreshPopulation() {
+    const requestSeq = ++populationRequestSeq;
+
+    if (populationAbortController) {
+      populationAbortController.abort();
+    }
+    populationAbortController = new AbortController();
+
     const campus = document.getElementById("populationCampus").value;
     const admCd = getSelectedAdmCd("populationRegion");
     const admLabel = getSelectedOptionText("populationRegion");
@@ -3679,10 +3690,29 @@
 
     setPopulationStatus("조회 중...");
 
-    const populationRes = await fetch(
-      `/statistics/api/population/compare?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`
-    );
-    const populationData = await populationRes.json();
+    let populationRes;
+    let populationData;
+    try {
+      populationRes = await fetch(
+        `/statistics/api/population/compare?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`,
+        { signal: populationAbortController.signal }
+      );
+      populationData = await populationRes.json();
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+      if (requestSeq !== populationRequestSeq) {
+        return;
+      }
+      setPopulationStatus(`인구 비교 에러: ${error?.message || "요청 실패"}`);
+      return;
+    }
+
+    // 왜: 느린 이전 요청 응답은 버리고, 가장 마지막 필터 요청 결과만 화면에 반영합니다.
+    if (requestSeq !== populationRequestSeq) {
+      return;
+    }
 
     if (!populationRes.ok) {
       setPopulationStatus(`인구 비교 에러: ${populationData?.message || "요청 실패"}`);
@@ -3705,6 +3735,9 @@
     const popRows = populationData.rows || [];
     populationTableData = popRows; // 표 뷰용 데이터 저장
     genderTableData = popRows; // 성비 표 뷰용 데이터 저장
+    // 왜: 표 탭을 보고 있는 상태에서도 필터 변경 결과가 즉시 보이도록 렌더를 강제합니다.
+    renderPopulationTable();
+    renderGenderTable();
     const popLabels = popRows.map((r) => r.ageBand);
     const regionRatios = popRows.map((r) => Number(r.regionRatio || 0));
     const campusRatios = popRows.map((r) => Number(r.campusRatio || 0));
