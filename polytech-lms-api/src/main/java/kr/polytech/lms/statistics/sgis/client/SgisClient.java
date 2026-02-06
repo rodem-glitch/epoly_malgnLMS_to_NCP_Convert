@@ -19,8 +19,8 @@ import java.util.Objects;
 
 @Component
 public class SgisClient {
-    // 왜: SGIS(OpenAPI3) 통계를 호출하는 로직을 클라이언트로 분리해,
-    //     서비스/컨트롤러에서는 "무슨 통계를 어떤 조합으로 계산할지"에만 집중할 수 있게 합니다.
+    // ?? SGIS(OpenAPI3) ?듦퀎瑜??몄텧?섎뒗 濡쒖쭅???대씪?댁뼵?몃줈 遺꾨━??
+    //     ?쒕퉬??而⑦듃濡ㅻ윭?먯꽌??"臾댁뒯 ?듦퀎瑜??대뼡 議고빀?쇰줈 怨꾩궛?좎?"?먮쭔 吏묒쨷?????덇쾶 ?⑸땲??
 
     private final KosisClient kosisClient;
     private final KosisProperties properties;
@@ -44,25 +44,31 @@ public class SgisClient {
         validateCompanyRequest(year, admCd, classCode);
 
         String accessToken = kosisClient.getAccessToken();
-        boolean nationwide = "00".equals(admCd);
+        boolean nationwide = "00".equals(admCd) || !StringUtils.hasText(admCd);
 
-        // 왜: SGIS 사업체 통계는 전국(adm_cd=00) 요청을 그대로 보내면 result가 비어(=0으로 계산)지는 케이스가 있어,
-        //     전국일 때는 하위 행정구역 결과를 받아 합산(low_search=1)하는 방식으로 처리합니다.
+        // ?? SGIS ?ъ뾽泥??듦퀎???꾧뎅(adm_cd=00) ?붿껌??洹몃?濡?蹂대궡硫?result媛 鍮꾩뼱(=0?쇰줈 怨꾩궛)吏??耳?댁뒪媛 ?덉뼱,
+        //     ?꾧뎅???뚮뒗 ?섏쐞 ?됱젙援ъ뿭 寃곌낵瑜?諛쏆븘 ?⑹궛(low_search=1)?섎뒗 諛⑹떇?쇰줈 泥섎━?⑸땲??
         int lowSearch = nationwide ? 1 : 0;
         if (nationwide) {
-            log.debug("SGIS 사업체 통계 전국 조회: year={}, admCd={}, classCode={}, low_search={} (하위 결과 합산)",
+            log.debug("SGIS ?ъ뾽泥??듦퀎 ?꾧뎅 議고쉶: year={}, admCd={}, classCode={}, low_search={} (?섏쐞 寃곌낵 ?⑹궛)",
                     year, admCd, classCode, lowSearch);
         }
 
-        URI uri = UriComponentsBuilder.fromHttpUrl(properties.getCompanyUrl())
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(properties.getCompanyUrl())
                 .queryParam("accessToken", accessToken)
                 .queryParam("year", year)
-                .queryParam("adm_cd", admCd)
-                .queryParam("low_search", lowSearch)
                 .queryParam("class_deg", 10)
-                .queryParam("class_code", classCode)
-                .build(true)
-                .toUri();
+                .queryParam("class_code", classCode);
+
+        if (StringUtils.hasText(admCd)) {
+            builder.queryParam("adm_cd", admCd);
+        }
+        if (nationwide || StringUtils.hasText(admCd)) {
+            // 왜: 문서상 adm_cd 미전달(non)일 때도 전국/시도 목록 조회는 low_search=1 기준이므로, 의도를 명시합니다.
+            builder.queryParam("low_search", lowSearch);
+        }
+
+        URI uri = builder.build(true).toUri();
 
         String responseBody = restClient.get().uri(uri).retrieve().body(String.class);
         return parseCompanyStatsResponse(responseBody);
@@ -74,7 +80,7 @@ public class SgisClient {
         int errCd = root.path("errCd").asInt(0);
         if (errCd != 0) {
             String errMsg = root.path("errMsg").asText("Unknown error");
-            throw new IllegalStateException("SGIS 사업체 통계 호출에 실패했습니다. (" + errCd + ") " + errMsg);
+            throw new IllegalStateException("SGIS ?ъ뾽泥??듦퀎 ?몄텧???ㅽ뙣?덉뒿?덈떎. (" + errCd + ") " + errMsg);
         }
 
         JsonNode result = root.path("result");
@@ -95,18 +101,16 @@ public class SgisClient {
     }
 
     private void validateCompanyRequest(String year, String admCd, String classCode) {
-        // 왜: 잘못된 파라미터로 외부 API를 때리면 불필요한 호출이 늘고, 디버깅도 어려워집니다.
+        // ?? ?섎せ???뚮씪誘명꽣濡??몃? API瑜??뚮━硫?遺덊븘?뷀븳 ?몄텧???섍퀬, ?붾쾭源낅룄 ?대젮?뚯쭛?덈떎.
         if (!StringUtils.hasText(properties.getCompanyUrl())) {
-            throw new IllegalStateException("SGIS company-url 설정이 없습니다. kosis.company-url 을 확인해 주세요.");
+            throw new IllegalStateException("SGIS company-url ?ㅼ젙???놁뒿?덈떎. kosis.company-url ???뺤씤??二쇱꽭??");
         }
         if (!StringUtils.hasText(year)) {
-            throw new IllegalArgumentException("year가 비어 있습니다.");
+            throw new IllegalArgumentException("year媛 鍮꾩뼱 ?덉뒿?덈떎.");
         }
-        if (!StringUtils.hasText(admCd)) {
-            throw new IllegalArgumentException("admCd가 비어 있습니다.");
-        }
+        // 왜: adm_cd 미전달(non)도 문서상 유효하며(전국 시도 리스트), 전국 합산에 사용합니다.
         if (!StringUtils.hasText(classCode)) {
-            throw new IllegalArgumentException("classCode가 비어 있습니다.");
+            throw new IllegalArgumentException("classCode媛 鍮꾩뼱 ?덉뒿?덈떎.");
         }
     }
 
@@ -124,7 +128,7 @@ public class SgisClient {
         try {
             return Long.parseLong(digitsOnly);
         } catch (NumberFormatException e) {
-            throw new IllegalStateException("SGIS 숫자 파싱에 실패했습니다. 값=" + normalized, e);
+            throw new IllegalStateException("SGIS ?レ옄 ?뚯떛???ㅽ뙣?덉뒿?덈떎. 媛?" + normalized, e);
         }
     }
 
@@ -146,3 +150,4 @@ public class SgisClient {
     public record CompanyStats(Long corpCnt, Long totWorker) {
     }
 }
+

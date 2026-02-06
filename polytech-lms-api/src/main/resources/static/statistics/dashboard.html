@@ -1010,6 +1010,40 @@
         </div>
       </div>
 
+      <!-- 왜: 운영 점검 요청에 따라 학번 기반 연도/캠퍼스 인구 카드를 임시로 숨깁니다. -->
+      <div class="card-premium" id="memberKeyPopulationCard" style="display: none;">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-bar-chart-steps"></i> 학번 기반 연도별·캠퍼스별 인구(재학생 수)</h3>
+        </div>
+        <div class="card-body-premium">
+          <div id="memberKeyPopulationChartView" class="chart-container" style="height: 320px;">
+            <canvas id="memberKeyPopulationChart"></canvas>
+          </div>
+          <div class="text-muted small mt-2 mb-2" id="memberKeyPopulationStatus">학번 기반 데이터를 불러오는 중입니다.</div>
+          <div style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-premium table-sm table-bordered align-middle text-center mb-0" style="table-layout: fixed;">
+              <colgroup>
+                <col style="width: 90px;">
+                <col style="width: 120px;">
+                <col style="width: 160px;">
+                <col style="width: 120px;">
+              </colgroup>
+              <thead class="table-light" style="position: sticky; top: 0;">
+                <tr>
+                  <th class="text-center">연도</th>
+                  <th class="text-center">캠퍼스 코드</th>
+                  <th class="text-center">캠퍼스명</th>
+                  <th class="text-center">인원</th>
+                </tr>
+              </thead>
+              <tbody id="memberKeyPopulationTableBody">
+                <!-- JavaScript로 데이터 채움 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- 출처 정보 -->
       <div class="text-end text-muted" style="font-size: 0.75rem; margin-top: 0.5rem;">
         <i class="bi bi-info-circle"></i> 인구 데이터 출처: KOSIS(국가통계포털), 2019~2024년
@@ -1886,7 +1920,12 @@
     "기장": { sido: "26", district: "26710" },        // 부산 기장군
     "울산": { sido: "31", district: "31110" },        // 울산 중구
     // 제주권
-    "제주": { sido: "50", district: "50110" }         // 제주 제주시
+    "제주": { sido: "50", district: "50110" },        // 제주 제주시
+    // 특성화 캠퍼스
+    "바이오": { sido: "44", district: "44230" },      // 충남 논산시
+    "항공": { sido: "48", district: "48240" },        // 경남 사천시
+    "반도체": { sido: "41", district: "41550" },      // 경기 안성시
+    "로봇": { sido: "47", district: "47230" }         // 경북 영천시
   };
 
   // 캠퍼스 선택 시 시도/시군구 자동 선택 함수
@@ -1932,6 +1971,8 @@
   // ==================== 인구통계 차트/표 토글 기능 ====================
   // 인구 데이터 저장용 (표 렌더링에 사용)
   let populationTableData = [];
+  // 왜: 학번 기반(년도+캠퍼스) 표는 별도 데이터 소스를 사용하므로 상태를 분리해 둡니다.
+  let memberKeyPopulationTableData = [];
 
   // 차트/표 뷰 토글 함수
   function togglePopulationView(view) {
@@ -2034,6 +2075,29 @@
         <td class="tabular-nums">${campusMale.toFixed(1)}</td>
         <td class="tabular-nums">${campusFemale.toFixed(1)}</td>
         <td class="tabular-nums">${gap.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderMemberKeyPopulationTable() {
+    const tbody = document.getElementById('memberKeyPopulationTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (!memberKeyPopulationTableData || memberKeyPopulationTableData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">데이터가 없습니다.</td></tr>';
+      return;
+    }
+
+    memberKeyPopulationTableData.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="tabular-nums text-center">${row.year ?? ''}</td>
+        <td class="text-center">${row.campusCode ?? ''}</td>
+        <td class="text-center">${row.campusName ?? ''}</td>
+        <td class="tabular-nums text-end">${Number(row.memberCount ?? 0).toLocaleString()}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -2200,6 +2264,14 @@
   let populationGapChartInstance = null;
   let populationGenderChartInstance = null;
   let populationGenderGapChartInstance = null;
+  let memberKeyPopulationChartInstance = null;
+  // 왜: 요청에 따라 학번 기반 인구 그래프/표를 임시 비활성화합니다.
+  const enableMemberKeyPopulation = false;
+  // 왜: 필터 연속 변경 시 이전 응답이 늦게 도착해 최신 화면을 덮지 않도록 요청 순서를 추적합니다.
+  let populationRequestSeq = 0;
+  // 왜: 이전 요청을 중단해 지연 응답 누적을 줄입니다.
+  let populationAbortController = null;
+  let memberKeyPopulationAbortController = null;
   let industryChartInstance = null;
   let industryGapChartInstance = null;
   let internalEmploymentChartInstance = null;
@@ -3025,6 +3097,12 @@
     document.getElementById("populationStatus").textContent = text || "";
   }
 
+  function setMemberKeyPopulationStatus(text) {
+    const statusEl = document.getElementById("memberKeyPopulationStatus");
+    if (!statusEl) return;
+    statusEl.textContent = text || "";
+  }
+
   function setIndustryStatus(text) {
     document.getElementById("industryStatus").textContent = text || "";
   }
@@ -3544,6 +3622,86 @@
     });
   }
 
+  function renderStackedCountChart(canvasId, labels, datasets, yAxisLabel) {
+    // 왜: 학번 기반 연도/캠퍼스 분포는 "비율"이 아니라 실제 인원수라서
+    //     퍼센트 툴팁이 아닌 인원 포맷(천 단위 구분)으로 그려야 해석이 정확합니다.
+    const ctx = document.getElementById(canvasId).getContext("2d");
+
+    const styledDatasets = datasets.map((ds) => ({
+      ...ds,
+      borderWidth: 0,
+      borderRadius: 4,
+      borderSkipped: false
+    }));
+
+    return new Chart(ctx, {
+      type: "bar",
+      data: { labels, datasets: styledDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 16,
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+            titleColor: '#ffffff',
+            bodyColor: '#e2e8f0',
+            cornerRadius: 8,
+            padding: 12,
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y || 0).toLocaleString()}명`
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: {
+              font: { size: 11 },
+              color: chartColors.textMuted
+            }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grid: {
+              color: chartColors.gridColor,
+              drawBorder: false
+            },
+            ticks: {
+              font: { size: 11 },
+              color: chartColors.textMuted,
+              padding: 8,
+              callback: (v) => Number(v).toLocaleString()
+            },
+            title: {
+              display: !!yAxisLabel,
+              text: yAxisLabel,
+              align: 'start',
+              color: chartColors.textMuted,
+              font: { size: 11 },
+              rotation: 0
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    });
+  }
+
 
   function updateChart(instance, labels, datasets) {
     instance.data.labels = labels;
@@ -3671,18 +3829,140 @@
     }
   }
 
+  function resolveMemberKeyColor(index) {
+    const palette = [
+      'rgba(59, 130, 246, 0.85)',
+      'rgba(16, 185, 129, 0.85)',
+      'rgba(245, 158, 11, 0.85)',
+      'rgba(99, 102, 241, 0.85)',
+      'rgba(239, 68, 68, 0.85)',
+      'rgba(14, 165, 233, 0.85)',
+      'rgba(244, 114, 182, 0.85)',
+      'rgba(107, 114, 128, 0.85)'
+    ];
+    return palette[index % palette.length];
+  }
+
+  async function refreshMemberKeyPopulation(campus, requestSeq) {
+    if (memberKeyPopulationAbortController) {
+      memberKeyPopulationAbortController.abort();
+    }
+    memberKeyPopulationAbortController = new AbortController();
+
+    setMemberKeyPopulationStatus("학번 기반 연도/캠퍼스 인구를 조회 중입니다...");
+
+    let response;
+    let data;
+    try {
+      response = await fetch(
+        `/statistics/api/population/member-key-campus?campus=${encodeURIComponent(campus)}`,
+        { signal: memberKeyPopulationAbortController.signal }
+      );
+      data = await response.json();
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+      if (requestSeq !== populationRequestSeq) {
+        return;
+      }
+      memberKeyPopulationTableData = [];
+      renderMemberKeyPopulationTable();
+      setMemberKeyPopulationStatus(`학번 기반 인구 조회 실패: ${error?.message || "요청 실패"}`);
+      return;
+    }
+
+    if (requestSeq !== populationRequestSeq) {
+      return;
+    }
+
+    if (!response.ok) {
+      memberKeyPopulationTableData = [];
+      renderMemberKeyPopulationTable();
+      setMemberKeyPopulationStatus(`학번 기반 인구 에러: ${data?.message || "요청 실패"}`);
+      return;
+    }
+
+    const years = (data.years || []).map((year) => String(year));
+    const campusSeries = data.campusSeries || [];
+    memberKeyPopulationTableData = data.rows || [];
+    renderMemberKeyPopulationTable();
+
+    if (years.length === 0 || campusSeries.length === 0) {
+      if (memberKeyPopulationChartInstance) {
+        updateChart(memberKeyPopulationChartInstance, [], []);
+      }
+      setMemberKeyPopulationStatus("학번 기반 집계 데이터가 없어 0건으로 표시됩니다.");
+      return;
+    }
+
+    const datasets = campusSeries.map((series, index) => ({
+      label: `${series.campusName || "미지정"} (${series.campusCode || "-"})`,
+      data: (series.yearCounts || []).map((count) => Number(count || 0)),
+      stack: "campus",
+      backgroundColor: resolveMemberKeyColor(index)
+    }));
+
+    if (!memberKeyPopulationChartInstance) {
+      memberKeyPopulationChartInstance = renderStackedCountChart(
+        "memberKeyPopulationChart",
+        years,
+        datasets,
+        "(명)"
+      );
+    } else {
+      updateChart(memberKeyPopulationChartInstance, years, datasets);
+    }
+
+    const totalMembers = Number(data.totalMembers || 0).toLocaleString();
+    setMemberKeyPopulationStatus(
+      `기준=학번(MEMBER_KEY) / 캠퍼스=${campus || "전체"} / 집계인원=${totalMembers}명`
+    );
+  }
+
   async function refreshPopulation() {
+    const requestSeq = ++populationRequestSeq;
+
+    if (populationAbortController) {
+      populationAbortController.abort();
+    }
+    populationAbortController = new AbortController();
+
     const campus = document.getElementById("populationCampus").value;
     const admCd = getSelectedAdmCd("populationRegion");
     const admLabel = getSelectedOptionText("populationRegion");
     const populationYear = document.getElementById("populationYear").value;
 
     setPopulationStatus("조회 중...");
+    // 왜: 임시 비활성화 상태에서는 학번 기반 그래프 API를 호출하지 않아 불필요한 오류 로그를 막습니다.
+    if (enableMemberKeyPopulation) {
+      // 왜: 학번 기반 연도/캠퍼스 표는 "캠퍼스 전용" 통계라서, 연도/행정구역 필터와 무관하게 캠퍼스만 전달합니다.
+      refreshMemberKeyPopulation(campus, requestSeq);
+    }
 
-    const populationRes = await fetch(
-      `/statistics/api/population/compare?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`
-    );
-    const populationData = await populationRes.json();
+    let populationRes;
+    let populationData;
+    try {
+      populationRes = await fetch(
+        `/statistics/api/population/compare?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`,
+        { signal: populationAbortController.signal }
+      );
+      populationData = await populationRes.json();
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+      if (requestSeq !== populationRequestSeq) {
+        return;
+      }
+      setPopulationStatus(`인구 비교 에러: ${error?.message || "요청 실패"}`);
+      return;
+    }
+
+    // 왜: 느린 이전 요청 응답은 버리고, 가장 마지막 필터 요청 결과만 화면에 반영합니다.
+    if (requestSeq !== populationRequestSeq) {
+      return;
+    }
 
     if (!populationRes.ok) {
       setPopulationStatus(`인구 비교 에러: ${populationData?.message || "요청 실패"}`);
@@ -3705,6 +3985,9 @@
     const popRows = populationData.rows || [];
     populationTableData = popRows; // 표 뷰용 데이터 저장
     genderTableData = popRows; // 성비 표 뷰용 데이터 저장
+    // 왜: 표 탭을 보고 있는 상태에서도 필터 변경 결과가 즉시 보이도록 렌더를 강제합니다.
+    renderPopulationTable();
+    renderGenderTable();
     const popLabels = popRows.map((r) => r.ageBand);
     const regionRatios = popRows.map((r) => Number(r.regionRatio || 0));
     const campusRatios = popRows.map((r) => Number(r.campusRatio || 0));

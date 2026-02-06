@@ -129,7 +129,7 @@ if(m.isPost() && f.validate()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.refund_insert");
 p.setVar("p_title", "환불신청");
 p.setVar("query", m.qs("mode, oid"));

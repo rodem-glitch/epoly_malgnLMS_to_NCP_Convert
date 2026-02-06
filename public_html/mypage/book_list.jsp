@@ -56,7 +56,7 @@ while(list2.next()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.book_list");
 p.setVar("p_title", "내서재");
 

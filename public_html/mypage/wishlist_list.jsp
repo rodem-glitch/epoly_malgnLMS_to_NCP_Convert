@@ -50,7 +50,7 @@ while(list.next()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.wishlist_" + module);
 
 p.setLoop("list", list);

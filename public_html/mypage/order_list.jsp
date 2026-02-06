@@ -41,7 +41,7 @@ while(list.next()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.order_list");
 p.setVar("p_title", "결제내역조회");
 

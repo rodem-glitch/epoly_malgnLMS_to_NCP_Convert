@@ -37,7 +37,7 @@ while(list.next()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody(ch + ".message_list");
 p.setVar("p_title", "쪽지함");
 p.setVar("query", m.qs());

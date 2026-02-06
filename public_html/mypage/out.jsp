@@ -42,7 +42,7 @@ if(m.isPost() && f.validate()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.out");
 p.setVar("form_script", f.getScript());
 

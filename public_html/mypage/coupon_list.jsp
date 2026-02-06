@@ -128,7 +128,7 @@ while(list.next()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.coupon_list");
 p.setVar("p_title", "쿠폰관리");
 p.setVar("query", m.qs());
