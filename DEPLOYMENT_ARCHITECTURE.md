@@ -1,4 +1,4 @@
-# MalgnLMS 배포 아키텍처
+# GrowAILMS 배포 아키텍처
 
 ## 전체 시스템 구성
 
@@ -6,7 +6,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    MalgnLMS System                          │
+│                    GrowAILMS System                          │
 │                                                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
 │  │   Legacy     │  │  Backend API │  │  Frontend    │    │
@@ -33,7 +33,7 @@
 
 | 항목 | Legacy | Backend API | Frontend |
 |------|--------|-------------|----------|
-| **경로** | `src/`, `public_html/` | `polytech-lms-api/` | `project/` |
+| **경로** | `src/`, `public_html/` | `growailms-api/` | `project/` |
 | **언어** | Java 8 | Java 17 | TypeScript |
 | **프레임워크** | Malgnsoft, JSP | Spring Boot 3.2 | React 18, Vite |
 | **WAS/서버** | Tomcat 9 | Embedded Tomcat | Nginx |
@@ -48,20 +48,20 @@
 
 ## Cloud Run 서비스 목록
 
-### 1. malgnlms-legacy
-- **URL**: https://malgnlms-legacy-xxxxx-an.a.run.app
+### 1. growailms-legacy
+- **URL**: https://growailms-legacy-xxxxx-an.a.run.app
 - **Domain**: legacy.growai.co.kr (선택 사항)
 - **용도**: 구 e-poly LMS 전체 기능
 - **사용자**: 모든 사용자 (관리자, 교수, 학생)
 
-### 2. malgnlms-api
-- **URL**: https://malgnlms-api-xxxxx-an.a.run.app
+### 2. growailms-api
+- **URL**: https://growailms-api-xxxxx-an.a.run.app
 - **Domain**: api.growai.co.kr
 - **용도**: 신규 RESTful API
 - **사용자**: Frontend, 외부 시스템
 
-### 3. malgnlms-frontend
-- **URL**: https://malgnlms-frontend-xxxxx-an.a.run.app
+### 3. growailms-frontend
+- **URL**: https://growailms-frontend-xxxxx-an.a.run.app
 - **Domain**: growai.co.kr, www.growai.co.kr
 - **용도**: 교수자 LMS 신규 UI
 - **사용자**: 교수자
@@ -72,9 +72,9 @@
 
 ```
 .github/workflows/
-├── legacy-deploy.yml       → malgnlms-legacy
-├── gcp-deploy.yml          → malgnlms-api
-└── frontend-deploy.yml     → malgnlms-frontend
+├── legacy-deploy.yml       → growailms-legacy
+├── gcp-deploy.yml          → growailms-api
+└── frontend-deploy.yml     → growailms-frontend
 ```
 
 ### 트리거 조건
@@ -82,7 +82,7 @@
 | 워크플로우 | 트리거 경로 | 브랜치 |
 |-----------|------------|--------|
 | **legacy-deploy.yml** | `src/**`, `public_html/**` | main, dev |
-| **gcp-deploy.yml** | `polytech-lms-api/**` | main, feature/securecoding_backend |
+| **gcp-deploy.yml** | `growailms-api/**` | main, feature/securecoding_backend |
 | **frontend-deploy.yml** | `project/**` | main, feature/securecoding_backend |
 
 ### 배포 순서
@@ -116,23 +116,23 @@
 
 | 도메인 | 타입 | 값 | 연결 서비스 |
 |--------|------|---|-------------|
-| growai.co.kr | A | 216.239.32.21, 216.239.34.21, ... | malgnlms-frontend |
-| www.growai.co.kr | CNAME | ghs.googlehosted.com | malgnlms-frontend |
-| api.growai.co.kr | CNAME | ghs.googlehosted.com | malgnlms-api |
-| legacy.growai.co.kr | CNAME | ghs.googlehosted.com | malgnlms-legacy (선택) |
+| growai.co.kr | A | 216.239.32.21, 216.239.34.21, ... | growailms-frontend |
+| www.growai.co.kr | CNAME | ghs.googlehosted.com | growailms-frontend |
+| api.growai.co.kr | CNAME | ghs.googlehosted.com | growailms-api |
+| legacy.growai.co.kr | CNAME | ghs.googlehosted.com | growailms-legacy (선택) |
 
 ### 도메인 매핑 생성
 
 ```bash
 # Frontend (이미 생성됨)
-gcloud run domain-mappings create --service=malgnlms-frontend --domain=growai.co.kr --region=asia-northeast1
-gcloud run domain-mappings create --service=malgnlms-frontend --domain=www.growai.co.kr --region=asia-northeast1
+gcloud run domain-mappings create --service=growailms-frontend --domain=growai.co.kr --region=asia-northeast1
+gcloud run domain-mappings create --service=growailms-frontend --domain=www.growai.co.kr --region=asia-northeast1
 
 # Backend API (이미 생성됨)
-gcloud run domain-mappings create --service=malgnlms-api --domain=api.growai.co.kr --region=asia-northeast1
+gcloud run domain-mappings create --service=growailms-api --domain=api.growai.co.kr --region=asia-northeast1
 
 # Legacy (선택 사항)
-gcloud run domain-mappings create --service=malgnlms-legacy --domain=legacy.growai.co.kr --region=asia-northeast1
+gcloud run domain-mappings create --service=growailms-legacy --domain=legacy.growai.co.kr --region=asia-northeast1
 ```
 
 ## 마이그레이션 전략
@@ -166,9 +166,9 @@ gcloud run domain-mappings create --service=malgnlms-legacy --domain=legacy.grow
 
 | 서비스 | CPU | Memory | 평균 인스턴스 | 월 비용 (예상) |
 |--------|-----|--------|--------------|---------------|
-| malgnlms-legacy | 2 core | 2 Gi | 1 | $30-50 |
-| malgnlms-api | 1 core | 1 Gi | 0.5 | $15-25 |
-| malgnlms-frontend | 1 core | 512 Mi | 0.5 | $10-15 |
+| growailms-legacy | 2 core | 2 Gi | 1 | $30-50 |
+| growailms-api | 1 core | 1 Gi | 0.5 | $15-25 |
+| growailms-frontend | 1 core | 512 Mi | 0.5 | $10-15 |
 | **합계** | - | - | - | **$55-90** |
 
 **추가 비용**:
@@ -202,13 +202,13 @@ gcloud run domain-mappings create --service=malgnlms-legacy --domain=legacy.grow
 
 ```bash
 # Legacy 로그
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=malgnlms-legacy" --limit=50
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=growailms-legacy" --limit=50
 
 # Backend API 로그
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=malgnlms-api" --limit=50
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=growailms-api" --limit=50
 
 # Frontend 로그
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=malgnlms-frontend" --limit=50
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=growailms-frontend" --limit=50
 ```
 
 ## 보안
@@ -240,8 +240,8 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 
 ```bash
 # 특정 버전으로 롤백
-gcloud run services update malgnlms-legacy \
-  --image=asia-northeast1-docker.pkg.dev/gen-lang-client-0725900816/malgnlms/malgnlms-legacy:PREVIOUS_SHA \
+gcloud run services update growailms-legacy \
+  --image=asia-northeast1-docker.pkg.dev/gen-lang-client-0725900816/growailms/growailms-legacy:PREVIOUS_SHA \
   --region=asia-northeast1
 ```
 
@@ -257,8 +257,8 @@ gcloud sql instances patch INSTANCE_NAME --backup-start-time=03:00
 ```bash
 # GitHub Actions에서 재실행
 # 또는 수동 배포
-gcloud run deploy malgnlms-legacy \
-  --image=asia-northeast1-docker.pkg.dev/gen-lang-client-0725900816/malgnlms/malgnlms-legacy:latest \
+gcloud run deploy growailms-legacy \
+  --image=asia-northeast1-docker.pkg.dev/gen-lang-client-0725900816/growailms/growailms-legacy:latest \
   --region=asia-northeast1
 ```
 
@@ -266,7 +266,7 @@ gcloud run deploy malgnlms-legacy \
 
 ### 배포 전
 - [ ] GitHub Secrets 설정 (GCP_PROJECT_ID, GCP_SA_KEY, GCP_REGION)
-- [ ] Artifact Registry 저장소 생성 (`malgnlms`)
+- [ ] Artifact Registry 저장소 생성 (`growailms`)
 - [ ] Cloud SQL 인스턴스 준비
 - [ ] DNS 레코드 설정
 - [ ] 도메인 소유권 인증
@@ -288,6 +288,6 @@ gcloud run deploy malgnlms-legacy \
 ## 참고 문서
 
 - [LEGACY_DEPLOYMENT.md](./LEGACY_DEPLOYMENT.md) - Legacy 배포 상세 가이드
-- [polytech-lms-api/README.md](./polytech-lms-api/README.md) - Backend API 문서
+- [growailms-api/README.md](./growailms-api/README.md) - Backend API 문서
 - [project/README.md](./project/README.md) - Frontend 문서
 - [CLEANUP_COMMANDS.txt](D:\WorkSpace\GrowAI-MAP\CLEANUP_COMMANDS.txt) - 리소스 정리 가이드

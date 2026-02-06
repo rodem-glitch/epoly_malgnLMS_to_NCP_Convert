@@ -1,0 +1,32 @@
+# ============================================
+# Backend Cloud Run Deploy
+# ============================================
+#
+# 왜: 레거시(Java 8, JSP, Tomcat 9) 서비스가 Phase 4에서 제거되었으므로,
+#     growailms-backend(eGovFrame)만 배포합니다.
+#     growailms-api(Spring Boot)는 gcp-deploy.yml에서 별도 배포합니다.
+#
+
+name: Backend Cloud Run Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'growailms-backend/**'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy'
+        default: 'backend'
+        type: choice
+        options:
+          - backend
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
+  ARTIFACT_REGISTRY: ${{ secrets.GCP_REGION || 'asia-northeast1' }}-docker.pkg.dev

@@ -1,0 +1,4366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>통계 대시보드</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       통계 대시보드 프리미엄 UI 스타일 (tutor_lms 디자인 시스템)
+       UI Skills + Vercel 가이드라인 준수
+       ═══════════════════════════════════════════════════════════ */
+    
+    :root {
+      /* 브랜드 컬러 */
+      --color-primary: #0f69af;
+      --color-primary-light: #e8f0f7;
+      --color-primary-dark: #0a3a73;
+      
+      /* 통계 카드 아이콘 배경 */
+      --color-stat-blue: #dbeafe;
+      --color-stat-blue-icon: #3b82f6;
+      --color-stat-amber: #fef3c7;
+      --color-stat-amber-icon: #f59e0b;
+      --color-stat-purple: #ede9fe;
+      --color-stat-purple-icon: #8b5cf6;
+      --color-stat-green: #d1fae5;
+      --color-stat-green-icon: #10b981;
+      
+      /* 배경 & 표면 */
+      --color-bg: #f8fafc;
+      --color-card: #ffffff;
+      --color-border: #e2e8f0;
+      
+      /* 텍스트 */
+      --color-text: #1e293b;
+      --color-text-secondary: #64748b;
+      --color-text-muted: #94a3b8;
+      
+      /* 그림자 */
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      
+      /* 둥글기 */
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      
+      /* 트랜지션 (200ms 이하) */
+      --transition-fast: 150ms ease-out;
+      --transition-normal: 200ms ease-out;
+    }
+    
+    /* 기본 스타일 */
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: transparent;
+      color: var(--color-text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      margin: 0;
+      padding: 0;
+    }
+    
+    /* 제목 스타일 */
+    h1, h2, h3, h4, h5, h6 {
+      text-wrap: balance;
+      font-weight: 600;
+    }
+    
+    /* 숫자 고정폭 */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       헤더 영역
+       ───────────────────────────────────────────────────────────── */
+    .page-header {
+      margin-bottom: 1.5rem;
+    }
+    
+    .page-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    
+    .page-header .subtitle {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       탭 네비게이션 (필 스타일)
+       ───────────────────────────────────────────────────────────── */
+    .nav-tabs-premium {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0;
+      margin: 0 0 1.5rem 0;
+      list-style: none;
+      background: var(--color-card);
+      border-radius: var(--radius-lg);
+      padding: 0.5rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--color-border);
+    }
+    
+    .nav-tabs-premium .nav-item {
+      flex-shrink: 0;
+    }
+    
+    .nav-tabs-premium .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+    
+    .nav-tabs-premium .nav-link:hover {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+    
+    .nav-tabs-premium .nav-link.active {
+      background: var(--color-primary);
+      color: #ffffff;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .nav-tabs-premium .nav-link i {
+      font-size: 1rem;
+    }
+
+    /* 하위 탭 네비게이션 (입학·양성·취업 내부) */
+    .nav-tabs-premium.sub-tabs {
+      margin-bottom: 1rem;
+      padding: 0.375rem;
+      gap: 0.375rem;
+      background: var(--color-bg);
+      box-shadow: none;
+    }
+
+    .nav-tabs-premium.sub-tabs .nav-link {
+      padding: 0.5rem 0.875rem;
+      font-size: 0.8125rem;
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       통계 요약 카드 그리드
+       ───────────────────────────────────────────────────────────── */
+    .stat-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+      background: var(--color-card);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--color-border);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .stat-card .icon-wrapper {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .stat-card .icon-wrapper.blue { background: var(--color-stat-blue); color: var(--color-stat-blue-icon); }
+    .stat-card .icon-wrapper.amber { background: var(--color-stat-amber); color: var(--color-stat-amber-icon); }
+    .stat-card .icon-wrapper.purple { background: var(--color-stat-purple); color: var(--color-stat-purple-icon); }
+    .stat-card .icon-wrapper.green { background: var(--color-stat-green); color: var(--color-stat-green-icon); }
+    
+    .stat-card .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--color-text);
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .stat-card .stat-label {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.25rem;
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       카드 컴포넌트 (개선)
+       ───────────────────────────────────────────────────────────── */
+    .card-premium {
+      background: var(--color-card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    
+    .card-premium .card-header-premium {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border);
+    }
+    
+    .card-premium .card-header-premium h3 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0;
+    }
+    
+    .card-premium .card-header-premium h3 i {
+      color: var(--color-primary);
+    }
+    
+    .card-premium .card-body-premium {
+      padding: 1.25rem;
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       필터 영역
+       ───────────────────────────────────────────────────────────── */
+    .filter-section {
+      background: var(--color-card);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--color-border);
+    }
+    
+    .filter-section .filter-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 0.75rem;
+    }
+    
+    .filter-section .filter-title i {
+      color: var(--color-primary);
+    }
+    
+    .filter-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    
+    .filter-controls .form-select {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      padding: 0.5rem 2rem 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      background-color: var(--color-bg);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    
+    .filter-controls .form-select:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px var(--color-primary-light);
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       버튼 스타일
+       ───────────────────────────────────────────────────────────── */
+    .btn-premium {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+      border: none;
+    }
+    
+    .btn-premium.btn-primary {
+      background: var(--color-primary);
+      color: #ffffff;
+    }
+    
+    .btn-premium.btn-primary:hover {
+      background: var(--color-primary-dark);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn-premium.btn-secondary {
+      background: var(--color-bg);
+      color: var(--color-text-secondary);
+      border: 1px solid var(--color-border);
+    }
+    
+    .btn-premium.btn-secondary:hover {
+      background: var(--color-border);
+      color: var(--color-text);
+    }
+    
+    .btn-premium.btn-success {
+      background: var(--color-stat-green);
+      color: var(--color-stat-green-icon);
+    }
+    
+    .btn-premium.btn-success:hover {
+      background: #a7f3d0;
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       데이터 카드 (다운로드 영역)
+       ───────────────────────────────────────────────────────────── */
+    .data-download-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: linear-gradient(135deg, var(--color-primary-light) 0%, #f0f9ff 100%);
+      border-radius: var(--radius-lg);
+      border: 1px solid #bfdbfe;
+      margin-bottom: 1rem;
+    }
+    
+    .data-download-card .info h4 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 0.25rem 0;
+    }
+    
+    .data-download-card .info p {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+      margin: 0;
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       차트 영역
+       ───────────────────────────────────────────────────────────── */
+    .chart-section {
+      margin-top: 1.5rem;
+    }
+    
+    .chart-section .chart-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    
+    .chart-section .chart-title h4 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0;
+    }
+    
+    .chart-section .chart-title h4 i {
+      color: var(--color-primary);
+    }
+    
+    .chart-container {
+      position: relative;
+      padding: 1rem;
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       스켈레톤 로딩
+       ───────────────────────────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s ease-in-out infinite;
+      border-radius: var(--radius-sm);
+    }
+    
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-bar {
+      height: 20px;
+      margin-bottom: 0.5rem;
+    }
+    
+    .skeleton-chart {
+      height: 200px;
+      border-radius: var(--radius-md);
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       테이블 스타일
+       ───────────────────────────────────────────────────────────── */
+    .table-premium {
+      font-size: 0.875rem;
+    }
+    
+    .table-premium thead th {
+      background: var(--color-bg);
+      font-weight: 600;
+      color: var(--color-text);
+      border-color: var(--color-border);
+      padding: 0.75rem 1rem;
+    }
+    
+    .table-premium tbody td {
+      padding: 0.75rem 1rem;
+      border-color: var(--color-border);
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .table-premium tbody tr:hover {
+      background: var(--color-primary-light);
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       상태 메시지
+       ───────────────────────────────────────────────────────────── */
+    .status-message {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+      margin-top: 1rem;
+    }
+    
+    .status-message i {
+      color: var(--color-primary);
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       모션 감소 설정 지원
+       ───────────────────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
+    /* ─────────────────────────────────────────────────────────────
+       반응형 조정
+       ───────────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .stat-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .data-download-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .nav-tabs-premium {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 0.75rem;
+      }
+    }
+
+    /* ─────────────────────────────────────────────────────────────
+       기술업종 정보 모달
+       ───────────────────────────────────────────────────────────── */
+    .tech-info-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all var(--transition-normal);
+    }
+    .tech-info-modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    .tech-info-modal {
+      background: var(--color-card);
+      border-radius: var(--radius-xl);
+      max-width: 720px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(20px);
+      transition: transform var(--transition-normal);
+    }
+    .tech-info-modal-overlay.show .tech-info-modal {
+      transform: translateY(0);
+    }
+    .tech-info-modal-header {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: white;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tech-info-modal-header h2 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tech-info-modal-header .subtitle {
+      font-size: 0.8125rem;
+      opacity: 0.9;
+      margin-top: 0.25rem;
+    }
+    .tech-info-modal-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background var(--transition-fast);
+    }
+    .tech-info-modal-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .tech-info-modal-body {
+      padding: 1.5rem;
+    }
+    .tech-category {
+      margin-bottom: 1.5rem;
+    }
+    .tech-category:last-child {
+      margin-bottom: 0;
+    }
+    .tech-category-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--color-primary);
+    }
+    .tech-category-desc {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+    .tech-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .tech-item {
+      background: var(--color-bg);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      border: 1px solid var(--color-border);
+    }
+    .tech-item-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: 0.375rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+    .tech-item-desc {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+    .tech-info-source {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border);
+      font-size: 0.8125rem;
+      color: var(--color-text-muted);
+      text-align: right;
+    }
+    .tech-info-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      padding: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+      margin-left: 0.25rem;
+    }
+    .tech-info-btn:hover {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+    .tech-info-btn i {
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+<main class="container-fluid px-4 py-3" style="max-width: 1600px;">
+  <!-- 헤더 영역 -->
+  <div class="page-header">
+    <h1><i class="bi bi-bar-chart-line-fill" style="color: var(--color-primary);"></i> 통계 대시보드</h1>
+    <p class="subtitle">교수자 활동 현황을 한눈에 확인하세요</p>
+  </div>
+
+  <!-- 탭 네비게이션 -->
+  <ul class="nav-tabs-premium" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-internal" data-bs-toggle="tab" data-bs-target="#pane-internal" type="button" role="tab" aria-label="입학 양성 취업 통계">
+        <i class="bi bi-mortarboard"></i> 입학·양성·취업
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-population" data-bs-toggle="tab" data-bs-target="#pane-population" type="button" role="tab" aria-label="인구별 통계">
+        <i class="bi bi-people"></i> 인구별 통계
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-industry" data-bs-toggle="tab" data-bs-target="#pane-industry" type="button" role="tab" aria-label="산업별 통계">
+        <i class="bi bi-building"></i> 산업별 통계
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-ai" data-bs-toggle="tab" data-bs-target="#pane-ai" type="button" role="tab" aria-label="AI 통계">
+        <i class="bi bi-robot"></i> AI 통계
+      </button>
+    </li>
+  </ul>
+
+
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="pane-internal" role="tabpanel" aria-labelledby="tab-internal">
+      <ul class="nav-tabs-premium sub-tabs" role="tablist" aria-label="입학·양성·취업 하위 탭">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-internal-charts" data-bs-toggle="tab" data-bs-target="#pane-internal-charts" type="button" role="tab" aria-label="입학 양성 취업 통계 차트">
+            📊 통계 차트
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-internal-rawdata" data-bs-toggle="tab" data-bs-target="#pane-internal-rawdata" type="button" role="tab" aria-label="입학 양성 취업 로우 데이터">
+            📋 로우 데이터
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id="pane-internal-charts" role="tabpanel" aria-labelledby="tab-internal-charts">
+          <!-- 필터 영역 -->
+          <div class="filter-section">
+            <div class="filter-title"><i class="bi bi-funnel"></i> 필터 조건</div>
+            <div class="filter-controls">
+              <select id="internalCampus" class="form-select" style="min-width: 180px;" aria-label="캠퍼스 선택"></select>
+            </div>
+          </div>
+
+          <!-- 데이터 다운로드 카드 -->
+          <div class="data-download-card">
+            <div class="info">
+              <h4><i class="bi bi-download me-1"></i>입학 양성 취업 통합 데이터</h4>
+              <p>입학, 양성, 취업 관련 모든 상세 데이터를 필터/캠퍼스/연도로 조회하고 다운로드할 수 있습니다.</p>
+            </div>
+            <button id="downloadInternalCsv" class="btn-premium btn-primary" type="button" aria-label="전체 데이터 다운로드">
+              <i class="bi bi-file-earmark-arrow-down"></i> 전체 다운로드
+            </button>
+          </div>
+
+          <!-- 상태 메시지 -->
+          <div id="internalStatus" class="status-message d-none"><i class="bi bi-info-circle"></i> <span></span></div>
+
+          <!-- 차트 카드: 학과별 취업률 -->
+          <div class="card-premium">
+            <div class="card-header-premium">
+              <h3><i class="bi bi-bar-chart"></i> 학과별 취업률</h3>
+            </div>
+            <div class="card-body-premium">
+              <div class="chart-container" style="height: 280px;">
+                <canvas id="internalEmploymentChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- 차트 카드: 학과별 입학충원률 -->
+          <div class="card-premium">
+            <div class="card-header-premium">
+              <h3><i class="bi bi-person-plus"></i> 학과별 입학충원률</h3>
+            </div>
+            <div class="card-body-premium">
+              <div class="chart-container" style="height: 280px;">
+                <canvas id="internalAdmissionChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- 차트 카드: 연도별 취업률 추이 -->
+          <div class="card-premium">
+            <div class="card-header-premium">
+              <h3><i class="bi bi-graph-up"></i> 연도별 취업률 추이</h3>
+            </div>
+            <div class="card-body-premium">
+              <div class="chart-container" style="height: 260px;">
+                <canvas id="internalTrendChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="pane-internal-rawdata" role="tabpanel" aria-labelledby="tab-internal-rawdata">
+          <!-- 필터 영역 -->
+          <div class="filter-section">
+            <div class="filter-title"><i class="bi bi-funnel"></i> 필터 조건</div>
+            <div class="filter-controls">
+              <select id="rawDataCategory" class="form-select" style="min-width: 160px;" aria-label="분류 선택">
+                <option value="employment" selected>취업</option>
+                <option value="admission">입학</option>
+                <option value="population">재학생 인구</option>
+              </select>
+              <select id="rawDataCampus" class="form-select" style="min-width: 180px;" aria-label="캠퍼스 선택"></select>
+              <select id="rawDataYear" class="form-select" style="min-width: 110px;" aria-label="연도 선택"></select>
+            </div>
+          </div>
+
+          <!-- 검색 및 다운로드 영역 -->
+          <div class="data-download-card">
+            <div class="d-flex flex-wrap gap-2 align-items-center flex-grow-1">
+              <input id="rawDataSearch" type="text" class="form-control" style="max-width: 250px;" placeholder="검색어 입력" aria-label="검색어 입력"/>
+              <select id="rawDataPageSize" class="form-select" style="max-width: 110px;" aria-label="표시 행 수">
+                <option value="20">20행</option>
+                <option value="50" selected>50행</option>
+                <option value="100">100행</option>
+                <option value="200">200행</option>
+              </select>
+            </div>
+            <button id="rawDataDownload" class="btn-premium btn-success" type="button" aria-label="엑셀 다운로드">
+              <i class="bi bi-file-earmark-excel"></i> 엑셀 다운로드
+            </button>
+          </div>
+
+          <!-- 상태 메시지 -->
+          <div id="rawDataStatus" class="status-message d-none"><i class="bi bi-info-circle"></i> <span></span></div>
+
+          <!-- 테이블 카드 -->
+          <div class="card-premium">
+            <div class="card-header-premium">
+              <h3><i class="bi bi-table"></i> 로우 데이터</h3>
+              <div class="d-flex align-items-center gap-3">
+                <span id="rawDataRowCount" class="text-secondary" style="font-size: 0.8125rem;"></span>
+                <span id="rawDataPageInfo" class="text-secondary tabular-nums" style="font-size: 0.8125rem;"></span>
+              </div>
+            </div>
+            <div class="card-body-premium p-0">
+              <div class="table-responsive">
+                <table class="table table-premium table-sm table-bordered align-middle text-center mb-0">
+                  <thead>
+                  <tr id="rawDataTableHead"></tr>
+                  </thead>
+                  <tbody id="rawDataTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 페이지네이션 -->
+          <div class="d-flex justify-content-center gap-2 mt-3">
+            <button id="rawDataPrev" class="btn-premium btn-secondary" type="button" aria-label="이전 페이지">
+              <i class="bi bi-chevron-left"></i> 이전
+            </button>
+            <button id="rawDataNext" class="btn-premium btn-secondary" type="button" aria-label="다음 페이지">
+              다음 <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="tab-pane fade" id="pane-population" role="tabpanel" aria-labelledby="tab-population">
+      <!-- 필터 영역 -->
+      <div class="filter-section">
+        <div class="filter-title"><i class="bi bi-funnel"></i> 필터 조건</div>
+        <div class="filter-controls">
+          <select id="populationCampus" class="form-select" style="min-width: 180px;" aria-label="캠퍼스 선택"></select>
+          <select id="populationRegion" class="form-select" style="min-width: 200px;" aria-label="행정구역 선택">
+            <option value="" disabled selected>캠퍼스를 선택해 주세요</option>
+          </select>
+          <select id="populationYear" class="form-select" style="min-width: 110px;" aria-label="연도 선택"></select>
+        </div>
+      </div>
+
+      <!-- 데이터 다운로드 카드 -->
+      <div class="data-download-card">
+        <div class="info">
+          <h4><i class="bi bi-download me-1"></i>지역 인구 통합 데이터</h4>
+          <p>현재 선택한 조건(캠퍼스/학기/행정구역/연도)으로 인구 비교 데이터를 엑셀로 다운로드합니다.</p>
+        </div>
+        <button id="downloadPopulationCsvTop" class="btn-premium btn-primary" type="button" aria-label="엑셀 다운로드">
+          <i class="bi bi-file-earmark-arrow-down"></i> 엑셀 다운로드
+        </button>
+      </div>
+
+      <!-- 상태 메시지 -->
+      <div id="populationStatus" class="status-message d-none"><i class="bi bi-info-circle"></i> <span></span></div>
+
+      <!-- 차트 카드: 연령대별 인구비율 비교 -->
+      <div class="card-premium">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-pie-chart"></i> 연령대별 행정구역 인구비율 vs 캠퍼스 학생비율</h3>
+          <div class="btn-group btn-group-sm" role="group" aria-label="차트/표 전환">
+            <button type="button" class="btn btn-outline-secondary active" id="populationChartViewBtn" onclick="togglePopulationView('chart')">
+              <i class="bi bi-bar-chart"></i> 차트
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="populationTableViewBtn" onclick="togglePopulationView('table')">
+              <i class="bi bi-table"></i> 표
+            </button>
+          </div>
+        </div>
+        <div class="card-body-premium">
+          <!-- 차트 뷰 -->
+          <div id="populationChartView" class="chart-container" style="height: 320px;">
+            <canvas id="populationChart"></canvas>
+          </div>
+          <!-- 표 뷰 (기본 숨김) -->
+          <div id="populationTableView" style="display: none; max-height: 400px; overflow-y: auto;">
+            <table class="table table-premium table-sm table-bordered align-middle text-center mb-0" style="table-layout: fixed;">
+              <colgroup>
+                <col style="width: 120px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 80px;">
+              </colgroup>
+              <thead class="table-light" style="position: sticky; top: 0;">
+                <tr>
+                  <th rowspan="2" class="text-center align-middle">연령대</th>
+                  <th colspan="2" class="text-center" style="background-color: #f0f0f0;">행정구역</th>
+                  <th colspan="2" class="text-center" style="background-color: #e3f2fd;">캠퍼스</th>
+                  <th rowspan="2" class="text-center align-middle">GAP<br>(%p)</th>
+                </tr>
+                <tr>
+                  <th class="text-center" style="background-color: #f0f0f0;">인원</th>
+                  <th class="text-center" style="background-color: #f0f0f0;">비율(%)</th>
+                  <th class="text-center" style="background-color: #e3f2fd;">인원</th>
+                  <th class="text-center" style="background-color: #e3f2fd;">비율(%)</th>
+                </tr>
+              </thead>
+              <tbody id="populationTableBody">
+                <!-- JavaScript로 데이터 채움 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 차트 카드: 비율 GAP -->
+      <div class="card-premium">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-arrow-left-right"></i> 연령대별 캠퍼스-행정구역 비율 GAP</h3>
+        </div>
+        <div class="card-body-premium">
+          <div class="chart-container" style="height: 260px;">
+            <canvas id="populationGapChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 차트 카드: 남녀 성비 -->
+      <div class="card-premium">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-gender-ambiguous"></i> 연령대별 남녀 성비: 행정구역 vs 캠퍼스</h3>
+          <div class="btn-group btn-group-sm" role="group" aria-label="차트/표 전환">
+            <button type="button" class="btn btn-outline-secondary active" id="genderChartViewBtn" onclick="toggleGenderView('chart')">
+              <i class="bi bi-bar-chart"></i> 차트
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="genderTableViewBtn" onclick="toggleGenderView('table')">
+              <i class="bi bi-table"></i> 표
+            </button>
+          </div>
+        </div>
+        <div class="card-body-premium">
+          <!-- 차트 뷰 -->
+          <div id="genderChartView" class="chart-container" style="height: 320px;">
+            <canvas id="populationGenderChart"></canvas>
+          </div>
+          <!-- 표 뷰 (기본 숨김) -->
+          <div id="genderTableView" style="display: none; max-height: 400px; overflow-y: auto;">
+            <table class="table table-premium table-sm table-bordered align-middle text-center mb-0" style="table-layout: fixed;">
+              <colgroup>
+                <col style="width: 80px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 80px;">
+              </colgroup>
+              <thead class="table-light" style="position: sticky; top: 0;">
+                <tr>
+                  <th rowspan="2" class="align-middle">연령대</th>
+                  <th colspan="2" style="background: rgba(107, 114, 128, 0.15);">행정구역</th>
+                  <th colspan="2" style="background: rgba(59, 130, 246, 0.15);">캠퍼스</th>
+                  <th rowspan="2" class="align-middle">GAP<br><small class="text-muted">(%p)</small></th>
+                </tr>
+                <tr>
+                  <th style="background: rgba(107, 114, 128, 0.08);">남성(%)</th>
+                  <th style="background: rgba(107, 114, 128, 0.08);">여성(%)</th>
+                  <th style="background: rgba(59, 130, 246, 0.08);">남성(%)</th>
+                  <th style="background: rgba(59, 130, 246, 0.08);">여성(%)</th>
+                </tr>
+              </thead>
+              <tbody id="genderTableBody">
+                <!-- JavaScript로 데이터 채움 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 차트 카드: 성비 GAP -->
+      <div class="card-premium">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-arrow-left-right"></i> 연령대별 남녀 성비 GAP(캠퍼스-행정구역, 남성 비율 기준)</h3>
+        </div>
+        <div class="card-body-premium">
+          <div class="chart-container" style="height: 260px;">
+            <canvas id="populationGenderGapChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 왜: 운영 점검 요청에 따라 학번 기반 연도/캠퍼스 인구 카드를 임시로 숨깁니다. -->
+      <div class="card-premium" id="memberKeyPopulationCard" style="display: none;">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-bar-chart-steps"></i> 학번 기반 연도별·캠퍼스별 인구(재학생 수)</h3>
+        </div>
+        <div class="card-body-premium">
+          <div id="memberKeyPopulationChartView" class="chart-container" style="height: 320px;">
+            <canvas id="memberKeyPopulationChart"></canvas>
+          </div>
+          <div class="text-muted small mt-2 mb-2" id="memberKeyPopulationStatus">학번 기반 데이터를 불러오는 중입니다.</div>
+          <div style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-premium table-sm table-bordered align-middle text-center mb-0" style="table-layout: fixed;">
+              <colgroup>
+                <col style="width: 90px;">
+                <col style="width: 120px;">
+                <col style="width: 160px;">
+                <col style="width: 120px;">
+              </colgroup>
+              <thead class="table-light" style="position: sticky; top: 0;">
+                <tr>
+                  <th class="text-center">연도</th>
+                  <th class="text-center">캠퍼스 코드</th>
+                  <th class="text-center">캠퍼스명</th>
+                  <th class="text-center">인원</th>
+                </tr>
+              </thead>
+              <tbody id="memberKeyPopulationTableBody">
+                <!-- JavaScript로 데이터 채움 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 출처 정보 -->
+      <div class="text-end text-muted" style="font-size: 0.75rem; margin-top: 0rem; margin-bottom: 1.5rem;">
+        <i class="bi bi-info-circle"></i> 인구 데이터 출처: KOSIS(국가통계포털), 2019~2024년
+      </div>
+
+      <!-- 왜: 사용자 수정 작업을 위해 학번 기반 연도/캠퍼스 인구 카드를 다시 기본 노출합니다. -->
+      <div class="card-premium" id="memberKeyPopulationCard">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-bar-chart-steps"></i> 학번 기반 연도별·캠퍼스별 인구(재학생 수)</h3>
+        </div>
+        <div class="card-body-premium">
+          <div id="memberKeyPopulationChartView" class="chart-container" style="height: 320px;">
+            <canvas id="memberKeyPopulationChart"></canvas>
+          </div>
+          <div class="text-muted small mt-2 mb-2" id="memberKeyPopulationStatus">학번 기반 데이터를 불러오는 중입니다.</div>
+          <div style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-premium table-sm table-bordered align-middle text-center mb-0" style="table-layout: fixed;">
+              <colgroup>
+                <col style="width: 90px;">
+                <col style="width: 120px;">
+                <col style="width: 160px;">
+                <col style="width: 120px;">
+                <col style="width: 120px;">
+              </colgroup>
+              <thead class="table-light" style="position: sticky; top: 0;">
+                <tr>
+                  <th class="text-center">연도</th>
+                  <th class="text-center">캠퍼스 코드</th>
+                  <th class="text-center">캠퍼스명</th>
+                  <th class="text-center">과정구분</th>
+                  <th class="text-center">인원</th>
+                </tr>
+              </thead>
+              <tbody id="memberKeyPopulationTableBody">
+                <!-- JavaScript로 데이터 채움 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tab-pane fade" id="pane-industry" role="tabpanel" aria-labelledby="tab-industry">
+      <!-- 필터 영역 -->
+      <div class="filter-section">
+        <div class="filter-title"><i class="bi bi-funnel"></i> 필터 조건</div>
+        <div class="filter-controls">
+          <select id="industryCampus" class="form-select" style="min-width: 180px;" aria-label="캠퍼스 선택"></select>
+          <select id="industryRegion" class="form-select" style="min-width: 200px;" aria-label="행정구역 선택">
+            <option value="" disabled selected>캠퍼스를 선택해 주세요</option>
+          </select>
+          <select id="industryYear" class="form-select" style="min-width: 110px;" aria-label="연도 선택"></select>
+        </div>
+      </div>
+
+      <!-- 데이터 다운로드 카드 -->
+      <div class="data-download-card">
+        <div class="info">
+          <h4><i class="bi bi-download me-1"></i>산업분포 통합 데이터</h4>
+          <p>현재 선택한 조건(캠퍼스/학기/행정구역/연도)으로 산업 비교 데이터를 엑셀로 다운로드합니다.</p>
+        </div>
+        <button id="downloadIndustryCsvTop" class="btn-premium btn-primary" type="button" aria-label="엑셀 다운로드">
+          <i class="bi bi-file-earmark-arrow-down"></i> 엑셀 다운로드
+        </button>
+      </div>
+
+      <!-- 상태 메시지 -->
+      <div id="industryStatus" class="status-message d-none"><i class="bi bi-info-circle"></i> <span></span></div>
+
+      <!-- 테이블 카드: 산업분포 분석 -->
+      <div class="card-premium">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-table"></i> 산업분포 분석 <button type="button" class="tech-info-btn" id="openTechInfoModal" aria-label="기술업종 분류 안내"><i class="bi bi-info-circle"></i></button></h3>
+        </div>
+        <div class="card-body-premium p-0">
+          <div class="table-responsive">
+            <table class="table table-premium table-sm table-bordered align-middle text-center mb-0" style="table-layout: fixed;">
+              <colgroup>
+                <col style="width: 120px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 100px;">
+                <col style="width: 80px;">
+              </colgroup>
+              <thead>
+              <tr>
+                <th rowspan="2" style="vertical-align: middle;">분야</th>
+                <th colspan="2" style="background: rgba(107, 114, 128, 0.15);">행정구역 (종사자)</th>
+                <th colspan="2" style="background: rgba(59, 130, 246, 0.15);">캠퍼스 (학생)</th>
+                <th rowspan="2" style="vertical-align: middle;">GAP<br><small class="text-muted">(%p)</small></th>
+              </tr>
+              <tr>
+                <th style="background: rgba(107, 114, 128, 0.08);">인원</th>
+                <th style="background: rgba(107, 114, 128, 0.08);">비율(%)</th>
+                <th style="background: rgba(59, 130, 246, 0.08);">인원</th>
+                <th style="background: rgba(59, 130, 246, 0.08);">비율(%)</th>
+              </tr>
+              </thead>
+              <tbody id="industryTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 차트 카드: 종사자 비율 비교 -->
+      <div class="card-premium">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-bar-chart"></i> 기술업종별 종사자 비율 vs 캠퍼스 학생 비율</h3>
+        </div>
+        <div class="card-body-premium">
+          <div class="chart-container" style="height: 320px;">
+            <canvas id="industryChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 차트 카드: 비율 GAP -->
+      <div class="card-premium">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-arrow-left-right"></i> 기술업종별 종사자 캠퍼스-행정구역 비율 GAP</h3>
+        </div>
+        <div class="card-body-premium">
+          <div class="chart-container" style="height: 260px;">
+            <canvas id="industryGapChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 출처 정보 -->
+      <div class="text-end text-muted" style="font-size: 0.75rem; margin-top: 0.5rem;">
+        <i class="bi bi-info-circle"></i> 산업 데이터 출처: SGIS(통계지리정보서비스), 2019~2023년
+      </div>
+    </div>
+
+
+    <!-- AI 통계 탭 -->
+    <div class="tab-pane fade" id="pane-ai" role="tabpanel" aria-labelledby="tab-ai">
+      <!-- 스타일 정의 -->
+      <style>
+        .ai-prompt-container {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 16px;
+          padding: 24px;
+          margin-bottom: 24px;
+        }
+        .ai-prompt-textarea {
+          border: none;
+          border-radius: 12px;
+          padding: 16px;
+          font-size: 15px;
+          resize: none;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .ai-prompt-textarea:focus {
+          outline: none;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+        .ai-submit-btn {
+          background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+          border: none;
+          border-radius: 12px;
+          padding: 12px 28px;
+          font-weight: 600;
+          color: white;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(0,114,255,0.4);
+        }
+        .ai-submit-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,114,255,0.5);
+          color: white;
+        }
+        .ai-submit-btn:disabled {
+          opacity: 0.6;
+          transform: none;
+        }
+        .example-btn {
+          border-radius: 20px;
+          padding: 8px 16px;
+          font-size: 13px;
+          transition: all 0.2s ease;
+          border-color: rgba(255,255,255,0.5);
+          color: rgba(255,255,255,0.9);
+        }
+        .example-btn:hover {
+          background: rgba(255,255,255,0.2);
+          border-color: white;
+          color: white;
+        }
+        .result-card {
+          border-radius: 12px;
+          border: 1px solid #e5e7eb;
+          background: white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+          overflow: hidden;
+        }
+        .result-card .card-header {
+          background: #f8fafc;
+          border-bottom: 1px solid #e5e7eb;
+          padding: 12px 16px;
+          font-weight: 600;
+        }
+        .summary-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 12px;
+        }
+        .summary-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 8px 12px;
+          background: #f1f5f9;
+          border-radius: 8px;
+        }
+        .summary-item .icon { color: #6366f1; flex-shrink: 0; }
+        .summary-item .label { font-size: 12px; color: #64748b; margin-bottom: 2px; }
+        .summary-item .value { font-size: 14px; font-weight: 500; color: #1e293b; }
+        .source-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          background: #e0f2fe;
+          color: #0369a1;
+          border-radius: 16px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+        .warning-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 10px 12px;
+          background: #fef3c7;
+          border-left: 3px solid #f59e0b;
+          border-radius: 4px;
+          font-size: 13px;
+          color: #92400e;
+        }
+        .clarify-card {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          border-radius: 12px;
+          padding: 20px;
+        }
+        .clarify-option-btn {
+          background: white;
+          border: 2px solid #f59e0b;
+          border-radius: 8px;
+          padding: 10px 20px;
+          font-weight: 500;
+          color: #92400e;
+          transition: all 0.2s ease;
+        }
+        .clarify-option-btn:hover {
+          background: #fef3c7;
+          border-color: #d97706;
+        }
+        .unsupported-card {
+          background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+          border-radius: 12px;
+          padding: 20px;
+          text-align: center;
+        }
+        /* 에이전트 진행 상태 */
+        .agent-progress {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          margin-bottom: 24px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .agent-step {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin-bottom: 8px;
+          transition: all 0.3s ease;
+        }
+        .agent-step.pending { background: #f8fafc; color: #94a3b8; }
+        .agent-step.active { background: #eef2ff; color: #4f46e5; }
+        .agent-step.done { background: #f0fdf4; color: #16a34a; }
+        .agent-step .agent-icon {
+          width: 36px; height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+        }
+        .agent-step.pending .agent-icon { background: #e2e8f0; }
+        .agent-step.active .agent-icon { background: #c7d2fe; animation: pulse 1.5s infinite; }
+        .agent-step.done .agent-icon { background: #bbf7d0; }
+        .agent-step .agent-info { flex: 1; }
+        .agent-step .agent-name { font-weight: 600; font-size: 14px; }
+        .agent-step .agent-status { font-size: 12px; opacity: 0.8; }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+        /* AI 인사이트 패널 */
+        .ai-insight-panel {
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+          border: 1px solid #7dd3fc;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 24px;
+        }
+        .ai-insight-panel .insight-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 600;
+          color: #0369a1;
+          margin-bottom: 12px;
+        }
+        .ai-insight-panel .insight-text {
+          font-size: 15px;
+          line-height: 1.6;
+          color: #1e3a5f;
+        }
+        /* 복합 차트 그리드 */
+        .charts-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+          gap: 20px;
+          margin-bottom: 24px;
+        }
+        .chart-card {
+          background: white;
+          border-radius: 12px;
+          border: 1px solid #e5e7eb;
+          overflow: hidden;
+        }
+        .chart-card .chart-header {
+          background: #f8fafc;
+          padding: 12px 16px;
+          font-weight: 600;
+          border-bottom: 1px solid #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .chart-card .chart-body { padding: 16px; height: 300px; }
+        /* 로딩 애니메이션 */
+        .ai-loading { display: flex; flex-direction: column; align-items: center; padding: 40px; }
+        .ai-loading .dots { display: flex; gap: 8px; margin-bottom: 16px; }
+        .ai-loading .dot {
+          width: 12px; height: 12px;
+          background: #6366f1;
+          border-radius: 50%;
+          animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .ai-loading .dot:nth-child(1) { animation-delay: -0.32s; }
+        .ai-loading .dot:nth-child(2) { animation-delay: -0.16s; }
+        .ai-loading .dot:nth-child(3) { animation-delay: 0s; }
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1); }
+        }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      </style>
+
+      <!-- 프롬프트 입력 영역 -->
+      <div class="ai-prompt-container">
+        <div class="mb-3">
+          <h5 class="text-white mb-1 fw-semibold">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align: -3px;">
+              <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a24.767 24.767 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25.286 25.286 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135Z"/>
+              <path d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2V1.866ZM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5Z"/>
+            </svg>
+            AI 통계 자유질문
+          </h5>
+          <p class="text-white-50 small mb-0">자연어로 질문하면 차트와 표로 분석 결과를 보여드립니다.</p>
+        </div>
+        
+        <div class="d-flex gap-3 mb-3">
+          <textarea 
+            id="aiPromptInput" 
+            class="form-control ai-prompt-textarea flex-grow-1" 
+            rows="2" 
+            placeholder="예: 서울캠퍼스 학과별 취업률 Top 10을 보여줘"
+          ></textarea>
+          <button id="aiSubmitBtn" class="ai-submit-btn d-flex align-items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471-.47 1.178Z"/>
+            </svg>
+            질문하기
+          </button>
+        </div>
+
+        <!-- 예시 질문 버튼 -->
+        <div class="d-flex flex-wrap gap-2">
+          <div class="text-white-50 small me-2 d-flex align-items-center">예시 질문:</div>
+          <button class="btn example-btn" data-prompt="서울(11) 20대 인구를 2020~2024로 보여줘">서울 20대 인구(2020~2024)</button>
+          <button class="btn example-btn" data-prompt="서울(11) ICT 종사자 수를 2020~2024로 보여줘">서울 ICT 종사자(2020~2024)</button>
+          <button class="btn example-btn" data-prompt="서울정수 취업률 Top 10 보여줘 (2024)">서울정수 취업률 Top 10(2024)</button>
+          <button class="btn example-btn" data-prompt="서울정수 입학충원률 Top 10 보여줘">서울정수 입학충원률 Top 10</button>
+          <button class="btn example-btn" data-prompt="서울(11) ICT 종사자 수와 서울정수 취업률을 2020~2024로 같이 보여줘">ICT 종사자 vs 취업률(2020~2024)</button>
+        </div>
+      </div>
+
+      <!-- 결과 영역 컨테이너 -->
+      <div id="aiResultContainer">
+        <!-- 초기 안내 상태 -->
+        <div id="aiInitialState" class="text-center py-5">
+          <div class="mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="#d1d5db" viewBox="0 0 16 16">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+              <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+            </svg>
+          </div>
+          <h5 class="text-secondary mb-2">AI에게 질문해보세요</h5>
+          <p class="text-muted small">위 입력창에 질문을 입력하거나 예시 질문을 클릭하세요.<br>데이터 카탈로그 내 정보만 조회 가능합니다.</p>
+        </div>
+
+        <!-- 에이전트 작업 상태 (로딩) -->
+        <div id="aiLoadingState" class="d-none">
+          <div class="agent-progress">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h6 class="mb-0 fw-semibold">🤖 AI 에이전트가 분석 중입니다</h6>
+              <div class="ai-loading" style="padding: 0;">
+                <div class="dots">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
+              </div>
+            </div>
+            <div id="agentStepsContainer">
+              <div class="agent-step active" id="step-orchestrator">
+                <div class="agent-icon">🎭</div>
+                <div class="agent-info">
+                  <div class="agent-name">오케스트레이터</div>
+                  <div class="agent-status">질문 분석 및 실행 계획 수립 중...</div>
+                </div>
+              </div>
+              <div class="agent-step pending" id="step-analyst">
+                <div class="agent-icon">📊</div>
+                <div class="agent-info">
+                  <div class="agent-name">분석가 에이전트</div>
+                  <div class="agent-status">대기 중</div>
+                </div>
+              </div>
+              <div class="agent-step pending" id="step-chemist">
+                <div class="agent-icon">🧪</div>
+                <div class="agent-info">
+                  <div class="agent-name">케미스트 에이전트</div>
+                  <div class="agent-status">대기 중</div>
+                </div>
+              </div>
+              <div class="agent-step pending" id="step-designer">
+                <div class="agent-icon">🎨</div>
+                <div class="agent-info">
+                  <div class="agent-name">디자이너 에이전트</div>
+                  <div class="agent-status">대기 중</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 정상 결과 -->
+        <div id="aiSuccessResult" class="d-none fade-in">
+          <!-- AI 인사이트 패널 -->
+          <div class="ai-insight-panel" id="aiInsightPanel">
+            <div class="insight-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+              </svg>
+              AI 분석 인사이트
+            </div>
+            <div class="insight-text" id="aiInsightText">
+              분석 결과에 대한 AI의 인사이트가 여기에 표시됩니다.
+            </div>
+          </div>
+
+          <!-- 차트 영역 -->
+          <div class="result-card mb-4">
+            <div class="card-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                <path d="M4 11H2v3h2v-3zm5-4H7v7h2V7zm5-5v12h-2V2h2zm-2-1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1h-2zM6 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm-5 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-3z"/>
+              </svg>
+              <span id="aiChartTitle">분석 결과</span>
+            </div>
+            <div class="card-body p-3">
+              <div style="height: 320px;">
+                <canvas id="aiResultChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- 데이터 테이블 -->
+          <div class="result-card mb-4">
+            <div class="card-header">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm4 4H6v3h4V8z"/>
+              </svg>
+              데이터 테이블
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0" id="aiResultTable">
+                  <thead class="table-light">
+                    <tr id="aiTableHeader"></tr>
+                  </thead>
+                  <tbody id="aiTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 요약/출처/경고 카드 -->
+          <div class="row g-3">
+            <!-- 요약 카드 -->
+            <div class="col-md-6">
+              <div class="result-card h-100">
+                <div class="card-header">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                  </svg>
+                  분석 조건 요약
+                </div>
+                <div class="card-body p-3">
+                  <div class="summary-grid" id="aiSummaryGrid">
+                    <!-- 동적으로 채워짐 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 출처 카드 -->
+            <div class="col-md-6">
+              <div class="result-card h-100">
+                <div class="card-header">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                    <path d="M4.5 0a.5.5 0 0 1 .5.5V1h6V.5a.5.5 0 0 1 1 0V1h1.5A1.5 1.5 0 0 1 15 2.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 13.5v-11A1.5 1.5 0 0 1 2.5 1H4V.5a.5.5 0 0 1 .5-.5zM2.5 2a.5.5 0 0 0-.5.5V4h12V2.5a.5.5 0 0 0-.5-.5h-11zM2 5v8.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V5H2z"/>
+                  </svg>
+                  데이터 출처
+                </div>
+                <div class="card-body p-3">
+                  <div class="d-flex flex-wrap gap-2" id="aiSourceList">
+                    <!-- 동적으로 채워짐 -->
+                  </div>
+                  <div class="small text-muted mt-2" id="aiQueryTime"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 경고 카드 (경고가 있을 때만 표시) -->
+          <div id="aiWarningContainer" class="mt-3 d-none">
+            <div class="result-card">
+              <div class="card-header text-warning">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="me-1">
+                  <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                </svg>
+                주의사항
+              </div>
+              <div class="card-body p-3">
+                <div id="aiWarningList">
+                  <!-- 동적으로 채워짐 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 되물음 상태 -->
+        <div id="aiClarifyState" class="d-none fade-in">
+          <div class="clarify-card">
+            <div class="d-flex align-items-start gap-3 mb-3">
+              <div class="bg-warning rounded-circle p-2 flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#92400e" viewBox="0 0 16 16">
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                  <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+                </svg>
+              </div>
+              <div>
+                <div class="fw-semibold text-dark mb-1">추가 정보가 필요합니다</div>
+                <div class="text-dark" id="aiClarifyQuestion">어느 캠퍼스를 기준으로 조회할까요?</div>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2" id="aiClarifyOptions">
+              <!-- 동적으로 채워짐 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 불가 상태 -->
+        <div id="aiUnsupportedState" class="d-none fade-in">
+          <div class="unsupported-card">
+            <div class="mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#dc2626" viewBox="0 0 16 16">
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+              </svg>
+            </div>
+            <h5 class="text-danger mb-2">요청을 처리할 수 없습니다</h5>
+            <p class="text-dark mb-3" id="aiUnsupportedMessage">해당 질문은 현재 지원하지 않습니다.</p>
+            <div class="small text-muted mb-2">다음과 같은 질문을 시도해보세요:</div>
+            <div class="d-flex flex-wrap justify-content-center gap-2" id="aiSuggestedExamples">
+              <!-- 동적으로 채워짐 -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ==================== Chart.js 프리미엄 테마 설정 ====================
+  // 왜: 차트를 더 현대적이고 매력적으로 보이게 하기 위해 전역 기본값을 설정합니다.
+  
+  // 프리미엄 컬러 팔레트
+  const chartColors = {
+    primary: 'rgba(15, 105, 175, 1)',        // #0f69af
+    primaryLight: 'rgba(15, 105, 175, 0.7)',
+    secondary: 'rgba(99, 102, 241, 1)',      // 인디고
+    secondaryLight: 'rgba(99, 102, 241, 0.7)',
+    success: 'rgba(16, 185, 129, 1)',        // 에메랄드
+    successLight: 'rgba(16, 185, 129, 0.7)',
+    warning: 'rgba(245, 158, 11, 1)',        // 앰버
+    warningLight: 'rgba(245, 158, 11, 0.7)',
+    danger: 'rgba(239, 68, 68, 1)',          // 레드
+    dangerLight: 'rgba(239, 68, 68, 0.7)',
+    purple: 'rgba(139, 92, 246, 1)',         // 보라
+    purpleLight: 'rgba(139, 92, 246, 0.7)',
+    gray: 'rgba(100, 116, 139, 0.5)',
+    gridColor: 'rgba(226, 232, 240, 0.8)',
+    textColor: 'rgba(30, 41, 59, 1)',
+    textMuted: 'rgba(100, 116, 139, 1)'
+  };
+
+  // ==================== 시군구 코드 데이터 ====================
+  const DISTRICT_CODES = {
+    "11": [ // 서울특별시
+      { code: "11110", name: "종로구" }, { code: "11140", name: "중구" }, { code: "11170", name: "용산구" },
+      { code: "11200", name: "성동구" }, { code: "11215", name: "광진구" }, { code: "11230", name: "동대문구" },
+      { code: "11260", name: "중랑구" }, { code: "11290", name: "성북구" }, { code: "11305", name: "강북구" },
+      { code: "11320", name: "도봉구" }, { code: "11350", name: "노원구" }, { code: "11380", name: "은평구" },
+      { code: "11410", name: "서대문구" }, { code: "11440", name: "마포구" }, { code: "11470", name: "양천구" },
+      { code: "11500", name: "강서구" }, { code: "11530", name: "구로구" }, { code: "11545", name: "금천구" },
+      { code: "11560", name: "영등포구" }, { code: "11590", name: "동작구" }, { code: "11620", name: "관악구" },
+      { code: "11650", name: "서초구" }, { code: "11680", name: "강남구" }, { code: "11710", name: "송파구" },
+      { code: "11740", name: "강동구" }
+    ],
+    "26": [ // 부산광역시
+      { code: "26110", name: "중구" }, { code: "26140", name: "서구" }, { code: "26170", name: "동구" },
+      { code: "26200", name: "영도구" }, { code: "26230", name: "부산진구" }, { code: "26260", name: "동래구" },
+      { code: "26290", name: "남구" }, { code: "26320", name: "북구" }, { code: "26350", name: "해운대구" },
+      { code: "26380", name: "사하구" }, { code: "26410", name: "금정구" }, { code: "26440", name: "강서구" },
+      { code: "26470", name: "연제구" }, { code: "26500", name: "수영구" }, { code: "26530", name: "사상구" },
+      { code: "26710", name: "기장군" }
+    ],
+    "27": [ // 대구광역시
+      { code: "27110", name: "중구" }, { code: "27140", name: "동구" }, { code: "27170", name: "서구" },
+      { code: "27200", name: "남구" }, { code: "27230", name: "북구" }, { code: "27260", name: "수성구" },
+      { code: "27290", name: "달서구" }, { code: "27710", name: "달성군" }, { code: "27720", name: "군위군" }
+    ],
+    "28": [ // 인천광역시
+      { code: "28110", name: "중구" }, { code: "28140", name: "동구" }, { code: "28177", name: "미추홀구" },
+      { code: "28185", name: "연수구" }, { code: "28200", name: "남동구" }, { code: "28237", name: "부평구" },
+      { code: "28245", name: "계양구" }, { code: "28260", name: "서구" }, { code: "28710", name: "강화군" },
+      { code: "28720", name: "옹진군" }
+    ],
+    "29": [ // 광주광역시
+      { code: "29110", name: "동구" }, { code: "29140", name: "서구" }, { code: "29155", name: "남구" },
+      { code: "29170", name: "북구" }, { code: "29200", name: "광산구" }
+    ],
+    "30": [ // 대전광역시
+      { code: "30110", name: "동구" }, { code: "30140", name: "중구" }, { code: "30170", name: "서구" },
+      { code: "30200", name: "유성구" }, { code: "30230", name: "대덕구" }
+    ],
+    "31": [ // 울산광역시
+      { code: "31110", name: "중구" }, { code: "31140", name: "남구" }, { code: "31170", name: "동구" },
+      { code: "31200", name: "북구" }, { code: "31710", name: "울주군" }
+    ],
+    "36": [], // 세종특별자치시 (단일 행정구역)
+    "41": [ // 경기도
+      { code: "41111", name: "수원시 장안구" }, { code: "41113", name: "수원시 권선구" }, { code: "41115", name: "수원시 팔달구" },
+      { code: "41117", name: "수원시 영통구" }, { code: "41131", name: "성남시 수정구" }, { code: "41133", name: "성남시 중원구" },
+      { code: "41135", name: "성남시 분당구" }, { code: "41150", name: "의정부시" }, { code: "41171", name: "안양시 만안구" },
+      { code: "41173", name: "안양시 동안구" }, { code: "41190", name: "부천시" }, { code: "41210", name: "광명시" },
+      { code: "41220", name: "평택시" }, { code: "41250", name: "동두천시" }, { code: "41271", name: "안산시 상록구" },
+      { code: "41273", name: "안산시 단원구" }, { code: "41281", name: "고양시 덕양구" }, { code: "41285", name: "고양시 일산동구" },
+      { code: "41287", name: "고양시 일산서구" }, { code: "41290", name: "과천시" }, { code: "41310", name: "구리시" },
+      { code: "41360", name: "남양주시" }, { code: "41370", name: "오산시" }, { code: "41390", name: "시흥시" },
+      { code: "41410", name: "군포시" }, { code: "41430", name: "의왕시" }, { code: "41450", name: "하남시" },
+      { code: "41461", name: "용인시 처인구" }, { code: "41463", name: "용인시 기흥구" }, { code: "41465", name: "용인시 수지구" },
+      { code: "41480", name: "파주시" }, { code: "41500", name: "이천시" }, { code: "41550", name: "안성시" },
+      { code: "41570", name: "김포시" }, { code: "41590", name: "화성시" }, { code: "41610", name: "광주시" },
+      { code: "41630", name: "양주시" }, { code: "41650", name: "포천시" }, { code: "41670", name: "여주시" },
+      { code: "41800", name: "연천군" }, { code: "41820", name: "가평군" }, { code: "41830", name: "양평군" }
+    ],
+    "42": [ // 강원특별자치도
+      { code: "42110", name: "춘천시" }, { code: "42130", name: "원주시" }, { code: "42150", name: "강릉시" },
+      { code: "42170", name: "동해시" }, { code: "42190", name: "태백시" }, { code: "42210", name: "속초시" },
+      { code: "42230", name: "삼척시" }, { code: "42720", name: "홍천군" }, { code: "42730", name: "횡성군" },
+      { code: "42750", name: "영월군" }, { code: "42760", name: "평창군" }, { code: "42770", name: "정선군" },
+      { code: "42780", name: "철원군" }, { code: "42790", name: "화천군" }, { code: "42800", name: "양구군" },
+      { code: "42810", name: "인제군" }, { code: "42820", name: "고성군" }, { code: "42830", name: "양양군" }
+    ],
+    "43": [ // 충청북도
+      { code: "43111", name: "청주시 상당구" }, { code: "43112", name: "청주시 서원구" }, { code: "43113", name: "청주시 흥덕구" },
+      { code: "43114", name: "청주시 청원구" }, { code: "43130", name: "충주시" }, { code: "43150", name: "제천시" },
+      { code: "43720", name: "보은군" }, { code: "43730", name: "옥천군" }, { code: "43740", name: "영동군" },
+      { code: "43745", name: "증평군" }, { code: "43750", name: "진천군" }, { code: "43760", name: "괴산군" },
+      { code: "43770", name: "음성군" }, { code: "43800", name: "단양군" }
+    ],
+    "44": [ // 충청남도
+      { code: "44131", name: "천안시 동남구" }, { code: "44133", name: "천안시 서북구" }, { code: "44150", name: "공주시" },
+      { code: "44180", name: "보령시" }, { code: "44200", name: "아산시" }, { code: "44210", name: "서산시" },
+      { code: "44230", name: "논산시" }, { code: "44250", name: "계룡시" }, { code: "44270", name: "당진시" },
+      { code: "44710", name: "금산군" }, { code: "44760", name: "부여군" }, { code: "44770", name: "서천군" },
+      { code: "44790", name: "청양군" }, { code: "44800", name: "홍성군" }, { code: "44810", name: "예산군" },
+      { code: "44825", name: "태안군" }
+    ],
+    "45": [ // 전북특별자치도
+      { code: "45111", name: "전주시 완산구" }, { code: "45113", name: "전주시 덕진구" }, { code: "45130", name: "군산시" },
+      { code: "45140", name: "익산시" }, { code: "45180", name: "정읍시" }, { code: "45190", name: "남원시" },
+      { code: "45210", name: "김제시" }, { code: "45710", name: "완주군" }, { code: "45720", name: "진안군" },
+      { code: "45730", name: "무주군" }, { code: "45740", name: "장수군" }, { code: "45750", name: "임실군" },
+      { code: "45770", name: "순창군" }, { code: "45790", name: "고창군" }, { code: "45800", name: "부안군" }
+    ],
+    "46": [ // 전라남도
+      { code: "46110", name: "목포시" }, { code: "46130", name: "여수시" }, { code: "46150", name: "순천시" },
+      { code: "46170", name: "나주시" }, { code: "46230", name: "광양시" }, { code: "46710", name: "담양군" },
+      { code: "46720", name: "곡성군" }, { code: "46730", name: "구례군" }, { code: "46770", name: "고흥군" },
+      { code: "46780", name: "보성군" }, { code: "46790", name: "화순군" }, { code: "46800", name: "장흥군" },
+      { code: "46810", name: "강진군" }, { code: "46820", name: "해남군" }, { code: "46830", name: "영암군" },
+      { code: "46840", name: "무안군" }, { code: "46860", name: "함평군" }, { code: "46870", name: "영광군" },
+      { code: "46880", name: "장성군" }, { code: "46890", name: "완도군" }, { code: "46900", name: "진도군" },
+      { code: "46910", name: "신안군" }
+    ],
+    "47": [ // 경상북도
+      { code: "47111", name: "포항시 남구" }, { code: "47113", name: "포항시 북구" }, { code: "47130", name: "경주시" },
+      { code: "47150", name: "김천시" }, { code: "47170", name: "안동시" }, { code: "47190", name: "구미시" },
+      { code: "47210", name: "영주시" }, { code: "47230", name: "영천시" }, { code: "47250", name: "상주시" },
+      { code: "47280", name: "문경시" }, { code: "47290", name: "경산시" }, { code: "47720", name: "의성군" },
+      { code: "47730", name: "청송군" }, { code: "47750", name: "영양군" }, { code: "47760", name: "영덕군" },
+      { code: "47770", name: "청도군" }, { code: "47820", name: "고령군" }, { code: "47830", name: "성주군" },
+      { code: "47840", name: "칠곡군" }, { code: "47900", name: "예천군" }, { code: "47920", name: "봉화군" },
+      { code: "47930", name: "울진군" }, { code: "47940", name: "울릉군" }
+    ],
+    "48": [ // 경상남도
+      { code: "48121", name: "창원시 의창구" }, { code: "48123", name: "창원시 성산구" }, { code: "48125", name: "창원시 마산합포구" },
+      { code: "48127", name: "창원시 마산회원구" }, { code: "48129", name: "창원시 진해구" }, { code: "48170", name: "진주시" },
+      { code: "48220", name: "통영시" }, { code: "48240", name: "사천시" }, { code: "48250", name: "김해시" },
+      { code: "48270", name: "밀양시" }, { code: "48310", name: "거제시" }, { code: "48330", name: "양산시" },
+      { code: "48720", name: "의령군" }, { code: "48730", name: "함안군" }, { code: "48740", name: "창녕군" },
+      { code: "48820", name: "고성군" }, { code: "48840", name: "남해군" }, { code: "48850", name: "하동군" },
+      { code: "48860", name: "산청군" }, { code: "48870", name: "함양군" }, { code: "48880", name: "거창군" },
+      { code: "48890", name: "합천군" }
+    ],
+    "50": [ // 제주특별자치도
+      { code: "50110", name: "제주시" }, { code: "50130", name: "서귀포시" }
+    ]
+  };
+
+  // 시군구 select 업데이트 함수
+  function updateDistrictSelect(sidoSelectId, districtSelectId) {
+    const sidoCode = document.getElementById(sidoSelectId).value;
+    const districtSelect = document.getElementById(districtSelectId);
+    const districts = DISTRICT_CODES[sidoCode] || [];
+    
+    districtSelect.innerHTML = '<option value="" selected>전체 (시군구)</option>';
+    districts.forEach(d => {
+      const opt = document.createElement("option");
+      opt.value = d.code;
+      opt.textContent = d.name;
+      districtSelect.appendChild(opt);
+    });
+  }
+
+  // 최종 행정구역 코드 반환 (통합 드롭다운용)
+  function getSelectedAdmCd(regionSelectId) {
+    return document.getElementById(regionSelectId).value;
+  }
+
+  // ==================== 시도 코드-이름 매핑 ====================
+  const SIDO_NAMES = {
+    "11": "서울특별시",
+    "26": "부산광역시",
+    "27": "대구광역시",
+    "28": "인천광역시",
+    "29": "광주광역시",
+    "30": "대전광역시",
+    "31": "울산광역시",
+    "36": "세종특별자치시",
+    "41": "경기도",
+    "42": "강원특별자치도",
+    "43": "충청북도",
+    "44": "충청남도",
+    "45": "전북특별자치도",
+    "46": "전라남도",
+    "47": "경상북도",
+    "48": "경상남도",
+    "50": "제주특별자치도"
+  };
+
+  // 시군구 코드로 이름 찾기
+  function getDistrictName(sidoCode, districtCode) {
+    const districts = DISTRICT_CODES[sidoCode] || [];
+    const found = districts.find(d => d.code === districtCode);
+    return found ? found.name : districtCode;
+  }
+
+  // 캠퍼스 선택 시 행정구역 드롭다운 업데이트 (광역시/세부행정구역 2개만 표시)
+  function updateRegionOptions(campusSelectId, regionSelectId, refreshCallback) {
+    const campusName = document.getElementById(campusSelectId).value;
+    const regionSelect = document.getElementById(regionSelectId);
+
+    if (!campusName) {
+      // 왜: "전체 캠퍼스"는 캠퍼스 필터만 풀고, 행정구역은 "전국 전체" 기본값으로 둡니다.
+      // - 인구(KOSIS): adm_cd를 비워두면(=미전달) 전국으로 처리됩니다.
+      // - 산업(SGIS): adm_cd가 필수이므로, 전국은 "00" 코드로 보냅니다. (SGIS 기준 전국 코드)
+      const nationwideAdmCd = regionSelectId === "industryRegion" ? "00" : "";
+      regionSelect.innerHTML = `<option value="${nationwideAdmCd}" selected>전국 전체</option>`;
+      if (refreshCallback) refreshCallback();
+      return;
+    }
+
+    // 캠퍼스 위치 찾기 (부분 일치 허용)
+    let location = CAMPUS_LOCATIONS[campusName];
+    if (!location) {
+      for (const [key, loc] of Object.entries(CAMPUS_LOCATIONS)) {
+        if (campusName.includes(key) || key.includes(campusName)) {
+          location = loc;
+          break;
+        }
+      }
+    }
+
+    if (!location) {
+      regionSelect.innerHTML = '<option value="" disabled selected>위치 정보 없음</option>';
+      return;
+    }
+
+    // 시도명과 시군구명 조회
+    const sidoName = SIDO_NAMES[location.sido] || location.sido;
+    const districtName = getDistrictName(location.sido, location.district);
+
+    // 2개 옵션만 표시: 광역시 전체, 세부행정구역 (기본 선택)
+    regionSelect.innerHTML = `
+      <option value="${location.sido}">${sidoName} 전체</option>
+      <option value="${location.district}" selected>${sidoName} ${districtName}</option>
+    `;
+
+    // 데이터 새로고침
+    if (refreshCallback) refreshCallback();
+  }
+
+  // ==================== 캠퍼스-소재지 매핑 데이터 ====================
+  // 캠퍼스명 → { sido: 시도코드, district: 시군구코드 }
+  const CAMPUS_LOCATIONS = {
+    // 서울권
+    "서울정수": { sido: "11", district: "11170" },    // 서울 용산구
+    "서울강서": { sido: "11", district: "11500" },    // 서울 강서구
+    // 경기권
+    "성남": { sido: "41", district: "41131" },        // 경기 성남시 수정구
+    "화성": { sido: "41", district: "41590" },        // 경기 화성시
+    "안성": { sido: "41", district: "41550" },        // 경기 안성시
+    // 인천권
+    "인천": { sido: "28", district: "28237" },        // 인천 부평구
+    "부평": { sido: "28", district: "28237" },        // 인천 부평구
+    "인천캠퍼스": { sido: "28", district: "28177" },  // 인천 미추홀구
+    // 강원권
+    "춘천": { sido: "42", district: "42110" },        // 강원 춘천시
+    "원주": { sido: "42", district: "42130" },        // 강원 원주시
+    "강릉": { sido: "42", district: "42150" },        // 강원 강릉시
+    // 충청권
+    "대전": { sido: "30", district: "30110" },        // 대전 동구
+    "청주": { sido: "43", district: "43111" },        // 충북 청주시 상당구
+    "충주": { sido: "43", district: "43130" },        // 충북 충주시
+    "아산": { sido: "44", district: "44200" },        // 충남 아산시
+    "홍성": { sido: "44", district: "44800" },        // 충남 홍성군
+    "논산": { sido: "44", district: "44230" },        // 충남 논산시
+    // 전라권
+    "광주": { sido: "29", district: "29170" },        // 광주 북구
+    "김제": { sido: "45", district: "45210" },        // 전북 김제시
+    "익산": { sido: "45", district: "45140" },        // 전북 익산시
+    "순천": { sido: "46", district: "46150" },        // 전남 순천시
+    "무안": { sido: "46", district: "46840" },        // 전남 무안군
+    // 경상권
+    "대구": { sido: "27", district: "27170" },        // 대구 서구
+    "대구캠퍼스": { sido: "27", district: "27140" },  // 대구 동구
+    "구미": { sido: "47", district: "47190" },        // 경북 구미시
+    "영주": { sido: "47", district: "47210" },        // 경북 영주시
+    "영천": { sido: "47", district: "47230" },        // 경북 영천시
+    "창원": { sido: "48", district: "48121" },        // 경남 창원시 의창구
+    "진주": { sido: "48", district: "48170" },        // 경남 진주시
+    "사천": { sido: "48", district: "48240" },        // 경남 사천시
+    // 부산/울산권
+    "부산": { sido: "26", district: "26320" },        // 부산 북구
+    "기장": { sido: "26", district: "26710" },        // 부산 기장군
+    "울산": { sido: "31", district: "31110" },        // 울산 중구
+    // 제주권
+    "제주": { sido: "50", district: "50110" },        // 제주 제주시
+    // 특성화 캠퍼스
+    "바이오": { sido: "44", district: "44230" },      // 충남 논산시
+    "항공": { sido: "48", district: "48240" },        // 경남 사천시
+    "반도체": { sido: "41", district: "41550" },      // 경기 안성시
+    "로봇": { sido: "47", district: "47230" }         // 경북 영천시
+  };
+
+  // 캠퍼스 선택 시 시도/시군구 자동 선택 함수
+  function autoSelectLocationByCampus(campusSelectId, sidoSelectId, districtSelectId, refreshCallback) {
+    const campusName = document.getElementById(campusSelectId).value;
+    if (!campusName) return false;
+    
+    // 캠퍼스명에서 키워드 매칭 (부분 일치 허용)
+    let location = CAMPUS_LOCATIONS[campusName];
+    if (!location) {
+      // 정확한 키가 없으면 포함된 키워드로 검색
+      for (const [key, loc] of Object.entries(CAMPUS_LOCATIONS)) {
+        if (campusName.includes(key) || key.includes(campusName)) {
+          location = loc;
+          break;
+        }
+      }
+    }
+    
+    if (!location) {
+      // 매핑 데이터가 없으면 알림
+      alert(`"${campusName}" 캠퍼스의 소재지 정보가 없습니다.\n시도와 시군구를 직접 선택해 주세요.`);
+      return false;
+    }
+    
+    // 시도 선택
+    const sidoSelect = document.getElementById(sidoSelectId);
+    sidoSelect.value = location.sido;
+    
+    // 시군구 목록 업데이트
+    updateDistrictSelect(sidoSelectId, districtSelectId);
+    
+    // 시군구 선택
+    const districtSelect = document.getElementById(districtSelectId);
+    districtSelect.value = location.district;
+    
+    // 데이터 새로고침
+    if (refreshCallback) refreshCallback();
+    
+    return true;
+  }
+
+  // ==================== 인구통계 차트/표 토글 기능 ====================
+  // 인구 데이터 저장용 (표 렌더링에 사용)
+  let populationTableData = [];
+  // 왜: 학번 기반(년도+캠퍼스) 표는 별도 데이터 소스를 사용하므로 상태를 분리해 둡니다.
+  let memberKeyPopulationTableData = [];
+
+  // 차트/표 뷰 토글 함수
+  function togglePopulationView(view) {
+    const chartView = document.getElementById('populationChartView');
+    const tableView = document.getElementById('populationTableView');
+    const chartBtn = document.getElementById('populationChartViewBtn');
+    const tableBtn = document.getElementById('populationTableViewBtn');
+    
+    if (view === 'chart') {
+      chartView.style.display = 'block';
+      tableView.style.display = 'none';
+      chartBtn.classList.add('active');
+      tableBtn.classList.remove('active');
+    } else {
+      chartView.style.display = 'none';
+      tableView.style.display = 'block';
+      chartBtn.classList.remove('active');
+      tableBtn.classList.add('active');
+      // 표 데이터 렌더링
+      renderPopulationTable();
+    }
+  }
+
+  // 인구 데이터 표 렌더링 함수
+  function renderPopulationTable() {
+    const tbody = document.getElementById('populationTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (!populationTableData || populationTableData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">데이터가 없습니다.</td></tr>';
+      return;
+    }
+    
+    populationTableData.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="text-center">${row.ageBand ?? ''}</td>
+        <td class="tabular-nums text-end">${Number(row.regionCount ?? 0).toLocaleString()}</td>
+        <td class="tabular-nums text-end">${Number(row.regionRatio ?? 0).toFixed(2)}</td>
+        <td class="tabular-nums text-end">${Number(row.campusCount ?? 0).toLocaleString()}</td>
+        <td class="tabular-nums text-end">${Number(row.campusRatio ?? 0).toFixed(2)}</td>
+        <td class="tabular-nums text-end">${Number(row.gap ?? 0).toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ==================== 남녀 성비 차트/표 토글 기능 ====================
+  // 성비 데이터 저장용 (표 렌더링에 사용)
+  let genderTableData = [];
+
+  // 차트/표 뷰 토글 함수
+  function toggleGenderView(view) {
+    const chartView = document.getElementById('genderChartView');
+    const tableView = document.getElementById('genderTableView');
+    const chartBtn = document.getElementById('genderChartViewBtn');
+    const tableBtn = document.getElementById('genderTableViewBtn');
+    
+    if (view === 'chart') {
+      chartView.style.display = 'block';
+      tableView.style.display = 'none';
+      chartBtn.classList.add('active');
+      tableBtn.classList.remove('active');
+    } else {
+      chartView.style.display = 'none';
+      tableView.style.display = 'block';
+      chartBtn.classList.remove('active');
+      tableBtn.classList.add('active');
+      // 표 데이터 렌더링
+      renderGenderTable();
+    }
+  }
+
+  // 성비 데이터 표 렌더링 함수
+  function renderGenderTable() {
+    const tbody = document.getElementById('genderTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (!genderTableData || genderTableData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">데이터가 없습니다.</td></tr>';
+      return;
+    }
+    
+    genderTableData.forEach(row => {
+      const regionMale = Number(row.regionMaleRatio ?? 0);
+      const regionFemale = 100 - regionMale;
+      const campusMale = Number(row.campusMaleRatio ?? 0);
+      const campusFemale = 100 - campusMale;
+      const gap = Number(row.maleGap ?? 0);
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.ageBand ?? ''}</td>
+        <td class="tabular-nums">${regionMale.toFixed(1)}</td>
+        <td class="tabular-nums">${regionFemale.toFixed(1)}</td>
+        <td class="tabular-nums">${campusMale.toFixed(1)}</td>
+        <td class="tabular-nums">${campusFemale.toFixed(1)}</td>
+        <td class="tabular-nums">${gap.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderMemberKeyPopulationTable() {
+    const tbody = document.getElementById('memberKeyPopulationTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (!memberKeyPopulationTableData || memberKeyPopulationTableData.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">데이터가 없습니다.</td></tr>';
+      return;
+    }
+
+    memberKeyPopulationTableData.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="tabular-nums text-center">${row.year ?? ''}</td>
+        <td class="text-center">${row.campusCode ?? ''}</td>
+        <td class="text-center">${row.campusName ?? ''}</td>
+        <td class="text-center">${row.courseCode ?? ''}</td>
+        <td class="tabular-nums text-end">${Number(row.memberCount ?? 0).toLocaleString()}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 그라데이션 생성 함수
+  function createGradient(ctx, color1, color2) {
+    const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+    gradient.addColorStop(0, color1);
+    gradient.addColorStop(1, color2);
+    return gradient;
+  }
+
+  // Chart.js 전역 기본값 설정
+  Chart.defaults.font.family = "'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = chartColors.textMuted;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+  Chart.defaults.plugins.legend.labels.padding = 20;
+  Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(30, 41, 59, 0.95)';
+  Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
+  Chart.defaults.plugins.tooltip.bodyColor = '#e2e8f0';
+  Chart.defaults.plugins.tooltip.borderColor = 'rgba(255, 255, 255, 0.1)';
+  Chart.defaults.plugins.tooltip.borderWidth = 1;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.plugins.tooltip.padding = 12;
+  Chart.defaults.plugins.tooltip.displayColors = true;
+  Chart.defaults.plugins.tooltip.boxPadding = 4;
+  Chart.defaults.elements.bar.borderRadius = 6;
+  Chart.defaults.elements.bar.borderSkipped = false;
+  Chart.defaults.elements.line.tension = 0.4;
+  Chart.defaults.elements.point.radius = 4;
+  Chart.defaults.elements.point.hoverRadius = 6;
+  Chart.defaults.animation.duration = 800;
+  Chart.defaults.animation.easing = 'easeOutQuart';
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+
+  // 개선된 차트 옵션 생성 함수
+  function getPremiumChartOptions(title, yAxisLabel) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: !!title,
+          text: title,
+          font: { size: 14, weight: '600' },
+          color: chartColors.textColor,
+          padding: { bottom: 16 }
+        },
+        legend: {
+          position: 'top',
+          align: 'end',
+          labels: {
+            font: { size: 11 },
+            usePointStyle: true,
+            pointStyle: 'circle',
+            padding: 16
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) label += ': ';
+              if (context.parsed.y !== null) {
+                label += new Intl.NumberFormat('ko-KR').format(context.parsed.y);
+                if (yAxisLabel && yAxisLabel.includes('%')) label += '%';
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            font: { size: 11 },
+            color: chartColors.textMuted,
+            maxRotation: 45,
+            minRotation: 0
+          }
+        },
+        y: {
+          grid: {
+            color: chartColors.gridColor,
+            drawBorder: false
+          },
+          ticks: {
+            font: { size: 11 },
+            color: chartColors.textMuted,
+            padding: 8
+          },
+          title: {
+            display: !!yAxisLabel,
+            text: yAxisLabel,
+            font: { size: 11, weight: '500' },
+            color: chartColors.textMuted
+          }
+        }
+      },
+      interaction: {
+        mode: 'index',
+        intersect: false
+      }
+    };
+  }
+
+  // 프리미엄 바 차트 데이터셋 생성
+  function getPremiumBarDataset(label, data, colorIndex = 0) {
+    const colors = [
+      { bg: chartColors.primaryLight, border: chartColors.primary },
+      { bg: chartColors.successLight, border: chartColors.success },
+      { bg: chartColors.warningLight, border: chartColors.warning },
+      { bg: chartColors.purpleLight, border: chartColors.purple },
+      { bg: chartColors.secondaryLight, border: chartColors.secondary }
+    ];
+    const color = colors[colorIndex % colors.length];
+    return {
+      label: label,
+      data: data,
+      backgroundColor: color.bg,
+      borderColor: color.border,
+      borderWidth: 2,
+      borderRadius: 6,
+      borderSkipped: false,
+      hoverBackgroundColor: color.border
+    };
+  }
+
+  // 프리미엄 라인 차트 데이터셋 생성
+  function getPremiumLineDataset(label, data, colorIndex = 0) {
+    const colors = [
+      { main: chartColors.primary, light: 'rgba(15, 105, 175, 0.1)' },
+      { main: chartColors.success, light: 'rgba(16, 185, 129, 0.1)' },
+      { main: chartColors.warning, light: 'rgba(245, 158, 11, 0.1)' },
+      { main: chartColors.purple, light: 'rgba(139, 92, 246, 0.1)' }
+    ];
+    const color = colors[colorIndex % colors.length];
+    return {
+      label: label,
+      data: data,
+      borderColor: color.main,
+      backgroundColor: color.light,
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#ffffff',
+      pointBorderColor: color.main,
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointHoverBackgroundColor: color.main,
+      pointHoverBorderColor: '#ffffff'
+    };
+  }
+
+  let populationChartInstance = null;
+  let populationGapChartInstance = null;
+  let populationGenderChartInstance = null;
+  let populationGenderGapChartInstance = null;
+  let memberKeyPopulationChartInstance = null;
+  // 왜: 사용자 요청으로 학번 기반 인구 그래프/표를 다시 활성화합니다.
+  const enableMemberKeyPopulation = true;
+  // 왜: 필터 연속 변경 시 이전 응답이 늦게 도착해 최신 화면을 덮지 않도록 요청 순서를 추적합니다.
+  let populationRequestSeq = 0;
+  // 왜: 이전 요청을 중단해 지연 응답 누적을 줄입니다.
+  let populationAbortController = null;
+  let memberKeyPopulationAbortController = null;
+  let industryChartInstance = null;
+  let industryGapChartInstance = null;
+  let internalEmploymentChartInstance = null;
+  let internalAdmissionChartInstance = null;
+  let internalTrendChartInstance = null;
+  let aiResultChartInstance = null;
+  let aiCatalog = null;
+  let aiLastPrompt = null;
+  let aiContext = {};
+  let rawDataState = {
+    columns: [],
+    rows: [],
+    filteredRows: [],
+    sortIndex: null,
+    sortDirection: "asc",
+    page: 1,
+    pageSize: 50,
+    searchText: ""
+  };
+  let isSyncingRawDataYear = false;
+
+
+  // ==================== AI 통계 기능 ====================
+
+  async function loadAiCatalog() {
+    // 왜: 되물음(캠퍼스/지역/연도 선택)에서 선택지를 바로 보여주기 위해 catalog를 미리 받아 둡니다.
+    try {
+      const res = await fetch("/statistics/api/ai/v2/catalog");
+      if (!res.ok) return;
+      aiCatalog = await res.json();
+    } catch (e) {
+      // 왜: catalog는 UX 개선용이라, 실패하더라도 핵심 기능(query)은 동작해야 합니다.
+      aiCatalog = null;
+    }
+  }
+
+  let aiDatastoreReindexed = false;
+  async function ensureAiDatastoreReindex() {
+    // 왜: Data Store(RAG)는 사전 인덱싱이 있어야 검색 품질이 안정적입니다.
+    //     다만 환경(Qdrant/임베딩)에 따라 실패할 수 있으니, 실패해도 화면은 그대로 동작해야 합니다.
+    if (aiDatastoreReindexed) return;
+    aiDatastoreReindexed = true;
+    try {
+      await fetch("/statistics/api/ai/v2/datastore/reindex", { method: "POST" });
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  function flattenCampusesFromCatalog(catalog) {
+    const groups = catalog?.campusGroups || [];
+    const campuses = [];
+    (groups || []).forEach((g) => {
+      (g?.campuses || []).forEach((c) => {
+        if (c) campuses.push(c);
+      });
+    });
+    return Array.from(new Set(campuses)).sort();
+  }
+
+  function normalizeAiSummary(summary) {
+    if (!summary) return {};
+    if (typeof summary === "string") {
+      // 왜: 백엔드는 요약을 한 문장으로 내려주고, 화면은 키-값 카드로 보여주므로 래핑합니다.
+      return { "요약": summary };
+    }
+    return summary;
+  }
+
+  function normalizeAiSources(sources) {
+    return (sources || []).map((s) => {
+      if (!s) return "";
+      if (typeof s === "string") return s;
+      const name = s.name || "";
+      const note = s.note ? ` (${s.note})` : "";
+      return `${name}${note}`.trim();
+    }).filter(Boolean);
+  }
+
+  function normalizeAiWarnings(warnings) {
+    return (warnings || []).map((w) => {
+      if (!w) return "";
+      if (typeof w === "string") return w;
+      return w.message || "";
+    }).filter(Boolean);
+  }
+  
+  // AI 통계용 Mock 데이터 (백엔드 연동 전 테스트용)
+  const aiMockData = {
+    // 취업률 Top 10 결과
+    'employment_top10': {
+      type: 'success',
+      chart: {
+        type: 'bar',
+        title: '학과별 취업률 Top 10',
+        data: {
+          labels: ['기계공학과', '전기공학과', '컴퓨터공학과', '자동차공학과', '전자공학과', 
+                   '정보통신과', '산업디자인과', '건축과', '메카트로닉스과', '화학공학과'],
+          datasets: [{
+            label: '취업률(%)',
+            data: [95.2, 93.8, 92.1, 91.5, 90.3, 88.7, 87.5, 86.2, 84.9, 83.1],
+            backgroundColor: 'rgba(99, 102, 241, 0.8)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+            borderWidth: 1
+          }]
+        }
+      },
+      table: {
+        columns: ['순위', '학과명', '취업률(%)'],
+        rows: [
+          ['1', '기계공학과', '95.2'],
+          ['2', '전기공학과', '93.8'],
+          ['3', '컴퓨터공학과', '92.1'],
+          ['4', '자동차공학과', '91.5'],
+          ['5', '전자공학과', '90.3'],
+          ['6', '정보통신과', '88.7'],
+          ['7', '산업디자인과', '87.5'],
+          ['8', '건축과', '86.2'],
+          ['9', '메카트로닉스과', '84.9'],
+          ['10', '화학공학과', '83.1']
+        ]
+      },
+      summary: {
+        캠퍼스: '전체',
+        연도: '2024',
+        단위: '%',
+        집계방식: '취업자 / 졸업자 × 100'
+      },
+      insight: '기계공학과가 95.2%로 가장 높은 취업률을 보이며, 상위 5개 학과 모두 90% 이상의 우수한 취업 성과를 달성했습니다. 제조업 기반 학과들의 강세가 두드러지며, IT/SW 관련 학과(컴퓨터공학과, 정보통신과)도 상위권에 포진해 있어 산업 수요와 교육이 잘 연계되어 있음을 보여줍니다.',
+      sources: ['내부 취업 통계 엑셀 (2024.01 집계)'],
+      warnings: []
+    },
+
+    // 인구 비율 분석
+    'population_20s': {
+      type: 'success',
+      chart: {
+        type: 'bar',
+        title: '서울 20대 인구 비율',
+        data: {
+          labels: ['20~24세', '25~29세'],
+          datasets: [
+            {
+              label: '행정구역 인구비율(%)',
+              data: [6.8, 7.2],
+              backgroundColor: 'rgba(251, 191, 36, 0.8)',
+              borderColor: 'rgba(251, 191, 36, 1)',
+              borderWidth: 1
+            },
+            {
+              label: '캠퍼스 학생비율(%)',
+              data: [45.2, 38.5],
+              backgroundColor: 'rgba(239, 68, 68, 0.8)',
+              borderColor: 'rgba(239, 68, 68, 1)',
+              borderWidth: 1
+            }
+          ]
+        }
+      },
+      table: {
+        columns: ['연령대', '행정구역 인구비율(%)', '캠퍼스 학생비율(%)', 'GAP(%p)'],
+        rows: [
+          ['20~24세', '6.8', '45.2', '+38.4'],
+          ['25~29세', '7.2', '38.5', '+31.3']
+        ]
+      },
+      summary: {
+        행정구역: '서울특별시',
+        캠퍼스: '서울캠퍼스',
+        연도: '2024',
+        단위: '%'
+      },
+      insight: '캠퍼스 학생 연령 분포가 행정구역 인구 분포와 크게 다릅니다. 20대 비율이 지역 평균(14%)보다 캠퍼스(83.7%)가 훨씬 높아, 청년층 직업교육 수요가 집중되어 있음을 보여줍니다. 이는 교육 프로그램이 20대 청년층에 최적화되어 있다는 긍정적 신호입니다.',
+      sources: ['KOSIS 인구통계 API', '내부 학생 현황 DB'],
+      warnings: ['캠퍼스 학생 표본 수: 1,234명']
+    },
+
+    // 산업-학생 GAP
+    'industry_gap': {
+      type: 'success',
+      chart: {
+        type: 'bar',
+        title: '산업-학생 비율 GAP 분석',
+        data: {
+          labels: ['제조업', 'IT/SW', '건설업', '의료/복지', '도소매', '금융/보험', '교육서비스'],
+          datasets: [{
+            label: 'GAP(%p)',
+            data: [12.5, -8.3, 5.2, -4.1, 3.8, -2.5, -1.2],
+            backgroundColor: (context) => {
+              const value = context.raw;
+              return value >= 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)';
+            },
+            borderColor: (context) => {
+              const value = context.raw;
+              return value >= 0 ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)';
+            },
+            borderWidth: 1
+          }]
+        }
+      },
+      table: {
+        columns: ['업종', '지역 종사자비율(%)', '캠퍼스 학생비율(%)', 'GAP(%p)'],
+        rows: [
+          ['제조업', '25.3', '37.8', '+12.5'],
+          ['IT/SW', '18.5', '10.2', '-8.3'],
+          ['건설업', '12.1', '17.3', '+5.2'],
+          ['의료/복지', '9.8', '5.7', '-4.1'],
+          ['도소매', '8.5', '12.3', '+3.8'],
+          ['금융/보험', '6.2', '3.7', '-2.5'],
+          ['교육서비스', '5.1', '3.9', '-1.2']
+        ]
+      },
+      summary: {
+        행정구역: '전국',
+        캠퍼스: '전체',
+        연도: '2024',
+        단위: '%p'
+      },
+      insight: '⚠️ IT/SW 분야에서 -8.3%p의 큰 음의 GAP이 발견되었습니다. 지역 산업 수요(18.5%)에 비해 캠퍼스 학생 비율(10.2%)이 부족합니다. 반면 제조업은 +12.5%p로 공급 과잉 가능성이 있습니다. IT/SW 관련 학과 정원 확대를 검토할 필요가 있습니다.',
+      sources: ['KOSIS 산업통계 API', '내부 학과 분류 매핑'],
+      warnings: ['일부 학과는 복수 업종에 매핑됨']
+    },
+
+    // 되물음 예시 (캠퍼스 선택 필요)
+    'need_campus': {
+      type: 'clarification',
+      question: '어느 캠퍼스를 기준으로 조회할까요?',
+      options: ['서울', '인천', '성남', '청주', '대전', '광주', '대구', '부산', '창원']
+    },
+
+    // 연도별 추이
+    'trend': {
+      type: 'success',
+      chart: {
+        type: 'line',
+        title: '연도별 취업률 추이',
+        data: {
+          labels: ['2020', '2021', '2022', '2023', '2024'],
+          datasets: [{
+            label: '취업률(%)',
+            data: [78.5, 80.2, 83.1, 85.7, 88.3],
+            borderColor: 'rgba(99, 102, 241, 1)',
+            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+            fill: true,
+            tension: 0.3
+          }]
+        }
+      },
+      table: {
+        columns: ['연도', '취업률(%)', '전년대비'],
+        rows: [
+          ['2020', '78.5', '-'],
+          ['2021', '80.2', '+1.7%p'],
+          ['2022', '83.1', '+2.9%p'],
+          ['2023', '85.7', '+2.6%p'],
+          ['2024', '88.3', '+2.6%p']
+        ]
+      },
+      summary: {
+        캠퍼스: '전체',
+        기간: '2020~2024',
+        단위: '%'
+      },
+      insight: '📈 취업률이 5년간 지속적으로 상승하고 있습니다. 2020년 78.5%에서 2024년 88.3%로 9.8%p 증가했으며, 연평균 2.45%p의 꾸준한 성장세를 보입니다. 특히 2022년 이후 매년 약 2.6%p씩 안정적으로 상승 중입니다.',
+      sources: ['내부 취업 통계 엑셀'],
+      warnings: []
+    },
+
+    // 불가 응답
+    'unsupported': {
+      type: 'unsupported',
+      message: '해당 질문은 현재 데이터 카탈로그에서 지원하지 않습니다.',
+      examples: ['취업률 Top 10', '서울 20대 인구 비율', '산업-학생 GAP 분석', '연도별 추이']
+    }
+  };
+
+  // 왜: 프롬프트에서 키워드를 매칭해서 적절한 Mock 응답을 반환합니다.
+  function getMockResponseForPrompt(prompt) {
+    const lower = prompt.toLowerCase();
+    
+    if (lower.includes('취업률') && (lower.includes('top') || lower.includes('순위') || lower.includes('높은'))) {
+      return aiMockData['employment_top10'];
+    }
+    if (lower.includes('인구') && (lower.includes('20대') || lower.includes('비율'))) {
+      return aiMockData['population_20s'];
+    }
+    if (lower.includes('gap') || lower.includes('격차') || lower.includes('산업')) {
+      return aiMockData['industry_gap'];
+    }
+    if (lower.includes('추이') || lower.includes('연도별') || lower.includes('변화')) {
+      return aiMockData['trend'];
+    }
+    if (lower.includes('입학충원률') || lower.includes('캠퍼스별')) {
+      return aiMockData['need_campus'];
+    }
+    
+    // 기본: 불가 응답
+    return aiMockData['unsupported'];
+  }
+
+  // UI 상태 전환 함수들
+  function hideAllAiStates() {
+    document.getElementById('aiInitialState').classList.add('d-none');
+    document.getElementById('aiLoadingState').classList.add('d-none');
+    document.getElementById('aiSuccessResult').classList.add('d-none');
+    document.getElementById('aiClarifyState').classList.add('d-none');
+    document.getElementById('aiUnsupportedState').classList.add('d-none');
+  }
+
+  function showAiState(stateId) {
+    hideAllAiStates();
+    document.getElementById(stateId).classList.remove('d-none');
+    // 로딩 상태일 때 에이전트 단계 초기화
+    if (stateId === 'aiLoadingState') {
+      resetAgentSteps();
+    }
+  }
+
+  // 에이전트 진행 상태 관련 함수들
+  function resetAgentSteps() {
+    const steps = ['step-orchestrator', 'step-analyst', 'step-chemist', 'step-designer'];
+    steps.forEach((id, idx) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.className = 'agent-step ' + (idx === 0 ? 'active' : 'pending');
+        const statusEl = el.querySelector('.agent-status');
+        if (statusEl) {
+          statusEl.textContent = idx === 0 ? '질문 분석 및 실행 계획 수립 중...' : '대기 중';
+        }
+      }
+    });
+  }
+
+  function updateAgentStep(stepId, status, statusText) {
+    const el = document.getElementById(stepId);
+    if (!el) return;
+    el.className = 'agent-step ' + status;
+    const statusEl = el.querySelector('.agent-status');
+    if (statusEl) statusEl.textContent = statusText;
+  }
+
+  // 에이전트 진행 시뮬레이션 (백엔드 연동 시 SSE/WebSocket으로 대체 예정)
+  async function simulateAgentProgress() {
+    await new Promise(r => setTimeout(r, 500));
+    updateAgentStep('step-orchestrator', 'done', '실행 계획 수립 완료');
+    updateAgentStep('step-analyst', 'active', 'KOSIS, SGIS, 내부 엑셀에서 데이터 수집 중...');
+    
+    await new Promise(r => setTimeout(r, 800));
+    updateAgentStep('step-analyst', 'done', '4개 데이터 소스에서 수집 완료');
+    updateAgentStep('step-chemist', 'active', '데이터 교차 분석 및 상관관계 계산 중...');
+    
+    await new Promise(r => setTimeout(r, 600));
+    updateAgentStep('step-chemist', 'done', '분석 완료');
+    updateAgentStep('step-designer', 'active', '최적 차트 유형 선정 및 시각화 중...');
+    
+    await new Promise(r => setTimeout(r, 400));
+    updateAgentStep('step-designer', 'done', '차트 생성 완료');
+  }
+
+  // AI 인사이트 렌더링
+  function renderInsight(insight) {
+    const panel = document.getElementById('aiInsightPanel');
+    const text = document.getElementById('aiInsightText');
+    if (!insight) {
+      panel.classList.add('d-none');
+      return;
+    }
+    panel.classList.remove('d-none');
+    text.textContent = insight;
+  }
+
+  // 요약 그리드 렌더링
+  function renderSummaryGrid(summary) {
+    const grid = document.getElementById('aiSummaryGrid');
+    grid.innerHTML = '';
+
+    const normalized = normalizeAiSummary(summary);
+    
+    const icons = {
+      '캠퍼스': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8.5 10c-.276 0-.5-.448-.5-1s.224-1 .5-1 .5.448.5 1-.224 1-.5 1z"/><path d="M10.828.122A.5.5 0 0 1 11 .5V1h.5A1.5 1.5 0 0 1 13 2.5V15h1.5a.5.5 0 0 1 0 1h-13a.5.5 0 0 1 0-1H3V1.5a.5.5 0 0 1 .43-.495l7-1a.5.5 0 0 1 .398.117zM11.5 2H11v13h1V2.5a.5.5 0 0 0-.5-.5zM4 1.934V15h6V1.077l-6 .857z"/></svg>',
+      '연도': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4V.5zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2z"/></svg>',
+      '행정구역': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>',
+      '단위': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.854 6.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 8.793l2.646-2.647a.5.5 0 0 1 .708 0z"/><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2z"/></svg>',
+      '기간': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/></svg>',
+      '집계방식': '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M6 4.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm-1 0a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0z"/><path d="M2 1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 1 6.586V2a1 1 0 0 1 1-1z"/></svg>'
+    };
+    
+    Object.entries(normalized).forEach(([key, value]) => {
+      const icon = icons[key] || icons['단위'];
+      grid.innerHTML += `
+        <div class="summary-item">
+          <div class="icon">${icon}</div>
+          <div>
+            <div class="label">${key}</div>
+            <div class="value">${value}</div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // 출처 목록 렌더링
+  function renderSourceList(sources) {
+    const list = document.getElementById('aiSourceList');
+    list.innerHTML = '';
+
+    normalizeAiSources(sources).forEach(src => {
+      list.innerHTML += `<span class="source-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811V2.828zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783z"/>
+        </svg>
+        ${src}
+      </span>`;
+    });
+    
+    document.getElementById('aiQueryTime').textContent = '조회 시점: ' + new Date().toLocaleString('ko-KR');
+  }
+
+  // 경고 목록 렌더링
+  function renderWarnings(warnings) {
+    const container = document.getElementById('aiWarningContainer');
+    const list = document.getElementById('aiWarningList');
+    const normalized = normalizeAiWarnings(warnings);
+    
+    if (!normalized || normalized.length === 0) {
+      container.classList.add('d-none');
+      return;
+    }
+    
+    container.classList.remove('d-none');
+    list.innerHTML = '';
+    
+    normalized.forEach(warn => {
+      list.innerHTML += `
+        <div class="warning-item">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="flex-shrink-0 mt-1">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+          </svg>
+          <span>${warn}</span>
+        </div>
+      `;
+    });
+  }
+
+  // 테이블 렌더링
+  function renderTable(tableData) {
+    const header = document.getElementById('aiTableHeader');
+    const body = document.getElementById('aiTableBody');
+    
+    header.innerHTML = '';
+    body.innerHTML = '';
+    
+    tableData.columns.forEach(col => {
+      header.innerHTML += `<th class="text-center">${col}</th>`;
+    });
+    
+    tableData.rows.forEach(row => {
+      let tr = '<tr>';
+      row.forEach(cell => {
+        tr += `<td class="text-center">${cell}</td>`;
+      });
+      tr += '</tr>';
+      body.innerHTML += tr;
+    });
+  }
+
+  // 차트 렌더링
+  function renderAiChart(chartConfig) {
+    const ctx = document.getElementById('aiResultChart').getContext('2d');
+    
+    // 기존 차트 제거
+    if (aiResultChartInstance) {
+      aiResultChartInstance.destroy();
+      aiResultChartInstance = null;
+    }
+    
+    document.getElementById('aiChartTitle').textContent = chartConfig.title || '분석 결과';
+
+    // 프리미엄 컬러 팔레트
+    const palette = [
+      { bg: 'rgba(15, 105, 175, 0.75)', border: 'rgba(15, 105, 175, 1)', hover: 'rgba(15, 105, 175, 0.9)' },
+      { bg: 'rgba(16, 185, 129, 0.75)', border: 'rgba(16, 185, 129, 1)', hover: 'rgba(16, 185, 129, 0.9)' },
+      { bg: 'rgba(245, 158, 11, 0.75)', border: 'rgba(245, 158, 11, 1)', hover: 'rgba(245, 158, 11, 0.9)' },
+      { bg: 'rgba(139, 92, 246, 0.75)', border: 'rgba(139, 92, 246, 1)', hover: 'rgba(139, 92, 246, 0.9)' },
+      { bg: 'rgba(239, 68, 68, 0.75)', border: 'rgba(239, 68, 68, 1)', hover: 'rgba(239, 68, 68, 0.9)' }
+    ];
+
+    const rawType = chartConfig.type || 'bar';
+    const isStacked = rawType === 'stacked_bar';
+    const isDualAxis = rawType === 'line_dual_axis' || rawType === 'dual_axis_line';
+    const chartType = isStacked ? 'bar' : (isDualAxis ? 'line' : rawType);
+
+    const datasets = (chartConfig?.data?.datasets || []).map((ds, idx) => {
+      const p = palette[idx % palette.length];
+      const base = {
+        borderWidth: 2,
+        backgroundColor: p.bg,
+        borderColor: p.border,
+        hoverBackgroundColor: p.hover,
+        borderRadius: chartType === 'bar' ? 6 : 0,
+        borderSkipped: false
+      };
+      const merged = Object.assign({}, base, ds || {});
+      // 왜: 백엔드(v2)는 Dataset.stack에 축 힌트(y1/y2)를 담고, 화면은 Chart.js의 yAxisID로 변환합니다.
+      if (isDualAxis && merged.stack) {
+        merged.yAxisID = merged.stack;
+      }
+      if (chartType === 'line') {
+        merged.fill = merged.fill ?? true;
+        merged.tension = merged.tension ?? 0.4;
+        merged.pointBackgroundColor = '#ffffff';
+        merged.pointBorderColor = p.border;
+        merged.pointBorderWidth = 2;
+        merged.pointRadius = 4;
+        merged.pointHoverRadius = 6;
+      }
+      return merged;
+    });
+
+    const data = {
+      labels: chartConfig?.data?.labels || [],
+      datasets
+    };
+
+    aiResultChartInstance = new Chart(ctx, {
+      type: chartType,
+      data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 16,
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+            titleColor: '#ffffff',
+            bodyColor: '#e2e8f0',
+            cornerRadius: 8,
+            padding: 12,
+            displayColors: true,
+            boxPadding: 4
+          }
+        },
+        scales: isDualAxis
+          ? {
+              x: {
+                grid: { display: false },
+                ticks: { font: { size: 11 }, color: chartColors.textMuted }
+              },
+              y1: { 
+                type: 'linear', 
+                position: 'left', 
+                beginAtZero: false,
+                grid: { color: chartColors.gridColor, drawBorder: false },
+                ticks: { font: { size: 11 }, color: chartColors.textMuted }
+              },
+              y2: { 
+                type: 'linear', 
+                position: 'right', 
+                beginAtZero: false, 
+                grid: { drawOnChartArea: false },
+                ticks: { font: { size: 11 }, color: chartColors.textMuted }
+              }
+            }
+          : chartType === 'line'
+          ? { 
+              x: {
+                grid: { display: false },
+                ticks: { font: { size: 11 }, color: chartColors.textMuted }
+              },
+              y: { 
+                beginAtZero: false,
+                grid: { color: chartColors.gridColor, drawBorder: false },
+                ticks: { font: { size: 11 }, color: chartColors.textMuted }
+              } 
+            }
+          : {
+              x: { 
+                stacked: isStacked,
+                grid: { display: false },
+                ticks: { font: { size: 11 }, color: chartColors.textMuted, maxRotation: 45 }
+              },
+              y: { 
+                beginAtZero: true, 
+                stacked: isStacked,
+                grid: { color: chartColors.gridColor, drawBorder: false },
+                ticks: { font: { size: 11 }, color: chartColors.textMuted, padding: 8 }
+              }
+            },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    });
+  }
+
+
+  function extractAiInsightFromResponse(data) {
+    // 왜: v4 응답은 summary에 대화형 설명이 통합되어 있습니다.
+    //     summary가 문자열이면 그대로 인사이트로 표시합니다.
+    if (!data) return null;
+    
+    // v4: summary가 대화형 설명 문자열인 경우 (📊, 💡 등 이모지 포함)
+    const summary = data.summary;
+    if (typeof summary === "string" && summary.trim()) {
+      const trimmed = summary.trim();
+      // 이모지나 마크다운이 포함되어 있으면 V4 대화형 응답
+      if (trimmed.includes("📊") || trimmed.includes("💡") || trimmed.includes("**")) {
+        return trimmed;
+      }
+      // " / " 구분자가 있으면 뒤쪽 부분 반환 (V2 호환)
+      const idx = trimmed.indexOf(" / ");
+      if (idx >= 0) return trimmed.substring(idx + 3).trim();
+      return trimmed;
+    }
+    
+    // insight 필드가 별도로 있는 경우 (V2)
+    if (typeof data.insight === "string" && data.insight.trim()) {
+      return data.insight.trim();
+    }
+
+    // summary가 객체인 경우 (V2 구버전)
+    if (summary && typeof summary === "object" && typeof summary["요약"] === "string") {
+      return summary["요약"].trim();
+    }
+
+    return null;
+  }
+
+  // 되물음 옵션 렌더링
+  function renderClarifyOptions(options, originalPrompt) {
+    const container = document.getElementById('aiClarifyOptions');
+    container.innerHTML = '';
+
+    const fields = options?.fields || [];
+
+    const campusGroups = options?.campusGroups || aiCatalog?.campusGroups || [];
+    const campuses = flattenCampusesFromCatalog({ campusGroups });
+
+    const admRegions = options?.admRegions || aiCatalog?.admRegions || [];
+    const years = options?.recommendedYears || aiCatalog?.recommendedYears || [];
+
+    const choices = [];
+
+    if (fields.includes('campus')) {
+      campuses.slice(0, 40).forEach((c) => choices.push({ label: c, context: { campus: c } }));
+    }
+    if (fields.includes('admCd')) {
+      (admRegions || []).forEach((r) => choices.push({ label: r.name || r.admCd, context: { admCd: r.admCd } }));
+    }
+    if (fields.includes('populationYear') || fields.includes('statsYear')) {
+      (years || []).forEach((y) => choices.push({ label: String(y), context: { populationYear: y, statsYear: y } }));
+    }
+
+    // 왜: fields가 비어도 사용자가 선택할 수 있도록 캠퍼스를 기본 후보로 제공합니다.
+    if (choices.length === 0 && campuses.length > 0) {
+      campuses.slice(0, 30).forEach((c) => choices.push({ label: c, context: { campus: c } }));
+    }
+
+    if (choices.length === 0) {
+      const btn = document.createElement('button');
+      btn.className = 'btn clarify-option-btn';
+      btn.textContent = '다시 질문하기';
+      btn.onclick = () => {
+        document.getElementById('aiPromptInput').value = originalPrompt;
+        handleAiSubmit();
+      };
+      container.appendChild(btn);
+      return;
+    }
+
+    choices.slice(0, 40).forEach((choice) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn clarify-option-btn';
+      btn.textContent = choice.label;
+      btn.onclick = () => {
+        // 왜: 프롬프트 문자열을 억지로 수정하면 LLM 해석이 흔들릴 수 있어, context로 값을 넘깁니다.
+        aiContext = Object.assign({}, aiContext, choice.context || {});
+        document.getElementById('aiPromptInput').value = originalPrompt;
+        handleAiSubmit();
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  // 불가 응답의 예시 질문 렌더링
+  function renderSuggestedExamples(examples) {
+    const container = document.getElementById('aiSuggestedExamples');
+    container.innerHTML = '';
+    
+    examples.forEach(ex => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-outline-secondary btn-sm';
+      btn.textContent = ex;
+      btn.onclick = () => {
+        document.getElementById('aiPromptInput').value = ex;
+        handleAiSubmit();
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  // AI 질문 제출 핸들러
+  async function handleAiSubmit() {
+    const prompt = document.getElementById('aiPromptInput').value.trim();
+    const submitBtn = document.getElementById('aiSubmitBtn');
+    
+    if (!prompt) {
+      alert('질문을 입력해주세요.');
+      return;
+    }
+
+    // 왜: 프롬프트가 바뀌면 이전 되물음 컨텍스트(캠퍼스/연도 등)가 오히려 방해가 될 수 있어 초기화합니다.
+    if (aiLastPrompt !== prompt) {
+      aiLastPrompt = prompt;
+      aiContext = {};
+    }
+    
+    // 로딩 상태 표시 + 에이전트 진행 시뮬레이션
+    showAiState('aiLoadingState');
+    submitBtn.disabled = true;
+
+    // 에이전트 진행 시뮬레이션 시작 (백엔드와 병렬 실행)
+    const progressPromise = simulateAgentProgress();
+
+    try {
+      const res = await fetch("/statistics/api/ai/v2/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, context: aiContext })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      
+      // 에이전트 진행이 완료될 때까지 대기
+      await progressPromise;
+
+      if (!res.ok) {
+        throw new Error(data?.message || "요청에 실패했습니다.");
+      }
+
+      if (data.needClarification) {
+        showAiState('aiClarifyState');
+        document.getElementById('aiClarifyQuestion').textContent = data.question || '추가 정보가 필요합니다.';
+        renderClarifyOptions(data.options || {}, prompt);
+        renderSuggestedExamples(data.examples || []);
+        return;
+      }
+
+      // 불가(지원하지 않는 질문)
+      if (data.message && (!data.charts || data.charts.length === 0)) {
+        showAiState('aiUnsupportedState');
+        document.getElementById('aiUnsupportedMessage').textContent = data.message;
+        renderSuggestedExamples(data.examples || []);
+        return;
+      }
+
+      // 성공
+      showAiState('aiSuccessResult');
+
+      // AI 인사이트 렌더링
+      renderInsight(extractAiInsightFromResponse(data));
+
+      const firstChart = (data.charts || [])[0];
+      if (firstChart) {
+        renderAiChart(firstChart);
+      }
+      if (data.table) {
+        renderTable(data.table);
+      }
+      renderSummaryGrid(data.summary);
+      renderSourceList(data.sources || []);
+      renderWarnings(data.warnings || []);
+       
+    } catch (err) {
+      console.error('AI 질의 오류:', err);
+      showAiState('aiUnsupportedState');
+      document.getElementById('aiUnsupportedMessage').textContent = err?.message || '처리 중 오류가 발생했습니다.';
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  // AI 통계 이벤트 바인딩
+  function initAiStatistics() {
+    loadAiCatalog();
+    ensureAiDatastoreReindex();
+    // 제출 버튼 클릭
+    document.getElementById('aiSubmitBtn').addEventListener('click', handleAiSubmit);
+    
+    // Enter 키로 제출 (Shift+Enter는 줄바꿈)
+    document.getElementById('aiPromptInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleAiSubmit();
+      }
+    });
+    
+    // 예시 질문 버튼들
+    document.querySelectorAll('.example-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prompt = btn.getAttribute('data-prompt');
+        document.getElementById('aiPromptInput').value = prompt;
+        aiLastPrompt = null;
+        aiContext = {};
+        handleAiSubmit();
+      });
+    });
+  }
+
+  // ==================== 기존 기능 ====================
+
+  function setPopulationStatus(text) {
+    document.getElementById("populationStatus").textContent = text || "";
+  }
+
+  function setMemberKeyPopulationStatus(text) {
+    const statusEl = document.getElementById("memberKeyPopulationStatus");
+    if (!statusEl) return;
+    statusEl.textContent = text || "";
+  }
+
+  function setIndustryStatus(text) {
+    document.getElementById("industryStatus").textContent = text || "";
+  }
+
+  function setInternalStatus(text) {
+    document.getElementById("internalStatus").textContent = text || "";
+  }
+
+  function setRawDataStatus(text) {
+    document.getElementById("rawDataStatus").textContent = text || "";
+  }
+
+  function syncRawDataYearOptions(availableYears, selectedYear) {
+    const select = document.getElementById("rawDataYear");
+    isSyncingRawDataYear = true;
+
+    select.innerHTML = "";
+
+    const allOpt = document.createElement("option");
+    allOpt.value = "";
+    allOpt.textContent = (availableYears && availableYears.length > 0) ? "전체" : "연도 없음";
+    select.appendChild(allOpt);
+
+    if (!availableYears || availableYears.length === 0) {
+      select.value = "";
+      select.disabled = true;
+      isSyncingRawDataYear = false;
+      return;
+    }
+
+    select.disabled = false;
+    const sortedYears = [...availableYears].sort((a, b) => Number(b) - Number(a));
+    sortedYears.forEach((y) => {
+      const opt = document.createElement("option");
+      opt.value = String(y);
+      opt.textContent = String(y);
+      select.appendChild(opt);
+    });
+
+    if (selectedYear && sortedYears.includes(Number(selectedYear))) {
+      select.value = String(selectedYear);
+    } else {
+      select.value = "";
+    }
+
+    isSyncingRawDataYear = false;
+  }
+
+  function normalizeRawDataSortValue(value) {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "number") return value;
+    const raw = String(value).trim();
+    if (!raw) return "";
+    const normalized = raw.replaceAll(",", "");
+    if (/^[-+]?\d+(\.\d+)?$/.test(normalized)) {
+      return Number(normalized);
+    }
+    return raw.toLowerCase();
+  }
+
+  function compareRawDataRows(a, b, index, direction) {
+    const v1 = normalizeRawDataSortValue(a?.[index]);
+    const v2 = normalizeRawDataSortValue(b?.[index]);
+    let result = 0;
+
+    if (typeof v1 === "number" && typeof v2 === "number") {
+      result = v1 - v2;
+    } else {
+      result = String(v1).localeCompare(String(v2), "ko");
+    }
+
+    return direction === "desc" ? -result : result;
+  }
+
+  function formatRawDataCell(value, columnName) {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "number") {
+      if (Number.isInteger(value)) return String(value);
+      // 왜: 비율(%)이나 소수 값은 비교가 쉽도록 2자리로 맞춥니다.
+      if (String(columnName || "").includes("%") || String(columnName || "").includes("율")) {
+        return value.toFixed(2);
+      }
+      return value.toFixed(2);
+    }
+    return String(value);
+  }
+
+  function updateRawDataPagination() {
+    const total = rawDataState.filteredRows.length;
+    const pageSize = rawDataState.pageSize || 50;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    if (rawDataState.page > totalPages) {
+      rawDataState.page = totalPages;
+    }
+
+    document.getElementById("rawDataRowCount").textContent = `총 ${total}건`;
+    document.getElementById("rawDataPageInfo").textContent = `${rawDataState.page} / ${totalPages} 페이지`;
+    document.getElementById("rawDataPrev").disabled = rawDataState.page <= 1;
+    document.getElementById("rawDataNext").disabled = rawDataState.page >= totalPages;
+  }
+
+  function renderRawDataTable() {
+    const head = document.getElementById("rawDataTableHead");
+    const body = document.getElementById("rawDataTableBody");
+    head.innerHTML = "";
+    body.innerHTML = "";
+
+    const columns = rawDataState.columns || [];
+    if (columns.length === 0) {
+      body.innerHTML = "<tr><td>데이터가 없습니다.</td></tr>";
+      return;
+    }
+
+    columns.forEach((col, idx) => {
+      const th = document.createElement("th");
+      const isSorted = rawDataState.sortIndex === idx;
+      const arrow = isSorted ? (rawDataState.sortDirection === "asc" ? " ▲" : " ▼") : "";
+      th.textContent = `${col}${arrow}`;
+      th.style.cursor = "pointer";
+      th.addEventListener("click", () => {
+        if (rawDataState.sortIndex === idx) {
+          rawDataState.sortDirection = rawDataState.sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          rawDataState.sortIndex = idx;
+          rawDataState.sortDirection = "asc";
+        }
+        applyRawDataFilterAndSort();
+      });
+      head.appendChild(th);
+    });
+
+    const start = (rawDataState.page - 1) * rawDataState.pageSize;
+    const end = start + rawDataState.pageSize;
+    const pageRows = rawDataState.filteredRows.slice(start, end);
+
+    if (pageRows.length === 0) {
+      body.innerHTML = `<tr><td colspan="${columns.length}">데이터가 없습니다.</td></tr>`;
+      return;
+    }
+
+    pageRows.forEach((row) => {
+      const tr = document.createElement("tr");
+      columns.forEach((col, idx) => {
+        const td = document.createElement("td");
+        td.textContent = formatRawDataCell(row?.[idx], col);
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  function applyRawDataFilterAndSort() {
+    const keyword = (rawDataState.searchText || "").trim().toLowerCase();
+    let rows = rawDataState.rows || [];
+
+    if (keyword) {
+      rows = rows.filter((row) =>
+        (row || []).some((cell) => String(cell ?? "").toLowerCase().includes(keyword))
+      );
+    }
+
+    if (rawDataState.sortIndex !== null) {
+      rows = [...rows].sort((a, b) =>
+        compareRawDataRows(a, b, rawDataState.sortIndex, rawDataState.sortDirection)
+      );
+    }
+
+    rawDataState.filteredRows = rows;
+    updateRawDataPagination();
+    renderRawDataTable();
+  }
+
+  function buildRawDataQueryParams() {
+    const category = document.getElementById("rawDataCategory").value;
+    const campus = document.getElementById("rawDataCampus").value;
+    const year = document.getElementById("rawDataYear").value;
+
+    const params = new URLSearchParams();
+    params.set("category", category);
+    if (campus) params.set("campus", campus);
+    if (year) params.set("year", year);
+    return params;
+  }
+
+  async function refreshRawData() {
+    const category = document.getElementById("rawDataCategory").value;
+    if (!category) {
+      setRawDataStatus("분류를 선택해 주세요.");
+      return;
+    }
+
+    setRawDataStatus("조회 중...");
+
+    let res;
+    let data;
+    try {
+      res = await fetch(`/statistics/api/rawdata?${buildRawDataQueryParams().toString()}`);
+      data = await res.json();
+    } catch (e) {
+      setRawDataStatus(`로우 데이터 요청 실패: ${e?.message || "요청 실패"}`);
+      return;
+    }
+
+    if (!res.ok) {
+      setRawDataStatus(`로우 데이터 에러: ${data?.message || "요청 실패"}`);
+      return;
+    }
+
+    rawDataState.columns = data.columns || [];
+    rawDataState.rows = data.rows || [];
+    rawDataState.sortIndex = null;
+    rawDataState.sortDirection = "asc";
+    rawDataState.page = 1;
+
+    if (Array.isArray(data.availableYears)) {
+      syncRawDataYearOptions(data.availableYears, data.year);
+    } else {
+      syncRawDataYearOptions([], null);
+    }
+
+    setRawDataStatus(`조회 완료: ${rawDataState.rows.length}건`);
+
+    rawDataState.searchText = document.getElementById("rawDataSearch").value || "";
+    applyRawDataFilterAndSort();
+
+    document.getElementById("rawDataDownload").onclick = () => {
+      window.location.href = `/statistics/api/rawdata/export?${buildRawDataQueryParams().toString()}`;
+    };
+  }
+
+  function buildYearOptions(selectId) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = "";
+    const startYear = 2024;
+    const endYear = 2015;
+    for (let y = startYear; y >= endYear; y--) {
+      const opt = document.createElement("option");
+      opt.value = String(y);
+      opt.textContent = String(y);
+      if (y === startYear) opt.selected = true;
+      select.appendChild(opt);
+    }
+  }
+
+  function downloadCsv(filename, rows) {
+    const lines = rows.map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","));
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function buildDeptRateMap(rows) {
+    const map = new Map();
+    (rows || []).forEach((r) => {
+      if (!r?.dept) return;
+      map.set(r.dept, Number(r.rate || 0));
+    });
+    return map;
+  }
+
+  function buildInternalDownloadRows(employmentRows, admissionRows) {
+    // 왜: 취업/입학 데이터는 원천이 달라서 학과 목록이 1:1로 맞지 않을 수 있습니다.
+    //     다운로드에서는 "학과명"을 키로 합쳐서 한 파일로 제공하는 편이 사용자 입장에서 편합니다.
+    const employmentMap = buildDeptRateMap(employmentRows);
+    const admissionMap = buildDeptRateMap(admissionRows);
+    const deptSet = new Set([...employmentMap.keys(), ...admissionMap.keys()]);
+    const depts = Array.from(deptSet).sort();
+
+    return depts.map((dept) => [
+      dept,
+      employmentMap.has(dept) ? employmentMap.get(dept) : "",
+      admissionMap.has(dept) ? admissionMap.get(dept) : ""
+    ]);
+  }
+
+  async function loadMeta() {
+    const groupsRes = await fetch("/statistics/api/meta/campus-groups");
+
+    const campusGroups = await groupsRes.json();
+
+    // 왜: 통계 기준이 "내부 DB 학기"가 아니라 "엑셀/통계청 API"이므로, 화면에서 학기(OPEN_TERM)를 노출하지 않습니다.
+    //     탭이 3개(내부/인구/산업)라서, 캠퍼스 선택 박스는 각각 따로 둡니다.
+    const campusSelects = ["populationCampus", "industryCampus", "internalCampus", "rawDataCampus"]
+      .map((id) => document.getElementById(id));
+    campusSelects.forEach((select) => {
+      select.innerHTML = "";
+      const allOpt = document.createElement("option");
+      allOpt.value = "";
+      allOpt.textContent = "전체 캠퍼스";
+      select.appendChild(allOpt);
+
+      (campusGroups || []).forEach((g) => {
+        const optGroup = document.createElement("optgroup");
+        optGroup.label = g.name || g.code || "";
+        (g.campuses || []).forEach((c) => {
+          const opt = document.createElement("option");
+          opt.value = c;
+          opt.textContent = c;
+          optGroup.appendChild(opt);
+        });
+        select.appendChild(optGroup);
+      });
+
+      // 기본값: 전체 캠퍼스 (value="")
+      select.value = "";
+    });
+  }
+
+  function termCodeToKoreanLabel(term) {
+    // 왜: OPEN_TERM 값(예: 10, 11, 20, 30)은 통계청(KOSIS) 코드가 아니라 "내부 학사(미러) 학기 코드"라서,
+    //     숫자만 보여주면 사용자가 의미를 알 수 없습니다. 화면에서는 최대한 한글 라벨로 풀어서 보여줍니다.
+    const t = String(term || "").trim().toUpperCase();
+
+    const baseMap = {
+      "1": "1학기",
+      "2": "2학기",
+      "S": "여름학기",
+      "W": "겨울학기"
+    };
+    if (baseMap[t]) return baseMap[t];
+
+    if (/^\d+$/.test(t)) {
+      // 왜: 폴리텍 학사 연동 데이터는 환경에 따라 1/2/S/W 대신 10/11/20/21/30 같은 코드로 들어오는 경우가 있어,
+      //     가장 보수적으로 "앞자리(1/2/3)" 기준으로 학기를 추정하고, 실제 코드는 괄호로 병기합니다.
+      if (t.startsWith("1")) return "1학기";
+      if (t.startsWith("2")) return "2학기";
+      if (t.startsWith("3")) return "계절학기";
+    }
+
+    return `학기코드(${t})`;
+  }
+
+  function formatYearTermLabel(year, term) {
+    const label = termCodeToKoreanLabel(term);
+    // 왜: 화면/다운로드 등에서 같은 코드가 반복되므로, 사용자가 나중에 추적할 수 있게 코드도 같이 보여줍니다.
+    if (label.startsWith("학기코드")) {
+      return `${year}년 ${label}`;
+    }
+    return `${year}년 ${label} (코드:${term})`;
+  }
+
+  function getSelectedOptionText(selectId) {
+    const el = document.getElementById(selectId);
+    return el?.selectedOptions?.[0]?.textContent || "";
+  }
+
+  function renderBarChart(canvasId, labels, datasets, yAxisLabel) {
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    
+    // 프리미엄 스타일 적용
+    const styledDatasets = datasets.map((ds, idx) => ({
+      ...ds,
+      backgroundColor: ds.backgroundColor || (idx === 0 ? chartColors.primaryLight : (idx === 1 ? chartColors.successLight : chartColors.warningLight)),
+      borderColor: ds.borderColor || (idx === 0 ? chartColors.primary : (idx === 1 ? chartColors.success : chartColors.warning)),
+      borderWidth: 0,
+      borderRadius: 6,
+      borderSkipped: false,
+      hoverBackgroundColor: ds.hoverBackgroundColor || (idx === 0 ? chartColors.primary : (idx === 1 ? chartColors.success : chartColors.warning))
+    }));
+    
+    return new Chart(ctx, {
+      type: "bar",
+      data: { labels, datasets: styledDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 16,
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+            titleColor: '#ffffff',
+            bodyColor: '#e2e8f0',
+            cornerRadius: 8,
+            padding: 12,
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(2)}%`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 11 },
+              color: chartColors.textMuted,
+              maxRotation: 45
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: chartColors.gridColor,
+              drawBorder: false
+            },
+            ticks: {
+              font: { size: 11 },
+              color: chartColors.textMuted,
+              padding: 8,
+              callback: (v) => `${Number(v).toFixed(0)}`
+            },
+            title: {
+              display: !!yAxisLabel,
+              text: yAxisLabel,
+              align: 'start',
+              color: chartColors.textMuted,
+              font: { size: 11 },
+              rotation: 0
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    });
+  }
+
+
+  function renderStackedPercentChart(canvasId, labels, datasets, yAxisLabel) {
+    // 왜: "남녀 성비"는 (남+여=100%) 형태가 직관적이라서, 스택 바 차트로 표시합니다.
+    const ctx = document.getElementById(canvasId).getContext("2d");
+    
+    // 프리미엄 스타일 적용
+    const styledDatasets = datasets.map((ds, idx) => ({
+      ...ds,
+      backgroundColor: ds.backgroundColor || (idx === 0 ? 'rgba(59, 130, 246, 0.7)' : 'rgba(244, 114, 182, 0.7)'),
+      borderColor: ds.borderColor || (idx === 0 ? 'rgba(59, 130, 246, 1)' : 'rgba(244, 114, 182, 1)'),
+      borderWidth: 0,
+      borderRadius: 4,
+      hoverBackgroundColor: idx === 0 ? 'rgba(59, 130, 246, 1)' : 'rgba(244, 114, 182, 1)'
+    }));
+    
+    return new Chart(ctx, {
+      type: "bar",
+      data: { labels, datasets: styledDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 16,
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+            titleColor: '#ffffff',
+            bodyColor: '#e2e8f0',
+            cornerRadius: 8,
+            padding: 12,
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(2)}%`
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: {
+              font: { size: 11 },
+              color: chartColors.textMuted,
+              maxRotation: 45
+            }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            max: 100,
+            grid: {
+              color: chartColors.gridColor,
+              drawBorder: false
+            },
+            ticks: {
+              font: { size: 11 },
+              color: chartColors.textMuted,
+              padding: 8,
+              callback: (v) => `${Number(v).toFixed(0)}`
+            },
+            title: {
+              display: !!yAxisLabel,
+              text: yAxisLabel,
+              align: 'start',
+              color: chartColors.textMuted,
+              font: { size: 11 },
+              rotation: 0
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    });
+  }
+
+  function renderStackedCountChart(canvasId, labels, datasets, yAxisLabel) {
+    // 왜: 학번 기반 연도/캠퍼스 분포는 "비율"이 아니라 실제 인원수라서
+    //     퍼센트 툴팁이 아닌 인원 포맷(천 단위 구분)으로 그려야 해석이 정확합니다.
+    const ctx = document.getElementById(canvasId).getContext("2d");
+
+    const styledDatasets = datasets.map((ds) => ({
+      ...ds,
+      borderWidth: 0,
+      borderRadius: 4,
+      borderSkipped: false
+    }));
+
+    return new Chart(ctx, {
+      type: "bar",
+      data: { labels, datasets: styledDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 16,
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(30, 41, 59, 0.95)',
+            titleColor: '#ffffff',
+            bodyColor: '#e2e8f0',
+            cornerRadius: 8,
+            padding: 12,
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y || 0).toLocaleString()}명`
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: {
+              font: { size: 11 },
+              color: chartColors.textMuted
+            }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grid: {
+              color: chartColors.gridColor,
+              drawBorder: false
+            },
+            ticks: {
+              font: { size: 11 },
+              color: chartColors.textMuted,
+              padding: 8,
+              callback: (v) => Number(v).toLocaleString()
+            },
+            title: {
+              display: !!yAxisLabel,
+              text: yAxisLabel,
+              align: 'start',
+              color: chartColors.textMuted,
+              font: { size: 11 },
+              rotation: 0
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    });
+  }
+
+
+  function updateChart(instance, labels, datasets) {
+    instance.data.labels = labels;
+    instance.data.datasets = datasets;
+    instance.update();
+  }
+
+  async function refreshInternal() {
+    const campus = document.getElementById("internalCampus").value;
+    const campusLabel = campus || "전체";
+
+    setInternalStatus("조회 중...");
+
+    let employmentRes, admissionRes;
+    try {
+      [employmentRes, admissionRes] = await Promise.all([
+        fetch(`/statistics/api/internal/employment/top?campus=${encodeURIComponent(campus)}&top=10`),
+        fetch(`/statistics/api/internal/admission/top?campus=${encodeURIComponent(campus)}&top=10`)
+      ]);
+    } catch (e) {
+      setInternalStatus(`내부 통계 요청 실패: ${e?.message || "요청 실패"}`);
+      return;
+    }
+
+    let employmentData, admissionData;
+    try {
+      employmentData = await employmentRes.json();
+    } catch (e) {
+      setInternalStatus("취업률 응답을 해석하지 못했습니다. (서버 응답 형식 확인 필요)");
+      return;
+    }
+    try {
+      admissionData = await admissionRes.json();
+    } catch (e) {
+      setInternalStatus("입학충원률 응답을 해석하지 못했습니다. (서버 응답 형식 확인 필요)");
+      return;
+    }
+
+    if (!employmentRes.ok) {
+      setInternalStatus(`취업률 에러: ${employmentData?.message || "요청 실패"}`);
+      return;
+    }
+    if (!admissionRes.ok) {
+      setInternalStatus(`입학충원률 에러: ${admissionData?.message || "요청 실패"}`);
+      return;
+    }
+
+    // 왜: 내부 통계는 "학기(내부 DB)" 기준이 아니라, 현재 엑셀 집계 데이터를 기준으로 표시합니다.
+    setInternalStatus(`캠퍼스=${campusLabel} / 기준=엑셀 집계`);
+
+    document.getElementById("downloadInternalCsv").onclick = () => {
+      // 왜: 브라우저에서 CSV를 만들면 한글/인코딩 이슈가 생길 수 있어, 서버에서 xlsx로 내려줍니다.
+      window.location.href = `/statistics/api/internal/export?campus=${encodeURIComponent(campus)}`;
+    };
+
+    const empLabels = (employmentData || []).map((r) => r.dept);
+    const empRates = (employmentData || []).map((r) => Number(r.rate || 0));
+
+    const empDatasets = [
+      { label: "취업률(%)", data: empRates, backgroundColor: "rgba(107, 114, 128, 0.85)" }
+    ];
+
+    if (!internalEmploymentChartInstance) {
+      internalEmploymentChartInstance = renderBarChart("internalEmploymentChart", empLabels, empDatasets, "(단위: %)");
+    } else {
+      updateChart(internalEmploymentChartInstance, empLabels, empDatasets);
+    }
+
+    const admLabels = (admissionData || []).map((r) => r.dept);
+    const admRates = (admissionData || []).map((r) => Number(r.rate || 0));
+
+    const admDatasets = [
+      { label: "입학충원률(%)", data: admRates, backgroundColor: "rgba(107, 114, 128, 0.85)" }
+    ];
+
+    if (!internalAdmissionChartInstance) {
+      internalAdmissionChartInstance = renderBarChart("internalAdmissionChart", admLabels, admDatasets, "(단위: %)");
+    } else {
+      updateChart(internalAdmissionChartInstance, admLabels, admDatasets);
+    }
+
+    // 왜: 연도별 추이는 내부 원천이 확정되면 교체될 수 있어, 현재는 "현재 평균값"을 기준으로 간단히 표시합니다.
+    const avg = empRates.length ? empRates.reduce((a, b) => a + b, 0) / empRates.length : 0;
+    const nowYear = new Date().getFullYear();
+    const trendLabels = [String(nowYear - 1), String(nowYear)];
+    const trendValues = [Math.max(0, avg - 2), avg];
+
+    const ctx = document.getElementById("internalTrendChart").getContext("2d");
+    if (!internalTrendChartInstance) {
+      internalTrendChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: trendLabels,
+          datasets: [{
+            label: "취업률(%)",
+            data: trendValues,
+            borderColor: "rgba(107, 114, 128, 0.9)",
+            backgroundColor: "rgba(107, 114, 128, 0.25)",
+            fill: true,
+            tension: 0.25
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { 
+            y: { 
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "(단위: %)",
+                align: 'start',
+                color: chartColors.textMuted,
+                font: { size: 11 },
+                rotation: 0
+              }
+            } 
+          }
+        }
+      });
+    } else {
+      internalTrendChartInstance.data.labels = trendLabels;
+      internalTrendChartInstance.data.datasets[0].data = trendValues;
+      internalTrendChartInstance.update();
+    }
+  }
+
+  function resolveMemberKeyColor(index) {
+    const palette = [
+      'rgba(59, 130, 246, 0.85)',
+      'rgba(16, 185, 129, 0.85)',
+      'rgba(245, 158, 11, 0.85)',
+      'rgba(99, 102, 241, 0.85)',
+      'rgba(239, 68, 68, 0.85)',
+      'rgba(14, 165, 233, 0.85)',
+      'rgba(244, 114, 182, 0.85)',
+      'rgba(107, 114, 128, 0.85)'
+    ];
+    return palette[index % palette.length];
+  }
+
+  function normalizeMemberKeyYear(rawYear) {
+    const yearNumber = Number(rawYear);
+    if (!Number.isInteger(yearNumber)) {
+      return rawYear;
+    }
+
+    const currentYear = new Date().getFullYear();
+    if (yearNumber <= currentYear) {
+      return yearNumber;
+    }
+
+    // 왜: 학번 연도(2자리) 확장값이 미래 연도로 들어오면 19YY로 해석해야 실제 입학연도와 맞습니다.
+    return 1900 + (yearNumber % 100);
+  }
+
+  function normalizeMemberKeyPopulationRows(rows) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+    let correctedRowCount = 0;
+
+    const normalizedRows = safeRows.map((row) => {
+      const normalizedYear = normalizeMemberKeyYear(row?.year);
+      if (String(normalizedYear) !== String(row?.year ?? "")) {
+        correctedRowCount += 1;
+      }
+      return {
+        ...row,
+        year: normalizedYear,
+        // 왜: 백엔드 필드명이 camelCase/snake_case로 달라도 과정구분 값을 안정적으로 읽습니다.
+        courseCode: String(row?.courseCode ?? row?.course_code ?? "").trim()
+      };
+    });
+
+    return { normalizedRows, correctedRowCount };
+  }
+
+  function buildMemberKeyYears(rows) {
+    const yearSet = new Set();
+
+    rows.forEach((row) => {
+      const yearKey = String(row?.year ?? "").trim();
+      if (!yearKey) return;
+
+      yearSet.add(yearKey);
+    });
+
+    const years = Array.from(yearSet).sort((a, b) => Number(a) - Number(b));
+    return years;
+  }
+
+  function buildMemberKeyCourseSeriesFromRows(rows, years) {
+    const courseMap = new Map();
+
+    rows.forEach((row) => {
+      const yearKey = String(row?.year ?? "").trim();
+      const courseCode = String(row?.courseCode ?? "").trim();
+      if (!yearKey || !courseCode) return;
+
+      const memberCount = Number(row?.memberCount || 0);
+      if (!courseMap.has(courseCode)) {
+        courseMap.set(courseCode, new Map());
+      }
+
+      const yearCountMap = courseMap.get(courseCode);
+      const prevCount = Number(yearCountMap.get(yearKey) || 0);
+      yearCountMap.set(yearKey, prevCount + memberCount);
+    });
+
+    return Array.from(courseMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], "ko-KR"))
+      .map(([courseCode, yearCountMap]) => ({
+        courseCode,
+        yearCounts: years.map((year) => Number(yearCountMap.get(year) || 0))
+      }));
+  }
+
+  function resolveCourseCodeLabel(courseCode) {
+    const code = String(courseCode ?? "").trim();
+    return code ? `과정 ${code}` : "과정 미지정";
+  }
+
+  async function refreshMemberKeyPopulation(campus, requestSeq) {
+    if (memberKeyPopulationAbortController) {
+      memberKeyPopulationAbortController.abort();
+    }
+    memberKeyPopulationAbortController = new AbortController();
+
+    setMemberKeyPopulationStatus("학번 기반 연도/캠퍼스 인구를 조회 중입니다...");
+
+    let response;
+    let data;
+    try {
+      response = await fetch(
+        `/statistics/api/population/member-key-campus?campus=${encodeURIComponent(campus)}`,
+        { signal: memberKeyPopulationAbortController.signal }
+      );
+      data = await response.json();
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+      if (requestSeq !== populationRequestSeq) {
+        return;
+      }
+      memberKeyPopulationTableData = [];
+      renderMemberKeyPopulationTable();
+      setMemberKeyPopulationStatus(`학번 기반 인구 조회 실패: ${error?.message || "요청 실패"}`);
+      return;
+    }
+
+    if (requestSeq !== populationRequestSeq) {
+      return;
+    }
+
+    if (!response.ok) {
+      memberKeyPopulationTableData = [];
+      renderMemberKeyPopulationTable();
+      setMemberKeyPopulationStatus(`학번 기반 인구 에러: ${data?.message || "요청 실패"}`);
+      return;
+    }
+
+    const { normalizedRows, correctedRowCount } = normalizeMemberKeyPopulationRows(data.rows || []);
+    const years = buildMemberKeyYears(normalizedRows);
+    const courseSeries = buildMemberKeyCourseSeriesFromRows(normalizedRows, years);
+    memberKeyPopulationTableData = normalizedRows;
+    renderMemberKeyPopulationTable();
+
+    if (correctedRowCount > 0) {
+      console.info(
+        "[통계] 학번 기반 인구 연도 보정 적용",
+        { correctedRowCount, currentYear: new Date().getFullYear() }
+      );
+    }
+
+    if (years.length === 0 || courseSeries.length === 0) {
+      if (memberKeyPopulationChartInstance) {
+        updateChart(memberKeyPopulationChartInstance, [], []);
+      }
+      setMemberKeyPopulationStatus("학번 기반 과정구분 집계 데이터가 없어 0건으로 표시됩니다.");
+      return;
+    }
+
+    const datasets = courseSeries.map((series, index) => ({
+      label: resolveCourseCodeLabel(series.courseCode),
+      data: (series.yearCounts || []).map((count) => Number(count || 0)),
+      stack: "course",
+      backgroundColor: resolveMemberKeyColor(index)
+    }));
+
+    if (!memberKeyPopulationChartInstance) {
+      memberKeyPopulationChartInstance = renderStackedCountChart(
+        "memberKeyPopulationChart",
+        years,
+        datasets,
+        "(명)"
+      );
+    } else {
+      updateChart(memberKeyPopulationChartInstance, years, datasets);
+    }
+
+    const totalMembers = normalizedRows
+      .reduce((sum, row) => sum + Number(row?.memberCount || 0), 0)
+      .toLocaleString();
+    setMemberKeyPopulationStatus(
+      `기준=학번(MEMBER_KEY) / 캠퍼스=${campus || "전체"} / 과정구분=${courseSeries.length}개 / 집계인원=${totalMembers}명`
+    );
+  }
+
+  async function refreshPopulation() {
+    const requestSeq = ++populationRequestSeq;
+
+    if (populationAbortController) {
+      populationAbortController.abort();
+    }
+    populationAbortController = new AbortController();
+
+    const campus = document.getElementById("populationCampus").value;
+    const admCd = getSelectedAdmCd("populationRegion");
+    const admLabel = getSelectedOptionText("populationRegion");
+    const populationYear = document.getElementById("populationYear").value;
+
+    setPopulationStatus("조회 중...");
+    // 왜: 학번 기반 통계는 캠퍼스 필터만 연동되므로 별도 API를 함께 호출합니다.
+    if (enableMemberKeyPopulation) {
+      // 왜: 학번 기반 연도/캠퍼스 표는 "캠퍼스 전용" 통계라서, 연도/행정구역 필터와 무관하게 캠퍼스만 전달합니다.
+      refreshMemberKeyPopulation(campus, requestSeq);
+    }
+
+    let populationRes;
+    let populationData;
+    try {
+      populationRes = await fetch(
+        `/statistics/api/population/compare?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`,
+        { signal: populationAbortController.signal }
+      );
+      populationData = await populationRes.json();
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
+      if (requestSeq !== populationRequestSeq) {
+        return;
+      }
+      setPopulationStatus(`인구 비교 에러: ${error?.message || "요청 실패"}`);
+      return;
+    }
+
+    // 왜: 느린 이전 요청 응답은 버리고, 가장 마지막 필터 요청 결과만 화면에 반영합니다.
+    if (requestSeq !== populationRequestSeq) {
+      return;
+    }
+
+    if (!populationRes.ok) {
+      setPopulationStatus(`인구 비교 에러: ${populationData?.message || "요청 실패"}`);
+      return;
+    }
+
+    const usedPopulationYear = populationData.populationYear ?? populationYear;
+    const campusSampleSize = populationData.campusStudentSampleSize ?? 0;
+    const campusNote = campusSampleSize > 0 ? "" : " (캠퍼스 학생 연령/성별 데이터 없음 → 0으로 표시)";
+
+    const requestedAdmCd = populationData.requestedAdmCd ?? admCd;
+    const usedAdmCd = populationData.admCd ?? admCd;
+    const showAdmCdChange = String(requestedAdmCd || "") !== String(usedAdmCd || "");
+    const admCdDesc = showAdmCdChange ? `${admLabel}(${requestedAdmCd} → ${usedAdmCd})` : `${admLabel}(${usedAdmCd})`;
+    setPopulationStatus(
+      `캠퍼스=${campus || "전체"} / 행정구역=${admCdDesc} / 인구연도=${usedPopulationYear} / 캠퍼스표본=${campusSampleSize}명${campusNote}`
+    );
+
+    // population charts
+    const popRows = populationData.rows || [];
+    populationTableData = popRows; // 표 뷰용 데이터 저장
+    genderTableData = popRows; // 성비 표 뷰용 데이터 저장
+    // 왜: 표 탭을 보고 있는 상태에서도 필터 변경 결과가 즉시 보이도록 렌더를 강제합니다.
+    renderPopulationTable();
+    renderGenderTable();
+    const popLabels = popRows.map((r) => r.ageBand);
+    const regionRatios = popRows.map((r) => Number(r.regionRatio || 0));
+    const campusRatios = popRows.map((r) => Number(r.campusRatio || 0));
+    const popGaps = popRows.map((r) => Number(r.gap || 0));
+    const regionMaleRatios = popRows.map((r) => Number(r.regionMaleRatio || 0));
+    const campusMaleRatios = popRows.map((r) => Number(r.campusMaleRatio || 0));
+    const maleGaps = popRows.map((r) => Number(r.maleGap || 0));
+    const regionFemaleRatios = popRows.map((r) => Number(r.regionCount || 0) > 0 ? 100 - Number(r.regionMaleRatio || 0) : 0);
+    const campusFemaleRatios = popRows.map((r) => Number(r.campusCount || 0) > 0 ? 100 - Number(r.campusMaleRatio || 0) : 0);
+
+    const popDatasets = [
+      { label: "행정구역 인구비율", data: regionRatios, backgroundColor: "rgba(107, 114, 128, 0.85)" },
+      { label: "캠퍼스 학생비율", data: campusRatios, backgroundColor: "rgba(59, 130, 246, 0.85)" }
+    ];
+
+    const popGapDatasets = [
+      { label: "GAP(%p)", data: popGaps, backgroundColor: "rgba(107, 114, 128, 0.85)" }
+    ];
+
+    if (!populationChartInstance) {
+      populationChartInstance = renderBarChart("populationChart", popLabels, popDatasets, "(%)");
+    } else {
+      updateChart(populationChartInstance, popLabels, popDatasets);
+    }
+
+    if (!populationGapChartInstance) {
+      populationGapChartInstance = renderBarChart("populationGapChart", popLabels, popGapDatasets, "(%P)");
+    } else {
+      updateChart(populationGapChartInstance, popLabels, popGapDatasets);
+    }
+
+    const genderDatasets = [
+      { label: "행정구역 남성", stack: "region", data: regionMaleRatios, backgroundColor: "rgba(107, 114, 128, 0.85)" },
+      { label: "행정구역 여성", stack: "region", data: regionFemaleRatios, backgroundColor: "rgba(107, 114, 128, 0.35)" },
+      { label: "캠퍼스 남성", stack: "campus", data: campusMaleRatios, backgroundColor: "rgba(59, 130, 246, 0.85)" },
+      { label: "캠퍼스 여성", stack: "campus", data: campusFemaleRatios, backgroundColor: "rgba(59, 130, 246, 0.35)" }
+    ];
+
+    const genderGapDatasets = [
+      { label: "남성비율 GAP(%p)", data: maleGaps, backgroundColor: "rgba(107, 114, 128, 0.85)" }
+    ];
+
+    if (!populationGenderChartInstance) {
+      populationGenderChartInstance = renderStackedPercentChart("populationGenderChart", popLabels, genderDatasets, "(%)");
+    } else {
+      updateChart(populationGenderChartInstance, popLabels, genderDatasets);
+    }
+
+    if (!populationGenderGapChartInstance) {
+      populationGenderGapChartInstance = renderBarChart("populationGenderGapChart", popLabels, genderGapDatasets, "(%P)");
+    } else {
+      updateChart(populationGenderGapChartInstance, popLabels, genderGapDatasets);
+    }
+
+    // download buttons
+    document.getElementById("downloadPopulationCsv").onclick = () => {
+      // 왜: 서버에서 xlsx로 내려주면, 엑셀에서 바로 열 수 있고 한글 인코딩 이슈도 줄어듭니다.
+      window.location.href = `/statistics/api/population/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`;
+    };
+    document.getElementById("downloadPopulationCsvTop").onclick = () => {
+      window.location.href = `/statistics/api/population/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&populationYear=${encodeURIComponent(populationYear)}`;
+    };
+  }
+
+  async function refreshIndustry() {
+    const campus = document.getElementById("industryCampus").value;
+    const admCd = getSelectedAdmCd("industryRegion");
+    const admLabel = getSelectedOptionText("industryRegion");
+    const statsYear = document.getElementById("industryYear").value;
+
+    setIndustryStatus("조회 중...");
+
+    const industryRes = await fetch(
+      `/statistics/api/industry/analysis?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`
+    );
+    const industryData = await industryRes.json();
+
+    if (!industryRes.ok) {
+      setIndustryStatus(`산업 비교 에러: ${industryData?.message || "요청 실패"}`);
+      return;
+    }
+
+    const usedIndustryYear = industryData.statsYear ?? statsYear;
+    const requestedAdmCd = industryData.requestedAdmCd ?? admCd;
+    const usedAdmCd = industryData.admCd ?? admCd;
+    const showAdmCdChange = String(requestedAdmCd || "") !== String(usedAdmCd || "");
+    const admCdDesc = showAdmCdChange ? `${admLabel}(${requestedAdmCd} → ${usedAdmCd})` : `${admLabel}(${usedAdmCd})`;
+    setIndustryStatus(
+      `캠퍼스=${campus || "전체"} / 행정구역=${admCdDesc} / 산업연도=${usedIndustryYear}`
+    );
+
+    // industry table + charts
+    const industryRows = industryData.rows || [];
+    const body = document.getElementById("industryTableBody");
+    body.innerHTML = "";
+    industryRows.forEach((r) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="text-start">${r.category ?? ""}</td>
+        <td class="tabular-nums">${Number(r.regionCount ?? 0).toLocaleString()}</td>
+        <td class="tabular-nums">${Number(r.regionRatio ?? 0).toFixed(2)}</td>
+        <td class="tabular-nums">${Number(r.campusCount ?? 0).toLocaleString()}</td>
+        <td class="tabular-nums">${Number(r.campusRatio ?? 0).toFixed(2)}</td>
+        <td class="tabular-nums">${Number(r.gap ?? 0).toFixed(2)}</td>
+      `;
+      body.appendChild(tr);
+    });
+
+    const indLabels = industryRows.map((r) => r.category);
+    const indRegion = industryRows.map((r) => Number(r.regionRatio || 0));
+    const indCampus = industryRows.map((r) => Number(r.campusRatio || 0));
+    const indGap = industryRows.map((r) => Number(r.gap || 0));
+
+    const indDatasets = [
+      { label: "행정구역 종사자 비율", data: indRegion, backgroundColor: "rgba(107, 114, 128, 0.85)" },
+      { label: "캠퍼스 학생 비율", data: indCampus, backgroundColor: "rgba(59, 130, 246, 0.85)" }
+    ];
+    const indGapDatasets = [
+      { label: "GAP(%p)", data: indGap, backgroundColor: "rgba(107, 114, 128, 0.85)" }
+    ];
+
+    if (!industryChartInstance) {
+      industryChartInstance = renderBarChart("industryChart", indLabels, indDatasets, "(%)");
+    } else {
+      updateChart(industryChartInstance, indLabels, indDatasets);
+    }
+
+    if (!industryGapChartInstance) {
+      industryGapChartInstance = renderBarChart("industryGapChart", indLabels, indGapDatasets, "(%P)");
+    } else {
+      updateChart(industryGapChartInstance, indLabels, indGapDatasets);
+    }
+
+    // download buttons
+    document.getElementById("downloadIndustryCsvTop").onclick = () => {
+      window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`;
+    };
+  }
+
+  function attachEvents() {
+    // 왜: 인구/산업 탭이 분리되어, 각 탭의 필터 변경이 해당 탭만 갱신하도록 분리합니다.
+
+    // 왜: Chart.js는 "숨겨진 탭(display: none)" 안에서 최초 렌더링되면 폭/높이를 0으로 계산해 빈 화면처럼 보일 수 있습니다.
+    //     (초기 로딩은 기본 탭=입학·양성·취업이라 인구/산업 탭이 숨겨진 상태에서 refresh가 먼저 실행됨)
+    //     탭이 실제로 보여지는 시점에 한 번 더 refresh를 호출해, 차트가 정상 크기로 그려지게 합니다.
+    document.getElementById("tab-population").addEventListener("shown.bs.tab", () => {
+      refreshPopulation();
+    });
+    document.getElementById("tab-industry").addEventListener("shown.bs.tab", () => {
+      refreshIndustry();
+    });
+    
+    // 인구 탭: 캠퍼스 선택 시 행정구역 자동 선택 (2개 옵션만 표시)
+    document.getElementById("populationCampus").addEventListener("change", () => {
+      updateRegionOptions("populationCampus", "populationRegion", refreshPopulation);
+    });
+    
+    // 인구 탭: 행정구역 변경 시 데이터 갱신
+    ["populationRegion", "populationYear"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", refreshPopulation);
+    });
+    
+    // 산업 탭: 캠퍼스 선택 시 행정구역 자동 선택 (2개 옵션만 표시)
+    document.getElementById("industryCampus").addEventListener("change", () => {
+      updateRegionOptions("industryCampus", "industryRegion", refreshIndustry);
+    });
+    
+    // 산업 탭: 행정구역/연도 변경 시 데이터 갱신
+    ["industryRegion", "industryYear"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", refreshIndustry);
+    });
+    
+    ["internalCampus"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", refreshInternal);
+    });
+
+    ["rawDataCategory", "rawDataCampus"].forEach((id) => {
+      document.getElementById(id).addEventListener("change", () => {
+        if (id === "rawDataCategory") {
+          document.getElementById("rawDataYear").value = "";
+        }
+        refreshRawData();
+      });
+    });
+    document.getElementById("rawDataYear").addEventListener("change", () => {
+      if (isSyncingRawDataYear) return;
+      refreshRawData();
+    });
+    document.getElementById("rawDataSearch").addEventListener("input", (e) => {
+      rawDataState.searchText = e.target.value || "";
+      rawDataState.page = 1;
+      applyRawDataFilterAndSort();
+    });
+    document.getElementById("rawDataPageSize").addEventListener("change", (e) => {
+      rawDataState.pageSize = Number(e.target.value || 50);
+      rawDataState.page = 1;
+      updateRawDataPagination();
+      renderRawDataTable();
+    });
+    document.getElementById("rawDataPrev").addEventListener("click", () => {
+      if (rawDataState.page > 1) {
+        rawDataState.page -= 1;
+        updateRawDataPagination();
+        renderRawDataTable();
+      }
+    });
+    document.getElementById("rawDataNext").addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(rawDataState.filteredRows.length / rawDataState.pageSize));
+      if (rawDataState.page < totalPages) {
+        rawDataState.page += 1;
+        updateRawDataPagination();
+        renderRawDataTable();
+      }
+    });
+  }
+
+  async function init() {
+    // 왜: 인구/산업은 통계 연도 선택이 별도로 필요할 수 있어, select를 각각 채웁니다.
+    buildYearOptions("populationYear");
+    buildYearOptions("industryYear");
+    await loadMeta();
+    // 인구/산업 탭의 행정구역 드롭다운 초기화 (전체 캠퍼스 선택 시 "전국 전체" 표시)
+    updateRegionOptions("populationCampus", "populationRegion", null);
+    updateRegionOptions("industryCampus", "industryRegion", null);
+    attachEvents();
+    rawDataState.pageSize = Number(document.getElementById("rawDataPageSize").value || 50);
+    initAiStatistics(); // AI 통계 기능 초기화
+    await refreshInternal();
+    await refreshPopulation();
+    await refreshIndustry();
+    await refreshRawData();
+  }
+
+  init();
+
+  // 기술업종 정보 버튼: 부모 창에 모달 열기 요청 전송
+  (function() {
+    const openBtn = document.getElementById('openTechInfoModal');
+    if (openBtn) {
+      openBtn.addEventListener('click', () => {
+        // 왜: iframe 내부에서 모달을 표시하면 iframe 영역 내에서만 보이므로,
+        //     부모 창에게 모달을 열라고 메시지를 전송합니다.
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'openTechInfoModal' }, '*');
+        }
+      });
+    }
+  })();
+</script>
+</body>
+</html>

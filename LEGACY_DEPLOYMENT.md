@@ -1,4 +1,4 @@
-# MalgnLMS Legacy 배포 가이드
+# GrowAILMS Legacy 배포 가이드
 
 ## 개요
 
@@ -15,7 +15,7 @@ Legacy 시스템(구 e-poly LMS)을 GCP Cloud Run에 배포하기 위한 가이�
 ## 디렉토리 구조
 
 ```
-MalgnLMS/
+GrowAILMS/
 ├── src/                        # Legacy Java 소스 코드
 │   ├── dao/                    # DAO 클래스 (180개)
 │   └── malgnsoft/              # Malgnsoft 프레임워크
@@ -70,7 +70,7 @@ Multi-stage 빌드 구조:
 
 | 설정 | 값 | 설명 |
 |------|---|------|
-| Service Name | malgnlms-legacy | Legacy 서비스명 |
+| Service Name | growailms-legacy | Legacy 서비스명 |
 | Region | asia-northeast1 | 도쿄 리전 (도메인 매핑 지원) |
 | CPU | 2 | Legacy는 리소스 많이 사용 |
 | Memory | 2Gi | JSP 컴파일, 세션 관리 |
@@ -85,14 +85,14 @@ Multi-stage 빌드 구조:
 
 1. 코드 변경 후 커밋:
 ```bash
-cd D:\Dev\MalgnLMS
+cd D:\Dev\GrowAILMS
 git add src/ public_html/
 git commit -m "feat: update legacy service"
 git push origin main
 ```
 
 2. GitHub Actions 자동 실행:
-   - https://github.com/sh-jang-code/MalgnLMS/actions
+   - https://github.com/sh-jang-code/GrowAILMS/actions
    - "Legacy Cloud Run Deploy" 워크플로우 확인
 
 ### 방법 2: 수동 실행
@@ -108,11 +108,11 @@ git push origin main
 
 ```bash
 # 1. Docker 이미지 빌드
-cd D:\Dev\MalgnLMS
-docker build -f Dockerfile.legacy -t malgnlms-legacy:local .
+cd D:\Dev\GrowAILMS
+docker build -f Dockerfile.legacy -t growailms-legacy:local .
 
 # 2. 로컬 실행
-docker run -d -p 8080:8080 --name legacy-test malgnlms-legacy:local
+docker run -d -p 8080:8080 --name legacy-test growailms-legacy:local
 
 # 3. 테스트
 curl http://localhost:8080/
@@ -129,9 +129,9 @@ docker rm legacy-test
 
 | 서비스 | 경로 | 기술 스택 | 용도 | Cloud Run Service |
 |--------|------|----------|------|-------------------|
-| **Legacy** | `src/`, `public_html/` | Java 8, JSP, Malgnsoft | 구 e-poly LMS | malgnlms-legacy |
-| **Backend API** | `polytech-lms-api/` | Java 17, Spring Boot | 신규 API | malgnlms-api |
-| **Frontend** | `project/` | React, TypeScript | 교수자 LMS UI | malgnlms-frontend |
+| **Legacy** | `src/`, `public_html/` | Java 8, JSP, Malgnsoft | 구 e-poly LMS | growailms-legacy |
+| **Backend API** | `growailms-api/` | Java 17, Spring Boot | 신규 API | growailms-api |
+| **Frontend** | `project/` | React, TypeScript | 교수자 LMS UI | growailms-frontend |
 
 ## 도메인 매핑 (선택 사항)
 
@@ -140,7 +140,7 @@ Legacy 서비스에도 커스텀 도메인을 연결할 수 있습니다:
 ```bash
 # Legacy 도메인 매핑 생성
 gcloud run domain-mappings create \
-  --service=malgnlms-legacy \
+  --service=growailms-legacy \
   --domain=legacy.growai.co.kr \
   --region=asia-northeast1
 
@@ -160,7 +160,7 @@ gcloud run domain-mappings create \
 
 ### 2. Cloud Run 서비스 확인
 ```bash
-gcloud run services describe malgnlms-legacy --region=asia-northeast1
+gcloud run services describe growailms-legacy --region=asia-northeast1
 ```
 
 ### 3. 서비스 접속 테스트
@@ -169,16 +169,16 @@ gcloud run services describe malgnlms-legacy --region=asia-northeast1
 gcloud run services list --region=asia-northeast1
 
 # 헬스체크
-curl https://malgnlms-legacy-xxxxx-an.a.run.app/
+curl https://growailms-legacy-xxxxx-an.a.run.app/
 ```
 
 ### 4. 로그 확인
 ```bash
 # 최근 로그 조회
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=malgnlms-legacy" --limit=50
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=growailms-legacy" --limit=50
 
 # 실시간 로그 스트리밍
-gcloud alpha run services logs tail malgnlms-legacy --region=asia-northeast1
+gcloud alpha run services logs tail growailms-legacy --region=asia-northeast1
 ```
 
 ## 트러블슈팅
@@ -209,7 +209,7 @@ ls -la public_html/WEB-INF/lib/malgn-1.13.0.jar
 **해결**:
 ```bash
 # 로컬에서 테스트
-docker run -it malgnlms-legacy:test bash
+docker run -it growailms-legacy:test bash
 cd /usr/local/tomcat/webapps/ROOT
 ls -la WEB-INF/
 
@@ -272,10 +272,10 @@ env:
 ```bash
 # 30일 이상 오래된 이미지 삭제
 gcloud artifacts docker images list \
-  asia-northeast1-docker.pkg.dev/gen-lang-client-0725900816/malgnlms/malgnlms-legacy
+  asia-northeast1-docker.pkg.dev/gen-lang-client-0725900816/growailms/growailms-legacy
 
 gcloud artifacts docker images delete \
-  asia-northeast1-docker.pkg.dev/gen-lang-client-0725900816/malgnlms/malgnlms-legacy:OLD_SHA
+  asia-northeast1-docker.pkg.dev/gen-lang-client-0725900816/growailms/growailms-legacy:OLD_SHA
 ```
 
 ## 성능 모니터링

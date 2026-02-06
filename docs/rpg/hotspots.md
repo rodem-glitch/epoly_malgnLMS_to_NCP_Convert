@@ -1,16 +1,15 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-05
+최근 갱신: 2026-02-06
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
 최근 자동 갱신: 2026-02-06 17:49
 
-- Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
-- Spring Boot 설정: polytech-lms-api/src/main/resources/application.yml, application-local.yml
-- Spring Boot DB/외부연동: polytech-lms-api/build.gradle 의존성(JPA/MySQL/Google/Spring AI 등)
+- Spring Boot 설정: growailms-api/src/main/resources/application.yml, application-local.yml
+- Spring Boot DB/외부연동: growailms-api/build.gradle 의존성(JPA/MySQL/Google/Spring AI 등)
 <!-- @generated:end -->
 
 ## 자동 생성(권장)
@@ -38,17 +37,17 @@
 - 교수자(React) CSP/외부 리소스:
   - `project/index.html`에 CSP 메타가 있어, 기본적으로 외부 CSS/폰트 로드가 막힙니다(보안상 장점).
   - 학생 메인(`public_html/html/css/custom.css`)은 Pretendard를 CDN으로 불러오지만, 교수자 앱에서 같은 방식으로 적용하려면 CSP 완화 또는 폰트 파일 자체 호스팅이 필요합니다(보안/배포 영향).
-- Spring Boot 설정/시크릿: `polytech-lms-api/src/main/resources/application.yml` (키/토큰/DB정보 노출 금지)
+- Spring Boot 설정/시크릿: `growailms-api/src/main/resources/application.yml` (키/토큰/DB정보 노출 금지)
 - 통계 대시보드 프런트-실행산출물 동기화:
-  - 파일: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/build/resources/main/static/statistics/dashboard.html`
+  - 파일: `growailms-api/src/main/resources/static/statistics/dashboard.html`, `growailms-api/build/resources/main/static/statistics/dashboard.html`
   - 위험: `src`/`build`가 갈라지면 화면에서 카드가 숨김인데 소스는 노출(또는 반대)처럼 동작이 달라짐
   - 확인 기준: 노출/비활성 제어값(`memberKeyPopulationCard`, `enableMemberKeyPopulation`)을 두 파일에서 동일하게 맞추고 UI에서 즉시 확인
 - 학번 기반 연도 보정(인구 통계):
-  - 파일: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/MemberKeyPopulationService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java`
+  - 파일: `growailms-api/src/main/resources/static/statistics/dashboard.html`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/service/MemberKeyPopulationService.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java`
   - 위험: 학번 2자리 연도 확장값이 미래 연도로 표시되면(예: 2099) 그래프/표 해석이 틀어짐
   - 확인 기준: `normalizeMemberKeyYear()`에서 현재 연도 초과 시 `19YY`로 보정되고, 백엔드 `/statistics/api/population/member-key-campus` 응답이 성공(200)하는지 함께 확인
 - 학번 기반 과정구분 집계(인구 통계):
-  - 파일: `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/MemberKeyPopulationService.java`, `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+  - 파일: `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/service/MemberKeyPopulationService.java`, `growailms-api/src/main/resources/static/statistics/dashboard.html`
   - 위험: 과정구분(학번 5~6자리) 집계가 빠지면 연도별 총원만 보여 과정별 인원 분석이 불가능함
   - 확인 기준: SQL이 `GROUP BY 연도+캠퍼스+과정구분`으로 집계되고, 첫 번째 차트(`memberKeyPopulationChart`)가 과정구분 스택으로 그려지며 표 `과정구분` 컬럼이 채워지는지 확인
 

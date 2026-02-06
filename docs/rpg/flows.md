@@ -1,15 +1,14 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-05
+최근 갱신: 2026-02-06
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
 최근 자동 갱신: 2026-02-06 17:49
 
-- Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
-- Spring Boot API: polytech-lms-api/build.gradle (Boot 3.2.5, Java 17)
+- Spring Boot API: growailms-api/build.gradle (Boot 3.2.5, Java 17)
 <!-- @generated:end -->
 
 ## 자동 생성(권장)
@@ -133,7 +132,7 @@
 - DB: 없음(UI 레벨 변경, API/DAO 쿼리 변경 없음)
 - 출력:
   - 산업분포 분석 표 카드 헤더: 다운로드 버튼 미노출
-  - 상단 “산업분포 통합 데이터” 다운로드 버튼: 기존대로 동작
+  - 상단 "산업분포 통합 데이터" 다운로드 버튼: 기존대로 동작
 - 확인(근거):
   - 코드 확인: `dashboard.html`에서 `downloadIndustryCsv` 버튼/onclick 제거 확인
   - 정적 검증: `rg -n "downloadIndustryCsv(\\W|$)|downloadIndustryCsvTop" .../dashboard.html` 결과에서 `downloadIndustryCsvTop`만 남았는지 확인
