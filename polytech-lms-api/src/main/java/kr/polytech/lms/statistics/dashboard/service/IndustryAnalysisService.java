@@ -47,17 +47,20 @@ public class IndustryAnalysisService {
     private final SgisCompanyCacheService sgisCompanyCacheService;
     private final CampusStudentQuotaExcelService campusStudentQuotaExcelService;
     private final SgisAdministrativeCodeService sgisAdministrativeCodeService;
+    private final StatisticsDashboardCacheService statisticsDashboardCacheService;
 
     public IndustryAnalysisService(
             MajorIndustryMappingService majorIndustryMappingService,
             SgisCompanyCacheService sgisCompanyCacheService,
             CampusStudentQuotaExcelService campusStudentQuotaExcelService,
-            SgisAdministrativeCodeService sgisAdministrativeCodeService
+            SgisAdministrativeCodeService sgisAdministrativeCodeService,
+            StatisticsDashboardCacheService statisticsDashboardCacheService
     ) {
         this.majorIndustryMappingService = majorIndustryMappingService;
         this.sgisCompanyCacheService = sgisCompanyCacheService;
         this.campusStudentQuotaExcelService = campusStudentQuotaExcelService;
         this.sgisAdministrativeCodeService = sgisAdministrativeCodeService;
+        this.statisticsDashboardCacheService = statisticsDashboardCacheService;
     }
 
     public IndustryAnalysisResponse analyze(
@@ -71,6 +74,19 @@ public class IndustryAnalysisService {
 
         String requestedAdmCd = normalizeRequestedAdmCd(admCd);
         String requestedAdmNm = normalizeRequestedAdmNm(admNm);
+
+        // 왜: 같은 조건의 반복 조회에서는 SGIS/KOSIS 재호출과 재계산을 건너뛰어 렌더링 지연을 줄입니다.
+        var cached = statisticsDashboardCacheService.findIndustry(
+                resolvedCampus,
+                requestedAdmCd,
+                requestedAdmNm,
+                desiredStatsYear
+        );
+        if (cached.isPresent()) {
+            log.info("산업 통계 캐시 HIT: campus={}, admCd={}, year={}", resolvedCampus, requestedAdmCd, desiredStatsYear);
+            return cached.get();
+        }
+        log.info("산업 통계 캐시 MISS: campus={}, admCd={}, year={}", resolvedCampus, requestedAdmCd, desiredStatsYear);
 
         SgisAdministrativeCodeService.Resolution sgisResolution =
                 sgisAdministrativeCodeService.resolveToSgisAdmCd(requestedAdmCd, requestedAdmNm);
@@ -109,7 +125,7 @@ public class IndustryAnalysisService {
             rows.add(new CategoryRow(category, regionCount, regionRatio, campusCount, campusRatio, gap));
         }
 
-        return new IndustryAnalysisResponse(
+        IndustryAnalysisResponse response = new IndustryAnalysisResponse(
                 resolvedCampus,
                 usedAdmCd,
                 requestedAdmCd,
@@ -119,6 +135,14 @@ public class IndustryAnalysisService {
                 regionTotal,
                 rows
         );
+        statisticsDashboardCacheService.saveIndustry(
+                resolvedCampus,
+                requestedAdmCd,
+                requestedAdmNm,
+                desiredStatsYear,
+                response
+        );
+        return response;
     }
 
     private Map<String, Long> countCampusStudentsByCategory(String campus) {

@@ -1084,9 +1084,6 @@
       <div class="card-premium">
         <div class="card-header-premium">
           <h3><i class="bi bi-table"></i> 산업분포 분석 <button type="button" class="tech-info-btn" id="openTechInfoModal" aria-label="기술업종 분류 안내"><i class="bi bi-info-circle"></i></button></h3>
-          <button id="downloadIndustryCsv" class="btn-premium btn-success" type="button" aria-label="엑셀 다운로드">
-            <i class="bi bi-file-earmark-excel"></i> 엑셀
-          </button>
         </div>
         <div class="card-body-premium p-0">
           <div class="table-responsive">
@@ -4216,9 +4213,6 @@
     }
 
     // download buttons
-    document.getElementById("downloadIndustryCsv").onclick = () => {
-      window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`;
-    };
     document.getElementById("downloadIndustryCsvTop").onclick = () => {
       window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`;
     };
