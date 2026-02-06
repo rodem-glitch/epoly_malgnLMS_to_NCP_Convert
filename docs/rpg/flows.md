@@ -7,7 +7,6 @@
 
 최근 자동 갱신: 2026-02-06 14:05
 
-- Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
 - Spring Boot API: growailms-api/build.gradle (Boot 3.2.5, Java 17)
 <!-- @generated:end -->

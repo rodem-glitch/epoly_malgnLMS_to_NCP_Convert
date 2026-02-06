@@ -1,5 +1,5 @@
 ﻿server:
-  port: 8081
+  port: 8001
   error:
     # 왜: 에러 응답에 stacktrace가 포함되면 민감정보(키/시크릿/경로)가 노출될 수 있어 차단합니다.
     include-stacktrace: never

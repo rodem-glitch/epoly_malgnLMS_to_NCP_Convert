@@ -7,7 +7,6 @@
 
 최근 자동 갱신: 2026-02-06 14:05
 
-- Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
 - Spring Boot 설정: growailms-api/src/main/resources/application.yml, application-local.yml
 - Spring Boot DB/외부연동: growailms-api/build.gradle 의존성(JPA/MySQL/Google/Spring AI 등)

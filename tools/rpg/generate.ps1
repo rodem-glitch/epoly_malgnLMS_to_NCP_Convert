@@ -44,7 +44,7 @@ $docsRpg = Join-Path $RepoRoot 'docs\\rpg'
 $genDir = Join-Path $docsRpg 'generated'
 New-Item -ItemType Directory -Force -Path $genDir | Out-Null
 
-Assert-Path (Join-Path $RepoRoot 'public_html') 'public_html 폴더가 없습니다. (Resin root-directory 기준 폴더가 필요합니다.)'
+Assert-Path (Join-Path $RepoRoot 'public_html') 'public_html 폴더가 없습니다. (웹 루트 폴더가 필요합니다.)'
 Assert-Path (Join-Path $RepoRoot 'src\\dao') 'src/dao 폴더가 없습니다. (DAO 테이블 매핑 생성에 필요합니다.)'
 
 Write-Host "[RPG] 스캔 시작: $RepoRoot"
@@ -176,7 +176,6 @@ Replace-GeneratedBlock (Join-Path $docsRpg 'flows.md') @(
     "",
     "최근 자동 갱신: $today",
     "",
-    "- Resin root-directory: resin/resin.xml → public_html",
     "- React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app",
     "- Spring Boot API: polytech-lms-api/build.gradle (Boot 3.2.5, Java 17)"
 )
@@ -184,7 +183,6 @@ Replace-GeneratedBlock (Join-Path $docsRpg 'hotspots.md') @(
     "",
     "최근 자동 갱신: $today",
     "",
-    "- Resin 설정: resin/resin.xml (root-directory=public_html)",
     "- React 배포: public_html/tutor_lms/app (project 빌드 산출물)",
     "- Spring Boot 설정: polytech-lms-api/src/main/resources/application.yml, application-local.yml",
     "- Spring Boot DB/외부연동: polytech-lms-api/build.gradle 의존성(JPA/MySQL/Google/Spring AI 등)"

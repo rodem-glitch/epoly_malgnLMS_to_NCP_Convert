@@ -36,7 +36,6 @@
 ## 자주 보는 진입점
 - 프론트 공통 초기화: `public_html/init.jsp`
 - 관리자 공통 초기화: `public_html/sysop/init.jsp`
-- Resin 루트 설정: `resin/resin.xml` (root-directory=`public_html`)
 - React UI 빌드 설정: `project/vite.config.ts` (outDir=`public_html/tutor_lms/app`)
 - Spring Boot API 빌드 설정: `growailms-api/build.gradle`
 

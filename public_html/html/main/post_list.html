@@ -1,9 +1,0 @@
-								<ul class="<!--@nif(board_type_faq)-->list_top<!--/nif(board_type_faq)--><!--@if(board_type_faq)-->faq_top<!--/if(board_type_faq)-->">
-									<!--@loop(list)-->
-									<li>
-										<a href="../board/<!--@nif(board_type_faq)-->read<!--/nif(board_type_faq)--><!--@if(board_type_faq)-->index<!--/if(board_type_faq)-->.jsp?id={{list.id}}&code={{list.code}}">
-											{{list.subject_conv}}
-										</a><!--@nif(board_type_faq)--><span>{{list.reg_date_conv}}</span><!--/nif(board_type_faq)-->
-									</li>
-									<!--/loop(list)-->
-								</ul>
