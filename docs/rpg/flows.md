@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-05
+최근 갱신: 2026-02-06
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-05 10:19
+최근 자동 갱신: 2026-02-06 14:05
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -134,4 +134,27 @@
   - 차트(`populationChart`, `populationGenderChart`)와 표(`populationTableBody`, `genderTableBody`)가 동일 시점 데이터로 동기화
 - 확인(근거):
   - `dashboard.html`의 `refreshPopulation()` 내부에서 최신 요청 체크 및 표 즉시 렌더 호출 코드 확인
+- 최근 갱신: 2026-02-06
+
+### FLOW-3003: 교수자 통계 > 인구별 통계(학번 기반 연도·캠퍼스 인구)
+- 사용자 동작(의도): 인구 탭에서 캠퍼스/연도 필터를 바꾸면, 기존 비교 그래프 아래에 학번 기반 연도별·캠퍼스별 인구 그래프/표를 즉시 확인
+- 진입점:
+  - 화면: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+  - API: `GET /statistics/api/population/member-key-campus?campus=...`
+- 처리(핵심):
+  - `StatisticsDashboardApiController.populationMemberKeyCampus()`가 캠퍼스만 로그로 남기고 서비스 호출
+  - `MemberKeyPopulationService.summarizeByYearAndCampus()`에서 캠퍼스 필터 정규화(전체/null 처리) 후 시리즈/표 형태로 가공
+  - `MemberKeyPopulationJdbcRepository.findYearCampusCounts()`에서 `LMS_MEMBER_VIEW`를 대상으로 `MEMBER_KEY` 앞 2자리(년도), `CAMPUS_CODE`, `CAMPUS_NAME` 기준 집계 (방언 충돌을 줄이기 위해 `LENGTH/SUBSTRING/CONCAT` 기반 SQL 사용)
+  - 저장소 레벨에서 SQL 시작/성공/실패 로그를 남겨, 뷰테이블 호출 여부와 실패 원인을 로그만으로 확인 가능
+  - 프론트 `refreshPopulation()`에서 `refreshMemberKeyPopulation()` 호출 시 캠퍼스만 전달하여, 행정구역/연도 변경은 이 그래프 집계값에 영향이 없도록 유지
+- DB:
+  - `LM_POLY_MEMBER` (`MEMBER_KEY`, `CAMPUS_CODE`, `CAMPUS_NAME`) - 학사 원천 `COM.LMS_MEMBER_VIEW` 동기화 테이블
+  - `MEMBER_KEY`는 숫자 10자리(`년도2+캠퍼스2+과정2+일련4`) 형식만 집계 대상
+- 출력:
+  - JSON: `years`, `campusSeries`, `rows`, `totalMembers`
+  - 화면: `memberKeyPopulationChart`(stacked bar), `memberKeyPopulationTableBody`(연도/캠퍼스/인원 표)
+  - 임시 상태(2026-02-06): `dashboard.html`에서 카드(`memberKeyPopulationCard`)를 숨기고, `enableMemberKeyPopulation=false`로 API 호출을 중지
+- 확인(근거):
+  - 백엔드 컴파일: `cd polytech-lms-api && .\\gradlew.bat compileJava` 성공
+  - 프론트 코드 경로 확인: `dashboard.html`의 `refreshMemberKeyPopulation()`, `renderMemberKeyPopulationTable()`, `memberKeyPopulationChart` 추가
 - 최근 갱신: 2026-02-06
