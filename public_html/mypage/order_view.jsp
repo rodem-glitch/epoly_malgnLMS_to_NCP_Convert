@@ -271,7 +271,7 @@ if(-99 == info.i("status") || "90".equals(info.s("paymethod")) || "99".equals(in
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.order_view");
 p.setVar("p_title", "결제내역조회");
 p.setVar("query", m.qs("mode, iid"));

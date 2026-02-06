@@ -42,7 +42,7 @@ while(list.next()){
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.course_lesson_list");
 p.setVar("query", m.qs());
 p.setVar("list_query", m.qs(""));

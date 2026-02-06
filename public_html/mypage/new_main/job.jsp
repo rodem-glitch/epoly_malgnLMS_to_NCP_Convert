@@ -70,7 +70,7 @@ if(!"".equals(deptName)) {
 }
 
 // 레이아웃: blank (전역 네비게이션 제외)
-p.setLayout("blank");
+p.setLayout("new_main");
 p.setBody("mypage.new_main_job");
 
 // 로그인 상태 및 사용자 정보

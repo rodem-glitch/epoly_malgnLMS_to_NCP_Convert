@@ -31,7 +31,7 @@ if("N".equals(info.s("read_yn"))) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody(ch + ".message_view");
 p.setVar("p_title", "쪽지함");
 

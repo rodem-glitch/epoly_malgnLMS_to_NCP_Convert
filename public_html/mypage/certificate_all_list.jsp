@@ -48,7 +48,7 @@ while(list.next()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.certificate_all_list");
 p.setVar("query", m.qs());
 p.setVar("list_query", m.qs("id"));

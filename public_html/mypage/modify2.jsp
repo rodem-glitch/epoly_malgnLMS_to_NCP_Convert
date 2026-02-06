@@ -277,7 +277,7 @@ while(rs.next()) {
 }
 
 //출력
-p.setLayout(ch);
+p.setLayout("mypage_newmain");
 p.setBody("mypage.modify2");
 p.setVar("p_title", "회원정보수정");
 p.setVar("form_script", f.getScript());

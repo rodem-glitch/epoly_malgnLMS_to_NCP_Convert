@@ -57,3 +57,8 @@
 |---|---|---|---|---|
 | 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
+
+## 최근 작업(교수자 통계/산업별 통계)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
+|---|---|---|---|---|
+| 산업별 통계: 전체 캠퍼스/전국 전체 선택 시 “행정구역(종사자) 인원”이 0으로 뜨는 문제 수정 | `/statistics` → `GET /statistics/api/industry/analysis` | `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/controller/StatisticsDashboardApiController.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/IndustryAnalysisService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/sgis/service/SgisCompanyCacheService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/sgis/client/SgisClient.java` | JSON(산업분포 분석) | 전국(`admCd=00`)은 SGIS 시도코드→로컬 시도코드→`adm_cd` non 리스트 순으로 합산. 시도/전국 코드의 null/0,0 캐시는 1회 재조회 |
