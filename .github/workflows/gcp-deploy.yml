@@ -1,5 +1,5 @@
 # ============================================
-# MalgnLMS API - GCP Cloud Run CI/CD Pipeline
+# GrowAILMS API - GCP Cloud Run CI/CD Pipeline
 # ============================================
 #
 # Required GitHub Secrets:
@@ -8,10 +8,10 @@
 #   - GCP_REGION: 배포 리전 (예: asia-northeast3)
 #
 # Required GitHub Variables (optional):
-#   - CLOUD_RUN_SERVICE: Cloud Run 서비스 이름 (기본값: malgnlms-api)
+#   - CLOUD_RUN_SERVICE: Cloud Run 서비스 이름 (기본값: growailms-api)
 #
 
-name: GCP Cloud Run Deploy
+name: API Cloud Run Deploy
 
 on:
   push:
@@ -19,13 +19,13 @@ on:
       - main
       - feature/securecoding_backend
     paths:
-      - 'polytech-lms-api/**'
+      - 'growailms-api/**'
       - '.github/workflows/gcp-deploy.yml'
   pull_request:
     branches:
       - main
     paths:
-      - 'polytech-lms-api/**'
+      - 'growailms-api/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -40,7 +40,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
-  SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE || 'malgnlms-api' }}
+  SERVICE_NAME: ${{ vars.CLOUD_RUN_SERVICE || 'growailms-api' }}
   ARTIFACT_REGISTRY: ${{ secrets.GCP_REGION || 'asia-northeast1' }}-docker.pkg.dev
 
 jobs:
@@ -53,7 +53,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: polytech-lms-api
+        working-directory: growailms-api
 
     steps:
       - name: Checkout code
@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: polytech-lms-api/build/libs/*.jar
+          path: growailms-api/build/libs/*.jar
           retention-days: 1
 
   # ============================================
@@ -100,7 +100,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
-          scan-ref: 'polytech-lms-api'
+          scan-ref: 'growailms-api'
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -145,19 +145,19 @@ jobs:
           gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet
 
       - name: Build Docker image
-        working-directory: polytech-lms-api
+        working-directory: growailms-api
         run: |
           docker build \
-            --tag "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:${{ github.sha }}" \
-            --tag "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:latest" \
+            --tag "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:${{ github.sha }}" \
+            --tag "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:latest" \
+            --cache-from "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:latest" \
             .
 
       - name: Push Docker image
         run: |
-          docker push "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-          docker push "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:latest"
+          docker push "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker push "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:latest"
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -165,7 +165,7 @@ jobs:
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:${{ github.sha }}
           flags: |
             --allow-unauthenticated
             --cpu=1

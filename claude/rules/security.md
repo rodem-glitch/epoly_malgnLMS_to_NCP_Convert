@@ -1,7 +1,7 @@
 # Security (보안) - 필수 체크리스트
 
 이 문서는 `everything-claude-code/rules/security.md`의 “커밋 전 보안 체크” 철학을 참고해,
-MalgnLMS(JSP+DAO 레거시)에 맞게 한글로 정리한 것입니다.
+GrowAILMS(JSP+DAO 레거시)에 맞게 한글로 정리한 것입니다.
 
 ---
 
@@ -15,7 +15,7 @@ MalgnLMS(JSP+DAO 레거시)에 맞게 한글로 정리한 것입니다.
 
 ---
 
-## 2) MalgnLMS에서 특히 자주 터지는 포인트
+## 2) GrowAILMS에서 특히 자주 터지는 포인트
 
 ### 2-1) SQL 인젝션
 - 가능하면 `find(..., new Object[]{...})` 같은 바인딩 형태를 우선합니다.

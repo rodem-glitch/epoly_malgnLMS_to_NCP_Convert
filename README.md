@@ -9,7 +9,7 @@ GrowAILMS는 한국폴리텍대학의 e-poly 학습관리시스템 레거시 코
 
 ## 🛠 기술 스택
 
-| 구분     | Legacy (MalgnLMS)            | Target (GrowAILMS)                      |
+| 구분     | Legacy (GrowAILMS)            | Target (GrowAILMS)                      |
 | -------- | ---------------------------- | --------------------------------------- |
 | Backend  | Java 8, Malgnsoft DataObject | Java 17, Spring Boot 3.2, eGovFrame 4.2 |
 | ORM      | Custom DAO Pattern           | MyBatis 3.5                             |
@@ -20,7 +20,7 @@ GrowAILMS는 한국폴리텍대학의 e-poly 학습관리시스템 레거시 코
 ## 📁 주요 구조
 
 ```
-MalgnLMS/
+GrowAILMS/
 ├── src/
 │   ├── dao/          # 170개 DAO 클래스
 │   └── ...
@@ -55,8 +55,8 @@ MalgnLMS/
 
 ```bash
 # 저장소 클론
-git clone -b dev https://github.com/sh-jang-code/MalgnLMS.git
-cd MalgnLMS
+git clone -b dev https://github.com/sh-jang-code/GrowAILMS.git
+cd GrowAILMS
 
 # Docker 컨테이너 실행
 docker-compose up -d

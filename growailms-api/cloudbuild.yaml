@@ -1,0 +1,104 @@
+# ============================================
+# GrowAILMS API - Google Cloud Build Configuration
+# Alternative to GitHub Actions
+# ============================================
+#
+# Usage:
+#   gcloud builds submit --config=cloudbuild.yaml
+#
+# Required Substitutions:
+#   _REGION: Deployment region (default: asia-northeast3)
+#   _SERVICE_NAME: Cloud Run service name (default: growailms-api)
+#
+
+substitutions:
+  _REGION: asia-northeast3
+  _SERVICE_NAME: growailms-api
+  _ARTIFACT_REGISTRY: ${_REGION}-docker.pkg.dev
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+steps:
+  # Step 1: Build with Gradle
+  - name: 'gradle:8-jdk17-alpine'
+    id: 'build'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd growailms-api
+        gradle build -x test --no-daemon
+
+  # Step 2: Run Tests
+  - name: 'gradle:8-jdk17-alpine'
+    id: 'test'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd growailms-api
+        gradle test --no-daemon || true
+    waitFor: ['build']
+
+  # Step 3: Build Docker Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'docker-build'
+    args:
+      - 'build'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY}/${PROJECT_ID}/growailms/${_SERVICE_NAME}:${SHORT_SHA}'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY}/${PROJECT_ID}/growailms/${_SERVICE_NAME}:latest'
+      - '--cache-from'
+      - '${_ARTIFACT_REGISTRY}/${PROJECT_ID}/growailms/${_SERVICE_NAME}:latest'
+      - '-f'
+      - 'growailms-api/Dockerfile'
+      - 'growailms-api'
+    waitFor: ['build']
+
+  # Step 4: Push Docker Image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'docker-push'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_ARTIFACT_REGISTRY}/${PROJECT_ID}/growailms/${_SERVICE_NAME}'
+    waitFor: ['docker-build']
+
+  # Step 5: Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image'
+      - '${_ARTIFACT_REGISTRY}/${PROJECT_ID}/growailms/${_SERVICE_NAME}:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--cpu'
+      - '1'
+      - '--memory'
+      - '1Gi'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+      - '--concurrency'
+      - '80'
+      - '--timeout'
+      - '300'
+      - '--execution-environment'
+      - 'gen2'
+    waitFor: ['docker-push']
+
+images:
+  - '${_ARTIFACT_REGISTRY}/${PROJECT_ID}/growailms/${_SERVICE_NAME}:${SHORT_SHA}'
+  - '${_ARTIFACT_REGISTRY}/${PROJECT_ID}/growailms/${_SERVICE_NAME}:latest'
+
+timeout: '1800s'

@@ -1,5 +1,5 @@
 # ============================================
-# MalgnLMS Frontend - Nginx Container
+# GrowAILMS Frontend - Nginx Container
 # Cloud Run Optimized
 # ============================================
 

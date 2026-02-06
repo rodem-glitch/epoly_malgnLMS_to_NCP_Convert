@@ -1,8 +1,8 @@
-# MalgnLMS GCP CI/CD 설정 가이드
+# GrowAILMS GCP CI/CD 설정 가이드
 
 ## 개요
 
-이 문서는 MalgnLMS API를 GCP Cloud Run에 자동 배포하기 위한 CI/CD 파이프라인 설정 방법을 설명합니다.
+이 문서는 GrowAILMS API를 GCP Cloud Run에 자동 배포하기 위한 CI/CD 파이프라인 설정 방법을 설명합니다.
 
 ## 아키텍처
 
@@ -44,10 +44,10 @@ gcloud services enable \
 
 ```bash
 # Docker 저장소 생성
-gcloud artifacts repositories create malgnlms \
+gcloud artifacts repositories create growailms \
   --repository-format=docker \
   --location=$REGION \
-  --description="MalgnLMS Docker images"
+  --description="GrowAILMS Docker images"
 ```
 
 ### 3. 서비스 계정 생성 및 권한 설정
@@ -96,14 +96,14 @@ cat gcp-sa-key.json | base64
 
 | Variable Name | 설명 | 기본값 |
 |---------------|------|--------|
-| `CLOUD_RUN_SERVICE` | Cloud Run 서비스 이름 | `malgnlms-api` |
+| `CLOUD_RUN_SERVICE` | Cloud Run 서비스 이름 | `growailms-api` |
 
 ## 배포 트리거
 
 ### 자동 배포
 - `main` 브랜치에 push
 - `feature/securecoding_backend` 브랜치에 push
-- `polytech-lms-api/` 경로의 파일 변경 시
+- `growailms-api/` 경로의 파일 변경 시
 
 ### 수동 배포
 GitHub Actions > GCP Cloud Run Deploy > Run workflow
@@ -111,11 +111,11 @@ GitHub Actions > GCP Cloud Run Deploy > Run workflow
 ## 파일 구조
 
 ```
-MalgnLMS/
+GrowAILMS/
 ├── .github/
 │   └── workflows/
 │       └── gcp-deploy.yml      # GitHub Actions 워크플로우
-├── polytech-lms-api/
+├── growailms-api/
 │   ├── Dockerfile              # 컨테이너 빌드 파일
 │   ├── .dockerignore           # Docker 빌드 제외 파일
 │   ├── cloudbuild.yaml         # Cloud Build 설정 (대안)
@@ -145,13 +145,13 @@ GitHub Actions 대신 GCP Cloud Build를 사용할 경우:
 ```bash
 # Cloud Build 트리거 생성
 gcloud builds triggers create github \
-  --repo-name=MalgnLMS \
+  --repo-name=GrowAILMS \
   --repo-owner=sh-jang-code \
   --branch-pattern="^main$" \
-  --build-config=polytech-lms-api/cloudbuild.yaml
+  --build-config=growailms-api/cloudbuild.yaml
 
 # 수동 빌드 실행
-cd polytech-lms-api
+cd growailms-api
 gcloud builds submit --config=cloudbuild.yaml
 ```
 
@@ -159,12 +159,12 @@ gcloud builds submit --config=cloudbuild.yaml
 
 ### Cloud Run 로그 확인
 ```bash
-gcloud run services logs read malgnlms-api --region=$REGION --limit=100
+gcloud run services logs read growailms-api --region=$REGION --limit=100
 ```
 
 ### 서비스 상태 확인
 ```bash
-gcloud run services describe malgnlms-api --region=$REGION
+gcloud run services describe growailms-api --region=$REGION
 ```
 
 ## 롤백
@@ -172,12 +172,12 @@ gcloud run services describe malgnlms-api --region=$REGION
 ### 이전 리비전으로 롤백
 ```bash
 # 리비전 목록 확인
-gcloud run revisions list --service=malgnlms-api --region=$REGION
+gcloud run revisions list --service=growailms-api --region=$REGION
 
 # 특정 리비전으로 트래픽 전환
-gcloud run services update-traffic malgnlms-api \
+gcloud run services update-traffic growailms-api \
   --region=$REGION \
-  --to-revisions=malgnlms-api-00001-abc=100
+  --to-revisions=growailms-api-00001-abc=100
 ```
 
 ## 비용 최적화

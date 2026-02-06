@@ -21,7 +21,20 @@
       form-action 'self';
       base-uri 'self';
     " />
-    <title>교수자 LMS</title>
+    <title>GrowAI LMS</title>
+    <script>
+      // 경로에 따라 제목 동적 변경
+      (function() {
+        const path = window.location.pathname;
+        if (path.startsWith('/tutor')) {
+          document.title = 'GrowAI LMS - 교수자';
+        } else if (path.startsWith('/lms')) {
+          document.title = 'GrowAI LMS - 학생';
+        } else {
+          document.title = 'GrowAI LMS';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

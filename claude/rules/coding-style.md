@@ -1,7 +1,7 @@
 # Coding Style (코드 스타일) - 일관성 규칙
 
 이 문서는 `everything-claude-code/rules/coding-style.md`의 “읽기 쉬운 코드/작은 단위/에러 처리” 원칙을 참고해,
-MalgnLMS(JSP+DAO+템플릿, 그리고 project/React)에 맞게 정리했습니다.
+GrowAILMS(JSP+DAO+템플릿, 그리고 project/React)에 맞게 정리했습니다.
 
 ---
 

@@ -4,7 +4,7 @@
 
 ---
 
-## 1) MalgnLMS API 응답 패턴(필수)
+## 1) GrowAILMS API 응답 패턴(필수)
 이 프로젝트(JSP API)는 보통 아래 형태를 사용합니다.
 - `rst_code`: 결과 코드(예: `0000`)
 - `rst_message`: 메시지

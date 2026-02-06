@@ -1,5 +1,5 @@
 # ============================================
-# MalgnLMS Frontend - GCP Cloud Run CI/CD Pipeline
+# GrowAILMS Frontend - GCP Cloud Run CI/CD Pipeline
 # ============================================
 #
 # Required GitHub Secrets:
@@ -28,7 +28,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
-  SERVICE_NAME: malgnlms-frontend
+  SERVICE_NAME: growailms-frontend
   ARTIFACT_REGISTRY: ${{ secrets.GCP_REGION || 'asia-northeast1' }}-docker.pkg.dev
 
 jobs:
@@ -151,16 +151,16 @@ jobs:
         working-directory: project
         run: |
           docker build \
-            --tag "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:${{ github.sha }}" \
-            --tag "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:latest" \
+            --tag "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:${{ github.sha }}" \
+            --tag "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:latest" \
+            --cache-from "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:latest" \
             .
 
       - name: Push Docker image
         run: |
-          docker push "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-          docker push "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:latest"
+          docker push "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker push "${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:latest"
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -168,7 +168,7 @@ jobs:
         with:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/malgnlms/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.PROJECT_ID }}/growailms/${{ env.SERVICE_NAME }}:${{ github.sha }}
           flags: |
             --allow-unauthenticated
             --cpu=1
