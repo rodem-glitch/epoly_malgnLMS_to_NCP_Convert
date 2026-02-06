@@ -5,14 +5,14 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-06 14:05
+최근 자동 갱신: 2026-02-06 17:49
 
 - JSP 총합(전체): 1226
 - JSP(public_html): 1225 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 178
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 109
-- growailms-api(Java/Spring Boot) Java 파일 수: 160
+- growailms-api(Java/Spring Boot) Java 파일 수: 162
 
 생성된 인덱스:
 - docs/rpg/generated/jsp_setBody_index.tsv
@@ -57,8 +57,8 @@
 | 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
 
-## 최근 작업(교수자 통계/산업별 통계)
-| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
-|---|---|---|---|---|
-| 산업별 통계: 전체 캠퍼스/전국 전체 선택 시 “행정구역(종사자) 인원”이 0으로 뜨는 문제 수정 | `/statistics` → `GET /statistics/api/industry/analysis` | `growailms-api/src/main/resources/static/statistics/dashboard.html`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/controller/StatisticsDashboardApiController.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/service/IndustryAnalysisService.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/sgis/service/SgisCompanyCacheService.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/sgis/client/SgisClient.java` | JSON(산업분포 분석) | 전국(`admCd=00`)은 SGIS 시도코드→로컬 시도코드→`adm_cd` non 리스트 순으로 합산. 시도/전국 코드의 null/0,0 캐시는 1회 재조회 |
-| 인구별 통계: 학번(MEMBER_KEY) 기반 연도별·캠퍼스별 인구 그래프/표 추가 | `/statistics` → `GET /statistics/api/population/member-key-campus` | `growailms-api/src/main/resources/static/statistics/dashboard.html`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/controller/StatisticsDashboardApiController.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/service/MemberKeyPopulationService.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java` | JSON(학번 기반 인구 시계열) + 인구 탭 하단 그래프/표 | `LM_POLY_MEMBER`(학사 원천 `COM.LMS_MEMBER_VIEW` 동기화본)의 `MEMBER_KEY/CAMPUS_CODE/CAMPUS_NAME` 집계. **캠퍼스 필터만 반영**하고 행정구역/연도 필터는 집계에서 제외. 2026-02-06 기준 화면/호출 임시 숨김(`memberKeyPopulationCard`, `enableMemberKeyPopulation=false`) |
+## 최근 작업(통계 대시보드)
+| 기능/화면 | 진입점(JSP/API) | 관련 파일 | 비고 |
+|---|---|---|---|
+| 산업분포 분석 표 내 엑셀 버튼 제거 | `public_html/tutor_lms/index.jsp` → `project/components/StatisticsPage.tsx` → `growailms-api/src/main/resources/static/statistics/dashboard.html` | `growailms-api/src/main/resources/static/statistics/dashboard.html` | 표 카드 헤더의 `downloadIndustryCsv` 버튼만 제거, 상단 `downloadIndustryCsvTop` 다운로드 버튼은 유지 |
+| 산업/인구 비교 결과 DB 캐시 | `public_html/tutor_lms/index.jsp` → `project/components/StatisticsPage.tsx` → `/statistics/api/industry/analysis`, `/statistics/api/population/compare` | `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/service/IndustryAnalysisService.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/service/PopulationComparisonService.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/service/StatisticsDashboardCacheService.java`, `growailms-api/src/main/java/kr/go/growailms/statistics/dashboard/persistence/StatisticsDashboardCacheJdbcRepository.java`, `growailms-api/src/main/resources/sql/schema-statistics-dashboard-cache.sql` | 동일 파라미터 재조회 시 계산 결과 JSON을 DB에서 바로 반환(HIT/MISS 로그 추가) |

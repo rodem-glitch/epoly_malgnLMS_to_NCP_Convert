@@ -1045,9 +1045,46 @@
       </div>
 
       <!-- 출처 정보 -->
-      <div class="text-end text-muted" style="font-size: 0.75rem; margin-top: 0.5rem;">
+      <div class="text-end text-muted" style="font-size: 0.75rem; margin-top: 0rem; margin-bottom: 1.5rem;">
         <i class="bi bi-info-circle"></i> 인구 데이터 출처: KOSIS(국가통계포털), 2019~2024년
       </div>
+
+      <!-- 왜: 사용자 수정 작업을 위해 학번 기반 연도/캠퍼스 인구 카드를 다시 기본 노출합니다. -->
+      <div class="card-premium" id="memberKeyPopulationCard">
+        <div class="card-header-premium">
+          <h3><i class="bi bi-bar-chart-steps"></i> 학번 기반 연도별·캠퍼스별 인구(재학생 수)</h3>
+        </div>
+        <div class="card-body-premium">
+          <div id="memberKeyPopulationChartView" class="chart-container" style="height: 320px;">
+            <canvas id="memberKeyPopulationChart"></canvas>
+          </div>
+          <div class="text-muted small mt-2 mb-2" id="memberKeyPopulationStatus">학번 기반 데이터를 불러오는 중입니다.</div>
+          <div style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-premium table-sm table-bordered align-middle text-center mb-0" style="table-layout: fixed;">
+              <colgroup>
+                <col style="width: 90px;">
+                <col style="width: 120px;">
+                <col style="width: 160px;">
+                <col style="width: 120px;">
+                <col style="width: 120px;">
+              </colgroup>
+              <thead class="table-light" style="position: sticky; top: 0;">
+                <tr>
+                  <th class="text-center">연도</th>
+                  <th class="text-center">캠퍼스 코드</th>
+                  <th class="text-center">캠퍼스명</th>
+                  <th class="text-center">과정구분</th>
+                  <th class="text-center">인원</th>
+                </tr>
+              </thead>
+              <tbody id="memberKeyPopulationTableBody">
+                <!-- JavaScript로 데이터 채움 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="tab-pane fade" id="pane-industry" role="tabpanel" aria-labelledby="tab-industry">
@@ -1081,9 +1118,6 @@
       <div class="card-premium">
         <div class="card-header-premium">
           <h3><i class="bi bi-table"></i> 산업분포 분석 <button type="button" class="tech-info-btn" id="openTechInfoModal" aria-label="기술업종 분류 안내"><i class="bi bi-info-circle"></i></button></h3>
-          <button id="downloadIndustryCsv" class="btn-premium btn-success" type="button" aria-label="엑셀 다운로드">
-            <i class="bi bi-file-earmark-excel"></i> 엑셀
-          </button>
         </div>
         <div class="card-body-premium p-0">
           <div class="table-responsive">
@@ -2087,7 +2121,7 @@
     tbody.innerHTML = '';
 
     if (!memberKeyPopulationTableData || memberKeyPopulationTableData.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">데이터가 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">데이터가 없습니다.</td></tr>';
       return;
     }
 
@@ -2097,6 +2131,7 @@
         <td class="tabular-nums text-center">${row.year ?? ''}</td>
         <td class="text-center">${row.campusCode ?? ''}</td>
         <td class="text-center">${row.campusName ?? ''}</td>
+        <td class="text-center">${row.courseCode ?? ''}</td>
         <td class="tabular-nums text-end">${Number(row.memberCount ?? 0).toLocaleString()}</td>
       `;
       tbody.appendChild(tr);
@@ -2265,8 +2300,8 @@
   let populationGenderChartInstance = null;
   let populationGenderGapChartInstance = null;
   let memberKeyPopulationChartInstance = null;
-  // 왜: 요청에 따라 학번 기반 인구 그래프/표를 임시 비활성화합니다.
-  const enableMemberKeyPopulation = false;
+  // 왜: 사용자 요청으로 학번 기반 인구 그래프/표를 다시 활성화합니다.
+  const enableMemberKeyPopulation = true;
   // 왜: 필터 연속 변경 시 이전 응답이 늦게 도착해 최신 화면을 덮지 않도록 요청 순서를 추적합니다.
   let populationRequestSeq = 0;
   // 왜: 이전 요청을 중단해 지연 응답 누적을 줄입니다.
@@ -3843,6 +3878,86 @@
     return palette[index % palette.length];
   }
 
+  function normalizeMemberKeyYear(rawYear) {
+    const yearNumber = Number(rawYear);
+    if (!Number.isInteger(yearNumber)) {
+      return rawYear;
+    }
+
+    const currentYear = new Date().getFullYear();
+    if (yearNumber <= currentYear) {
+      return yearNumber;
+    }
+
+    // 왜: 학번 연도(2자리) 확장값이 미래 연도로 들어오면 19YY로 해석해야 실제 입학연도와 맞습니다.
+    return 1900 + (yearNumber % 100);
+  }
+
+  function normalizeMemberKeyPopulationRows(rows) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+    let correctedRowCount = 0;
+
+    const normalizedRows = safeRows.map((row) => {
+      const normalizedYear = normalizeMemberKeyYear(row?.year);
+      if (String(normalizedYear) !== String(row?.year ?? "")) {
+        correctedRowCount += 1;
+      }
+      return {
+        ...row,
+        year: normalizedYear,
+        // 왜: 백엔드 필드명이 camelCase/snake_case로 달라도 과정구분 값을 안정적으로 읽습니다.
+        courseCode: String(row?.courseCode ?? row?.course_code ?? "").trim()
+      };
+    });
+
+    return { normalizedRows, correctedRowCount };
+  }
+
+  function buildMemberKeyYears(rows) {
+    const yearSet = new Set();
+
+    rows.forEach((row) => {
+      const yearKey = String(row?.year ?? "").trim();
+      if (!yearKey) return;
+
+      yearSet.add(yearKey);
+    });
+
+    const years = Array.from(yearSet).sort((a, b) => Number(a) - Number(b));
+    return years;
+  }
+
+  function buildMemberKeyCourseSeriesFromRows(rows, years) {
+    const courseMap = new Map();
+
+    rows.forEach((row) => {
+      const yearKey = String(row?.year ?? "").trim();
+      const courseCode = String(row?.courseCode ?? "").trim();
+      if (!yearKey || !courseCode) return;
+
+      const memberCount = Number(row?.memberCount || 0);
+      if (!courseMap.has(courseCode)) {
+        courseMap.set(courseCode, new Map());
+      }
+
+      const yearCountMap = courseMap.get(courseCode);
+      const prevCount = Number(yearCountMap.get(yearKey) || 0);
+      yearCountMap.set(yearKey, prevCount + memberCount);
+    });
+
+    return Array.from(courseMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], "ko-KR"))
+      .map(([courseCode, yearCountMap]) => ({
+        courseCode,
+        yearCounts: years.map((year) => Number(yearCountMap.get(year) || 0))
+      }));
+  }
+
+  function resolveCourseCodeLabel(courseCode) {
+    const code = String(courseCode ?? "").trim();
+    return code ? `과정 ${code}` : "과정 미지정";
+  }
+
   async function refreshMemberKeyPopulation(campus, requestSeq) {
     if (memberKeyPopulationAbortController) {
       memberKeyPopulationAbortController.abort();
@@ -3883,23 +3998,31 @@
       return;
     }
 
-    const years = (data.years || []).map((year) => String(year));
-    const campusSeries = data.campusSeries || [];
-    memberKeyPopulationTableData = data.rows || [];
+    const { normalizedRows, correctedRowCount } = normalizeMemberKeyPopulationRows(data.rows || []);
+    const years = buildMemberKeyYears(normalizedRows);
+    const courseSeries = buildMemberKeyCourseSeriesFromRows(normalizedRows, years);
+    memberKeyPopulationTableData = normalizedRows;
     renderMemberKeyPopulationTable();
 
-    if (years.length === 0 || campusSeries.length === 0) {
+    if (correctedRowCount > 0) {
+      console.info(
+        "[통계] 학번 기반 인구 연도 보정 적용",
+        { correctedRowCount, currentYear: new Date().getFullYear() }
+      );
+    }
+
+    if (years.length === 0 || courseSeries.length === 0) {
       if (memberKeyPopulationChartInstance) {
         updateChart(memberKeyPopulationChartInstance, [], []);
       }
-      setMemberKeyPopulationStatus("학번 기반 집계 데이터가 없어 0건으로 표시됩니다.");
+      setMemberKeyPopulationStatus("학번 기반 과정구분 집계 데이터가 없어 0건으로 표시됩니다.");
       return;
     }
 
-    const datasets = campusSeries.map((series, index) => ({
-      label: `${series.campusName || "미지정"} (${series.campusCode || "-"})`,
+    const datasets = courseSeries.map((series, index) => ({
+      label: resolveCourseCodeLabel(series.courseCode),
       data: (series.yearCounts || []).map((count) => Number(count || 0)),
-      stack: "campus",
+      stack: "course",
       backgroundColor: resolveMemberKeyColor(index)
     }));
 
@@ -3914,9 +4037,11 @@
       updateChart(memberKeyPopulationChartInstance, years, datasets);
     }
 
-    const totalMembers = Number(data.totalMembers || 0).toLocaleString();
+    const totalMembers = normalizedRows
+      .reduce((sum, row) => sum + Number(row?.memberCount || 0), 0)
+      .toLocaleString();
     setMemberKeyPopulationStatus(
-      `기준=학번(MEMBER_KEY) / 캠퍼스=${campus || "전체"} / 집계인원=${totalMembers}명`
+      `기준=학번(MEMBER_KEY) / 캠퍼스=${campus || "전체"} / 과정구분=${courseSeries.length}개 / 집계인원=${totalMembers}명`
     );
   }
 
@@ -3934,7 +4059,7 @@
     const populationYear = document.getElementById("populationYear").value;
 
     setPopulationStatus("조회 중...");
-    // 왜: 임시 비활성화 상태에서는 학번 기반 그래프 API를 호출하지 않아 불필요한 오류 로그를 막습니다.
+    // 왜: 학번 기반 통계는 캠퍼스 필터만 연동되므로 별도 API를 함께 호출합니다.
     if (enableMemberKeyPopulation) {
       // 왜: 학번 기반 연도/캠퍼스 표는 "캠퍼스 전용" 통계라서, 연도/행정구역 필터와 무관하게 캠퍼스만 전달합니다.
       refreshMemberKeyPopulation(campus, requestSeq);
@@ -4122,9 +4247,6 @@
     }
 
     // download buttons
-    document.getElementById("downloadIndustryCsv").onclick = () => {
-      window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`;
-    };
     document.getElementById("downloadIndustryCsvTop").onclick = () => {
       window.location.href = `/statistics/api/industry/export?campus=${encodeURIComponent(campus)}&admCd=${encodeURIComponent(admCd)}&admNm=${encodeURIComponent(admLabel)}&statsYear=${encodeURIComponent(statsYear)}`;
     };

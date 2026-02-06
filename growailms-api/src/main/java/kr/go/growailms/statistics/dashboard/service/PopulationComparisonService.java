@@ -37,17 +37,20 @@ public class PopulationComparisonService {
     private final KosisStatisticsService kosisStatisticsService;
     private final CampusStudentPopulationExcelService campusStudentPopulationExcelService;
     private final SgisAdministrativeCodeService sgisAdministrativeCodeService;
+    private final StatisticsDashboardCacheService statisticsDashboardCacheService;
 
     private static final Logger log = LoggerFactory.getLogger(PopulationComparisonService.class);
 
     public PopulationComparisonService(
             KosisStatisticsService kosisStatisticsService,
             CampusStudentPopulationExcelService campusStudentPopulationExcelService,
-            SgisAdministrativeCodeService sgisAdministrativeCodeService
+            SgisAdministrativeCodeService sgisAdministrativeCodeService,
+            StatisticsDashboardCacheService statisticsDashboardCacheService
     ) {
         this.kosisStatisticsService = kosisStatisticsService;
         this.campusStudentPopulationExcelService = campusStudentPopulationExcelService;
         this.sgisAdministrativeCodeService = sgisAdministrativeCodeService;
+        this.statisticsDashboardCacheService = statisticsDashboardCacheService;
     }
 
     public PopulationComparisonResponse compare(
@@ -65,6 +68,19 @@ public class PopulationComparisonService {
 
         String requestedAdmCd = normalizeRequestedAdmCd(admCd);
         String requestedAdmNm = normalizeRequestedAdmNm(admNm);
+
+        // 왜: 같은 필터로 다시 들어올 때 외부 통계 조회/비율 계산을 반복하지 않도록 최종 응답을 DB 캐시에서 재사용합니다.
+        var cached = statisticsDashboardCacheService.findPopulation(
+                resolvedCampus,
+                requestedAdmCd,
+                requestedAdmNm,
+                desiredPopulationYear
+        );
+        if (cached.isPresent()) {
+            log.info("인구 통계 캐시 HIT: campus={}, admCd={}, year={}", resolvedCampus, requestedAdmCd, desiredPopulationYear);
+            return cached.get();
+        }
+        log.info("인구 통계 캐시 MISS: campus={}, admCd={}, year={}", resolvedCampus, requestedAdmCd, desiredPopulationYear);
 
         // 왜: SGIS 인구 API는 행안부 코드(41/28/30...)가 아니라 SGIS 코드(31/23/25...) 체계를 씁니다.
         //     프론트는 캠퍼스 소속 행정구역을 "이름"까지 알고 있으므로, 이름 기반(stage API)으로 SGIS 코드를 찾아 변환합니다.
@@ -116,7 +132,7 @@ public class PopulationComparisonService {
             ));
         }
 
-        return new PopulationComparisonResponse(
+        PopulationComparisonResponse response = new PopulationComparisonResponse(
                 resolvedCampus,
                 usedAdmCd,
                 requestedAdmCd,
@@ -126,6 +142,14 @@ public class PopulationComparisonService {
                 regionTotal,
                 rows
         );
+        statisticsDashboardCacheService.savePopulation(
+                resolvedCampus,
+                requestedAdmCd,
+                requestedAdmNm,
+                desiredPopulationYear,
+                response
+        );
+        return response;
     }
 
     private Map<String, GenderCount> loadRegionPopulationGenderCounts(String admCd, int year) {

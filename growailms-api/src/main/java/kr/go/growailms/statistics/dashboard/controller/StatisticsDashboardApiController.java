@@ -104,7 +104,7 @@ public class StatisticsDashboardApiController {
             @RequestParam(name = "campus", required = false) String campus
     ) {
         try {
-            // 왜: 학번 기반 통계는 "캠퍼스"만 필터로 사용해야 하므로, 요청 로그도 캠퍼스 기준으로만 남깁니다.
+            // 왜: 학번 기반 통계는 캠퍼스 필터만 사용하므로 실제 요청값을 로그에 남겨 장애 분석 시간을 줄입니다.
             log.info("통계 API 호출(학번인구-캠퍼스전용): campus={}", campus);
             return ResponseEntity.ok(memberKeyPopulationService.summarizeByYearAndCampus(campus));
         } catch (IllegalArgumentException e) {
