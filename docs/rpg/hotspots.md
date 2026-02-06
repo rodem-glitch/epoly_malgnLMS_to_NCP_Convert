@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-06 15:40
+최근 자동 갱신: 2026-02-06 17:49
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -55,3 +55,13 @@
 ## 갱신 기준(강제)
 - 권한/세션/결제/수료/통계/업로드처럼 “운영 영향이 큰” 부분을 수정했으면,
   무엇이 위험했고 무엇을 확인했는지(근거)를 1~2줄로 추가합니다.
+
+## 최근 갱신 메모
+- 2026-02-06 / 통계 대시보드(산업 탭) UI:
+  - 파일: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+  - 위험: 버튼 DOM(`downloadIndustryCsv`)만 지우고 JS 바인딩을 남기면 `null.onclick` 오류로 탭 렌더링이 깨질 수 있음
+  - 확인 근거: 버튼 마크업과 `refreshIndustry()`의 동일 ID 클릭 바인딩을 함께 제거하고, `rg`로 `downloadIndustryCsvTop`만 남았는지 확인
+- 2026-02-06 / 통계 대시보드(산업/인구) 결과 캐시:
+  - 파일: `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/IndustryAnalysisService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/PopulationComparisonService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/persistence/StatisticsDashboardCacheJdbcRepository.java`
+  - 위험: 캐시 키 구성(`campus/admCd/admNm/year`)이 바뀌면 기존 캐시 적중률이 급락하거나 잘못된 재사용이 생길 수 있음
+  - 확인 근거: 캐시 키를 SHA-256 고정 규칙으로 통일하고, `./gradlew.bat compileJava` 및 서비스 HIT/MISS 로그로 동작 확인

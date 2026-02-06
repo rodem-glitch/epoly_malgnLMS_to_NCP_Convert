@@ -5,14 +5,14 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-06 15:40
+최근 자동 갱신: 2026-02-06 17:49
 
 - JSP 총합(전체): 1225
 - JSP(public_html): 1224 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 927
 - DAO(src/dao): 178
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 109
-- polytech-lms-api(Java/Spring Boot) Java 파일 수: 158
+- polytech-lms-api(Java/Spring Boot) Java 파일 수: 162
 
 생성된 인덱스:
 - docs/rpg/generated/jsp_setBody_index.tsv
@@ -57,3 +57,9 @@
 |---|---|---|---|---|
 | 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
+
+## 최근 작업(통계 대시보드)
+| 기능/화면 | 진입점(JSP/API) | 관련 파일 | 비고 |
+|---|---|---|---|
+| 산업분포 분석 표 내 엑셀 버튼 제거 | `public_html/tutor_lms/index.jsp` → `project/components/StatisticsPage.tsx` → `polytech-lms-api/src/main/resources/static/statistics/dashboard.html` | `polytech-lms-api/src/main/resources/static/statistics/dashboard.html` | 표 카드 헤더의 `downloadIndustryCsv` 버튼만 제거, 상단 `downloadIndustryCsvTop` 다운로드 버튼은 유지 |
+| 산업/인구 비교 결과 DB 캐시 | `public_html/tutor_lms/index.jsp` → `project/components/StatisticsPage.tsx` → `/statistics/api/industry/analysis`, `/statistics/api/population/compare` | `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/IndustryAnalysisService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/PopulationComparisonService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/StatisticsDashboardCacheService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/persistence/StatisticsDashboardCacheJdbcRepository.java`, `polytech-lms-api/src/main/resources/sql/schema-statistics-dashboard-cache.sql` | 동일 파라미터 재조회 시 계산 결과 JSON을 DB에서 바로 반환(HIT/MISS 로그 추가) |

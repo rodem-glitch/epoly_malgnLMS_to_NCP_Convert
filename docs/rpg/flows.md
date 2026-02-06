@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-06 15:40
+최근 자동 갱신: 2026-02-06 17:49
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -121,4 +121,42 @@
   - `build/resources` 파일도 동일하게 반영해 실행 중 화면과 소스 불일치 제거
   - `refreshMemberKeyPopulation()`에서 응답 행 기준으로 연도 보정 후 차트/표 재구성 확인
   - `./gradlew.bat compileJava`로 API 엔드포인트/서비스/저장소 컴파일 성공 확인
+- 최근 갱신: 2026-02-06
+
+### FLOW-3002: 산업분포 분석 표 내 엑셀 버튼 제거
+- 사용자 동작(의도): 교수자 LMS 통계 > 산업별 통계에서 표 카드 헤더의 엑셀 버튼을 숨기고 싶음
+- 진입점: `public_html/tutor_lms/index.jsp` → `project/components/StatisticsPage.tsx`(iframe) → `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+- 처리(핵심):
+  - 산업분포 분석 카드 헤더의 `downloadIndustryCsv` 버튼 마크업 제거
+  - `refreshIndustry()` 내부의 `downloadIndustryCsv` 클릭 바인딩 제거(없는 DOM 참조 에러 방지)
+  - 상단 다운로드 카드의 `downloadIndustryCsvTop` 버튼/바인딩은 유지
+- DB: 없음(UI 레벨 변경, API/DAO 쿼리 변경 없음)
+- 출력:
+  - 산업분포 분석 표 카드 헤더: 다운로드 버튼 미노출
+  - 상단 “산업분포 통합 데이터” 다운로드 버튼: 기존대로 동작
+- 확인(근거):
+  - 코드 확인: `dashboard.html`에서 `downloadIndustryCsv` 버튼/onclick 제거 확인
+  - 정적 검증: `rg -n "downloadIndustryCsv(\\W|$)|downloadIndustryCsvTop" .../dashboard.html` 결과에서 `downloadIndustryCsvTop`만 남았는지 확인
+- 최근 갱신: 2026-02-06
+
+### FLOW-3003: 산업/인구 비교 결과 DB 캐시 기반 재사용
+- 사용자 동작(의도): 통계 탭에서 같은 필터(캠퍼스/행정구역/연도)로 반복 조회해도 빠르게 결과를 보고 싶음
+- 진입점:
+  - 산업: `/statistics/api/industry/analysis`
+  - 인구: `/statistics/api/population/compare`
+- 처리(핵심):
+  - 서비스 시작 시 `statistics_dashboard_cache` 테이블을 보장 생성
+  - `IndustryAnalysisService`, `PopulationComparisonService`에서 계산 전에 캐시 조회(HIT 시 즉시 반환)
+  - MISS일 때만 기존 계산 수행 후 최종 응답 JSON을 DB에 upsert 저장
+  - 캐시 키: `cacheType + campus + admCd + admNm + year`를 SHA-256으로 해시해 고정 길이 PK 사용
+  - 운영 추적을 위해 캐시 HIT/MISS 로그를 남김
+- DB:
+  - 테이블: `statistics_dashboard_cache`
+  - 컬럼: `cache_key(PK)`, `cache_type`, `campus`, `adm_cd`, `adm_nm`, `stats_year`, `payload_json`, `hit_count`, `created_at`, `updated_at`
+- 출력:
+  - 기존 API 응답 포맷 유지(프론트 변경 없음)
+  - 동일 조건 재조회 시 계산 결과를 DB에서 직접 반환해 응답 지연 감소
+- 확인(근거):
+  - 코드 반영: 캐시 저장소/서비스 추가 및 산업·인구 서비스에 캐시 분기 연결 확인
+  - 빌드 검증: `cd polytech-lms-api && ./gradlew.bat compileJava` 성공
 - 최근 갱신: 2026-02-06
