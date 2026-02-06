@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-05
+최근 갱신: 2026-02-06
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-05 10:19
+최근 자동 갱신: 2026-02-06 14:05
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -49,6 +49,15 @@
 - 통계 대시보드(인구 탭) 비동기 UI 주의:
   - 필터 연속 변경 시 이전 요청 응답이 늦게 도착하면 차트/표가 서로 다른 조건 값으로 보일 수 있습니다.
   - `dashboard.html`의 `refreshPopulation()`에서 이전 요청 중단(`populationAbortController`), 최신 요청 순번(`populationRequestSeq`) 검증, 표 즉시 렌더(`renderPopulationTable`, `renderGenderTable`)를 함께 유지해야 합니다.
+- 통계 대시보드(학번 기반 인구) 집계 주의:
+  - 현재 운영 DB에서는 `LMS_MEMBER_VIEW`가 직접 노출되지 않을 수 있으므로, 동기화 테이블 `LM_POLY_MEMBER` 기준으로 조회해야 합니다.
+  - `LM_POLY_MEMBER.MEMBER_KEY`는 10자리 숫자 형식(년도2+캠퍼스2+과정2+일련4) 가정이 깨지면 연도 추출이 어긋날 수 있으므로, 숫자/길이 필터를 유지해야 합니다.
+  - 캠퍼스 필터는 화면값(`서울`)과 DB값(`서울캠퍼스`)이 다를 수 있어 `REPLACE(CAMPUS_NAME, '캠퍼스', '')` 비교를 같이 유지해야 합니다.
+  - 사용자 요구상 학번 기반 그래프/표는 캠퍼스 전용 통계이므로, 행정구역/연도 필터 파라미터를 새로 연결하지 않도록 유지해야 합니다.
+  - DB 방언 차이(MySQL/H2)로 SQL 문법 오류가 날 수 있으므로, `REGEXP`, `UNSIGNED`, 별칭 `HAVING` 같은 방언 의존 문법은 피하고 `LENGTH/SUBSTRING/CONCAT` 기준으로 유지해야 합니다.
+  - 임시 숨김 상태에서는 `dashboard.html`의 `enableMemberKeyPopulation=false`를 유지해 API 호출까지 중지해야 불필요한 오류 로그 누적을 막을 수 있습니다.
+  - 운영 확인 시 `MemberKeyPopulationJdbcRepository`의 `학번 기반 인구 SQL 시작/성공/실패` 로그를 먼저 확인하면, 뷰테이블 조회 자체 문제인지 후처리 문제인지 빠르게 분리할 수 있습니다.
+  - 인구 탭 필터 연속 변경 시 학번 그래프도 비동기 충돌이 날 수 있으므로 `memberKeyPopulationAbortController`와 요청 순번 검증(`requestSeq`)을 함께 유지해야 합니다.
 
 ## 갱신 기준(강제)
 - 권한/세션/결제/수료/통계/업로드처럼 “운영 영향이 큰” 부분을 수정했으면,

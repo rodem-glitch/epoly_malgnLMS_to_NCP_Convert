@@ -1,18 +1,18 @@
 ﻿# RPG-라이트: 저장소 지도 (`map.md`)
 
-최근 갱신: 2026-02-05
+최근 갱신: 2026-02-06
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-05 10:19
+최근 자동 갱신: 2026-02-06 14:05
 
-- JSP 총합(전체): 1225
-- JSP(public_html): 1224 (sysop: 715, api: 18)
-- 템플릿 HTML(public_html/**/html): 927
+- JSP 총합(전체): 1226
+- JSP(public_html): 1225 (sysop: 715, api: 18)
+- 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 178
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 109
-- polytech-lms-api(Java/Spring Boot) Java 파일 수: 158
+- polytech-lms-api(Java/Spring Boot) Java 파일 수: 160
 
 생성된 인덱스:
 - docs/rpg/generated/jsp_setBody_index.tsv
@@ -62,3 +62,4 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
 |---|---|---|---|---|
 | 산업별 통계: 전체 캠퍼스/전국 전체 선택 시 “행정구역(종사자) 인원”이 0으로 뜨는 문제 수정 | `/statistics` → `GET /statistics/api/industry/analysis` | `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/controller/StatisticsDashboardApiController.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/IndustryAnalysisService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/sgis/service/SgisCompanyCacheService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/sgis/client/SgisClient.java` | JSON(산업분포 분석) | 전국(`admCd=00`)은 SGIS 시도코드→로컬 시도코드→`adm_cd` non 리스트 순으로 합산. 시도/전국 코드의 null/0,0 캐시는 1회 재조회 |
+| 인구별 통계: 학번(MEMBER_KEY) 기반 연도별·캠퍼스별 인구 그래프/표 추가 | `/statistics` → `GET /statistics/api/population/member-key-campus` | `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/controller/StatisticsDashboardApiController.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/MemberKeyPopulationService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java` | JSON(학번 기반 인구 시계열) + 인구 탭 하단 그래프/표 | `LM_POLY_MEMBER`(학사 원천 `COM.LMS_MEMBER_VIEW` 동기화본)의 `MEMBER_KEY/CAMPUS_CODE/CAMPUS_NAME` 집계. **캠퍼스 필터만 반영**하고 행정구역/연도 필터는 집계에서 제외. 2026-02-06 기준 화면/호출 임시 숨김(`memberKeyPopulationCard`, `enableMemberKeyPopulation=false`) |
