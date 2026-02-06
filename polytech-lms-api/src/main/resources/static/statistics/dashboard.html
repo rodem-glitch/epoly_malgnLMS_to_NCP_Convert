@@ -1010,6 +1010,11 @@
         </div>
       </div>
 
+      <!-- 출처 정보 -->
+      <div class="text-end text-muted" style="font-size: 0.75rem; margin-top: 0rem; margin-bottom: 1.5rem;">
+        <i class="bi bi-info-circle"></i> 인구 데이터 출처: KOSIS(국가통계포털), 2019~2024년
+      </div>
+
       <!-- 왜: 사용자 수정 작업을 위해 학번 기반 연도/캠퍼스 인구 카드를 다시 기본 노출합니다. -->
       <div class="card-premium" id="memberKeyPopulationCard">
         <div class="card-header-premium">
@@ -1027,12 +1032,14 @@
                 <col style="width: 120px;">
                 <col style="width: 160px;">
                 <col style="width: 120px;">
+                <col style="width: 120px;">
               </colgroup>
               <thead class="table-light" style="position: sticky; top: 0;">
                 <tr>
                   <th class="text-center">연도</th>
                   <th class="text-center">캠퍼스 코드</th>
                   <th class="text-center">캠퍼스명</th>
+                  <th class="text-center">과정구분</th>
                   <th class="text-center">인원</th>
                 </tr>
               </thead>
@@ -1044,10 +1051,6 @@
         </div>
       </div>
 
-      <!-- 출처 정보 -->
-      <div class="text-end text-muted" style="font-size: 0.75rem; margin-top: 0.5rem;">
-        <i class="bi bi-info-circle"></i> 인구 데이터 출처: KOSIS(국가통계포털), 2019~2024년
-      </div>
     </div>
 
     <div class="tab-pane fade" id="pane-industry" role="tabpanel" aria-labelledby="tab-industry">
@@ -2087,7 +2090,7 @@
     tbody.innerHTML = '';
 
     if (!memberKeyPopulationTableData || memberKeyPopulationTableData.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">데이터가 없습니다.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">데이터가 없습니다.</td></tr>';
       return;
     }
 
@@ -2097,6 +2100,7 @@
         <td class="tabular-nums text-center">${row.year ?? ''}</td>
         <td class="text-center">${row.campusCode ?? ''}</td>
         <td class="text-center">${row.campusName ?? ''}</td>
+        <td class="text-center">${row.courseCode ?? ''}</td>
         <td class="tabular-nums text-end">${Number(row.memberCount ?? 0).toLocaleString()}</td>
       `;
       tbody.appendChild(tr);
@@ -3869,54 +3873,58 @@
       }
       return {
         ...row,
-        year: normalizedYear
+        year: normalizedYear,
+        // 왜: 백엔드 필드명이 camelCase/snake_case로 달라도 과정구분 값을 안정적으로 읽습니다.
+        courseCode: String(row?.courseCode ?? row?.course_code ?? "").trim()
       };
     });
 
     return { normalizedRows, correctedRowCount };
   }
 
-  function buildMemberKeySeriesFromRows(rows) {
+  function buildMemberKeyYears(rows) {
     const yearSet = new Set();
-    const campusMap = new Map();
 
     rows.forEach((row) => {
       const yearKey = String(row?.year ?? "").trim();
       if (!yearKey) return;
 
-      const campusCode = String(row?.campusCode ?? "").trim();
-      const campusName = String(row?.campusName ?? "").trim();
-      const campusKey = `${campusCode}||${campusName}`;
-      const memberCount = Number(row?.memberCount || 0);
-
       yearSet.add(yearKey);
-      if (!campusMap.has(campusKey)) {
-        campusMap.set(campusKey, {
-          campusCode,
-          campusName,
-          yearCountMap: new Map()
-        });
-      }
-
-      const campusInfo = campusMap.get(campusKey);
-      const prevCount = Number(campusInfo.yearCountMap.get(yearKey) || 0);
-      campusInfo.yearCountMap.set(yearKey, prevCount + memberCount);
     });
 
     const years = Array.from(yearSet).sort((a, b) => Number(a) - Number(b));
-    const campusSeries = Array.from(campusMap.values())
-      .sort((a, b) => {
-        const codeCompare = a.campusCode.localeCompare(b.campusCode, "ko-KR");
-        if (codeCompare !== 0) return codeCompare;
-        return a.campusName.localeCompare(b.campusName, "ko-KR");
-      })
-      .map((campusInfo) => ({
-        campusCode: campusInfo.campusCode,
-        campusName: campusInfo.campusName,
-        yearCounts: years.map((year) => Number(campusInfo.yearCountMap.get(year) || 0))
-      }));
+    return years;
+  }
 
-    return { years, campusSeries };
+  function buildMemberKeyCourseSeriesFromRows(rows, years) {
+    const courseMap = new Map();
+
+    rows.forEach((row) => {
+      const yearKey = String(row?.year ?? "").trim();
+      const courseCode = String(row?.courseCode ?? "").trim();
+      if (!yearKey || !courseCode) return;
+
+      const memberCount = Number(row?.memberCount || 0);
+      if (!courseMap.has(courseCode)) {
+        courseMap.set(courseCode, new Map());
+      }
+
+      const yearCountMap = courseMap.get(courseCode);
+      const prevCount = Number(yearCountMap.get(yearKey) || 0);
+      yearCountMap.set(yearKey, prevCount + memberCount);
+    });
+
+    return Array.from(courseMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], "ko-KR"))
+      .map(([courseCode, yearCountMap]) => ({
+        courseCode,
+        yearCounts: years.map((year) => Number(yearCountMap.get(year) || 0))
+      }));
+  }
+
+  function resolveCourseCodeLabel(courseCode) {
+    const code = String(courseCode ?? "").trim();
+    return code ? `과정 ${code}` : "과정 미지정";
   }
 
   async function refreshMemberKeyPopulation(campus, requestSeq) {
@@ -3960,7 +3968,8 @@
     }
 
     const { normalizedRows, correctedRowCount } = normalizeMemberKeyPopulationRows(data.rows || []);
-    const { years, campusSeries } = buildMemberKeySeriesFromRows(normalizedRows);
+    const years = buildMemberKeyYears(normalizedRows);
+    const courseSeries = buildMemberKeyCourseSeriesFromRows(normalizedRows, years);
     memberKeyPopulationTableData = normalizedRows;
     renderMemberKeyPopulationTable();
 
@@ -3971,18 +3980,18 @@
       );
     }
 
-    if (years.length === 0 || campusSeries.length === 0) {
+    if (years.length === 0 || courseSeries.length === 0) {
       if (memberKeyPopulationChartInstance) {
         updateChart(memberKeyPopulationChartInstance, [], []);
       }
-      setMemberKeyPopulationStatus("학번 기반 집계 데이터가 없어 0건으로 표시됩니다.");
+      setMemberKeyPopulationStatus("학번 기반 과정구분 집계 데이터가 없어 0건으로 표시됩니다.");
       return;
     }
 
-    const datasets = campusSeries.map((series, index) => ({
-      label: `${series.campusName || "미지정"} (${series.campusCode || "-"})`,
+    const datasets = courseSeries.map((series, index) => ({
+      label: resolveCourseCodeLabel(series.courseCode),
       data: (series.yearCounts || []).map((count) => Number(count || 0)),
-      stack: "campus",
+      stack: "course",
       backgroundColor: resolveMemberKeyColor(index)
     }));
 
@@ -4001,7 +4010,7 @@
       .reduce((sum, row) => sum + Number(row?.memberCount || 0), 0)
       .toLocaleString();
     setMemberKeyPopulationStatus(
-      `기준=학번(MEMBER_KEY) / 캠퍼스=${campus || "전체"} / 집계인원=${totalMembers}명`
+      `기준=학번(MEMBER_KEY) / 캠퍼스=${campus || "전체"} / 과정구분=${courseSeries.length}개 / 집계인원=${totalMembers}명`
     );
   }
 

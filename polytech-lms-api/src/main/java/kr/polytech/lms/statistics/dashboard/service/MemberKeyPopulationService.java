@@ -8,13 +8,15 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class MemberKeyPopulationService {
-    // 왜: 인구 탭에 "학번 규칙 기반(년도+캠퍼스) 분포"를 추가하려면
-    //     LM_POLY_MEMBER(학사 원천 뷰 동기화본) 집계를 연도축 시리즈 형태로 가공해야 화면이 바로 그릴 수 있습니다.
+    // 왜: 학번 기반 인구 통계는 "캠퍼스 필터 1개"만 적용되는 별도 카드라서
+    //     기존 인구/산업 통계와 분리해 단순한 응답 구조로 관리합니다.
 
     private static final Logger log = LoggerFactory.getLogger(MemberKeyPopulationService.class);
 
@@ -27,122 +29,115 @@ public class MemberKeyPopulationService {
     public MemberKeyPopulationResponse summarizeByYearAndCampus(String campus) {
         String normalizedCampus = normalizeCampus(campus);
 
-        // 왜: 사용자 요구사항에 따라 학번 기반 그래프는 "캠퍼스"만 필터로 사용하고,
-        //     행정구역/연도 필터는 집계에서 제외합니다.
         log.info("학번 기반 인구 통계 요청(캠퍼스 전용): campus={}", normalizedCampus);
 
-        List<MemberKeyPopulationJdbcRepository.YearCampusCount> counts =
-                memberKeyPopulationJdbcRepository.findYearCampusCounts(normalizedCampus);
+        List<MemberKeyPopulationJdbcRepository.YearCampusCourseCount> rows =
+                memberKeyPopulationJdbcRepository.findYearCampusCourseCounts(normalizedCampus);
 
-        if (counts.isEmpty()) {
-            log.warn("학번 기반 인구 통계 결과 없음(캠퍼스 전용): campus={}", normalizedCampus);
-            return new MemberKeyPopulationResponse(
-                    normalizedCampus,
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    0L
+        Set<Integer> yearSet = new LinkedHashSet<>();
+        Map<String, CampusAccumulator> campusMap = new LinkedHashMap<>();
+        Map<String, CourseAccumulator> courseMap = new LinkedHashMap<>();
+        List<YearCampusRow> responseRows = new ArrayList<>();
+        long totalMembers = 0L;
+
+        for (MemberKeyPopulationJdbcRepository.YearCampusCourseCount row : rows) {
+            yearSet.add(row.year());
+
+            YearCampusRow responseRow = new YearCampusRow(
+                    row.year(),
+                    row.campusCode(),
+                    row.campusName(),
+                    row.courseCode(),
+                    row.memberCount()
             );
+            responseRows.add(responseRow);
+            totalMembers += row.memberCount();
+
+            String campusKey = (row.campusCode() == null ? "" : row.campusCode()) + "||" + (row.campusName() == null ? "" : row.campusName());
+            CampusAccumulator acc = campusMap.computeIfAbsent(
+                    campusKey,
+                    key -> new CampusAccumulator(row.campusCode(), row.campusName())
+            );
+            long campusPrev = acc.yearCounts.getOrDefault(row.year(), 0L);
+            acc.yearCounts.put(row.year(), campusPrev + row.memberCount());
+
+            String courseCode = row.courseCode() == null ? "" : row.courseCode().trim();
+            CourseAccumulator courseAccumulator = courseMap.computeIfAbsent(
+                    courseCode,
+                    key -> new CourseAccumulator(courseCode)
+            );
+            long coursePrev = courseAccumulator.yearCounts.getOrDefault(row.year(), 0L);
+            courseAccumulator.yearCounts.put(row.year(), coursePrev + row.memberCount());
         }
 
-        List<Integer> years = buildYears(counts);
-        List<CampusYearSeries> series = buildSeries(counts, years);
-        List<YearCampusRow> rows = buildRows(counts);
-        long totalMembers = rows.stream().mapToLong(YearCampusRow::memberCount).sum();
+        List<Integer> years = new ArrayList<>(yearSet);
+        List<CampusYearSeries> campusSeries = new ArrayList<>();
+        for (CampusAccumulator acc : campusMap.values()) {
+            List<Long> yearCounts = new ArrayList<>();
+            for (Integer year : years) {
+                yearCounts.add(acc.yearCounts.getOrDefault(year, 0L));
+            }
+            campusSeries.add(new CampusYearSeries(acc.campusCode, acc.campusName, yearCounts));
+        }
+
+        List<CourseYearSeries> courseSeries = new ArrayList<>();
+        for (CourseAccumulator acc : courseMap.values()) {
+            List<Long> yearCounts = new ArrayList<>();
+            for (Integer year : years) {
+                yearCounts.add(acc.yearCounts.getOrDefault(year, 0L));
+            }
+            courseSeries.add(new CourseYearSeries(acc.courseCode, yearCounts));
+        }
 
         log.info(
-                "학번 기반 인구 통계 집계 완료: campus={}, years={}, campuses={}, rows={}, totalMembers={}",
-                normalizedCampus, years.size(), series.size(), rows.size(), totalMembers
-        );
-
-        return new MemberKeyPopulationResponse(
+                "학번 기반 인구 통계 응답: campus={}, years={}, campusSeries={}, courseSeries={}, rows={}, totalMembers={}",
                 normalizedCampus,
-                years,
-                series,
-                rows,
+                years.size(),
+                campusSeries.size(),
+                courseSeries.size(),
+                responseRows.size(),
                 totalMembers
         );
-    }
 
-    private List<Integer> buildYears(List<MemberKeyPopulationJdbcRepository.YearCampusCount> counts) {
-        Map<Integer, Boolean> yearMap = new LinkedHashMap<>();
-        for (MemberKeyPopulationJdbcRepository.YearCampusCount count : counts) {
-            yearMap.putIfAbsent(count.year(), true);
-        }
-        return new ArrayList<>(yearMap.keySet());
-    }
-
-    private List<CampusYearSeries> buildSeries(
-            List<MemberKeyPopulationJdbcRepository.YearCampusCount> counts,
-            List<Integer> years
-    ) {
-        Map<String, String> campusNameMap = new LinkedHashMap<>();
-        Map<String, String> campusCodeMap = new LinkedHashMap<>();
-        Map<String, Map<Integer, Long>> campusYearCountMap = new LinkedHashMap<>();
-
-        for (MemberKeyPopulationJdbcRepository.YearCampusCount count : counts) {
-            String campusKey = buildCampusKey(count.campusCode(), count.campusName());
-            campusCodeMap.putIfAbsent(campusKey, count.campusCode());
-            campusNameMap.putIfAbsent(campusKey, count.campusName());
-
-            Map<Integer, Long> yearCountMap = campusYearCountMap.computeIfAbsent(campusKey, key -> new LinkedHashMap<>());
-            yearCountMap.put(count.year(), count.memberCount());
-        }
-
-        List<CampusYearSeries> result = new ArrayList<>();
-        for (String campusKey : campusYearCountMap.keySet()) {
-            Map<Integer, Long> yearCountMap = campusYearCountMap.get(campusKey);
-            List<Long> yearCounts = new ArrayList<>();
-            long totalCount = 0L;
-
-            for (Integer year : years) {
-                long count = yearCountMap.getOrDefault(year, 0L);
-                yearCounts.add(count);
-                totalCount += count;
-            }
-
-            result.add(new CampusYearSeries(
-                    campusCodeMap.get(campusKey),
-                    campusNameMap.get(campusKey),
-                    yearCounts,
-                    totalCount
-            ));
-        }
-        return result;
-    }
-
-    private List<YearCampusRow> buildRows(List<MemberKeyPopulationJdbcRepository.YearCampusCount> counts) {
-        List<YearCampusRow> rows = new ArrayList<>();
-        for (MemberKeyPopulationJdbcRepository.YearCampusCount count : counts) {
-            rows.add(new YearCampusRow(
-                    count.year(),
-                    count.campusCode(),
-                    count.campusName(),
-                    count.memberCount()
-            ));
-        }
-        return rows;
-    }
-
-    private String buildCampusKey(String campusCode, String campusName) {
-        return "%s::%s".formatted(campusCode, campusName);
+        return new MemberKeyPopulationResponse(years, campusSeries, courseSeries, responseRows, totalMembers);
     }
 
     private String normalizeCampus(String campus) {
         if (!StringUtils.hasText(campus)) {
             return null;
         }
-        String normalized = campus.trim();
-        if ("전체".equals(normalized) || "전체 캠퍼스".equals(normalized)) {
+
+        String trimmedCampus = campus.trim();
+        if ("전체".equals(trimmedCampus) || "전체 캠퍼스".equals(trimmedCampus)) {
             return null;
         }
-        return normalized;
+        return trimmedCampus;
+    }
+
+    private static class CampusAccumulator {
+        private final String campusCode;
+        private final String campusName;
+        private final Map<Integer, Long> yearCounts = new LinkedHashMap<>();
+
+        private CampusAccumulator(String campusCode, String campusName) {
+            this.campusCode = campusCode;
+            this.campusName = campusName;
+        }
+    }
+
+    private static class CourseAccumulator {
+        private final String courseCode;
+        private final Map<Integer, Long> yearCounts = new LinkedHashMap<>();
+
+        private CourseAccumulator(String courseCode) {
+            this.courseCode = courseCode;
+        }
     }
 
     public record MemberKeyPopulationResponse(
-            String campus,
             List<Integer> years,
             List<CampusYearSeries> campusSeries,
+            List<CourseYearSeries> courseSeries,
             List<YearCampusRow> rows,
             long totalMembers
     ) {
@@ -151,8 +146,13 @@ public class MemberKeyPopulationService {
     public record CampusYearSeries(
             String campusCode,
             String campusName,
-            List<Long> yearCounts,
-            long totalCount
+            List<Long> yearCounts
+    ) {
+    }
+
+    public record CourseYearSeries(
+            String courseCode,
+            List<Long> yearCounts
     ) {
     }
 
@@ -160,6 +160,7 @@ public class MemberKeyPopulationService {
             int year,
             String campusCode,
             String campusName,
+            String courseCode,
             long memberCount
     ) {
     }
