@@ -1010,8 +1010,8 @@
         </div>
       </div>
 
-      <!-- 왜: 운영 점검 요청에 따라 학번 기반 연도/캠퍼스 인구 카드를 임시로 숨깁니다. -->
-      <div class="card-premium" id="memberKeyPopulationCard" style="display: none;">
+      <!-- 왜: 사용자 수정 작업을 위해 학번 기반 연도/캠퍼스 인구 카드를 다시 기본 노출합니다. -->
+      <div class="card-premium" id="memberKeyPopulationCard">
         <div class="card-header-premium">
           <h3><i class="bi bi-bar-chart-steps"></i> 학번 기반 연도별·캠퍼스별 인구(재학생 수)</h3>
         </div>
@@ -2265,8 +2265,8 @@
   let populationGenderChartInstance = null;
   let populationGenderGapChartInstance = null;
   let memberKeyPopulationChartInstance = null;
-  // 왜: 요청에 따라 학번 기반 인구 그래프/표를 임시 비활성화합니다.
-  const enableMemberKeyPopulation = false;
+  // 왜: 사용자 요청으로 학번 기반 인구 그래프/표를 다시 활성화합니다.
+  const enableMemberKeyPopulation = true;
   // 왜: 필터 연속 변경 시 이전 응답이 늦게 도착해 최신 화면을 덮지 않도록 요청 순서를 추적합니다.
   let populationRequestSeq = 0;
   // 왜: 이전 요청을 중단해 지연 응답 누적을 줄입니다.
@@ -3843,6 +3843,82 @@
     return palette[index % palette.length];
   }
 
+  function normalizeMemberKeyYear(rawYear) {
+    const yearNumber = Number(rawYear);
+    if (!Number.isInteger(yearNumber)) {
+      return rawYear;
+    }
+
+    const currentYear = new Date().getFullYear();
+    if (yearNumber <= currentYear) {
+      return yearNumber;
+    }
+
+    // 왜: 학번 연도(2자리) 확장값이 미래 연도로 들어오면 19YY로 해석해야 실제 입학연도와 맞습니다.
+    return 1900 + (yearNumber % 100);
+  }
+
+  function normalizeMemberKeyPopulationRows(rows) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+    let correctedRowCount = 0;
+
+    const normalizedRows = safeRows.map((row) => {
+      const normalizedYear = normalizeMemberKeyYear(row?.year);
+      if (String(normalizedYear) !== String(row?.year ?? "")) {
+        correctedRowCount += 1;
+      }
+      return {
+        ...row,
+        year: normalizedYear
+      };
+    });
+
+    return { normalizedRows, correctedRowCount };
+  }
+
+  function buildMemberKeySeriesFromRows(rows) {
+    const yearSet = new Set();
+    const campusMap = new Map();
+
+    rows.forEach((row) => {
+      const yearKey = String(row?.year ?? "").trim();
+      if (!yearKey) return;
+
+      const campusCode = String(row?.campusCode ?? "").trim();
+      const campusName = String(row?.campusName ?? "").trim();
+      const campusKey = `${campusCode}||${campusName}`;
+      const memberCount = Number(row?.memberCount || 0);
+
+      yearSet.add(yearKey);
+      if (!campusMap.has(campusKey)) {
+        campusMap.set(campusKey, {
+          campusCode,
+          campusName,
+          yearCountMap: new Map()
+        });
+      }
+
+      const campusInfo = campusMap.get(campusKey);
+      const prevCount = Number(campusInfo.yearCountMap.get(yearKey) || 0);
+      campusInfo.yearCountMap.set(yearKey, prevCount + memberCount);
+    });
+
+    const years = Array.from(yearSet).sort((a, b) => Number(a) - Number(b));
+    const campusSeries = Array.from(campusMap.values())
+      .sort((a, b) => {
+        const codeCompare = a.campusCode.localeCompare(b.campusCode, "ko-KR");
+        if (codeCompare !== 0) return codeCompare;
+        return a.campusName.localeCompare(b.campusName, "ko-KR");
+      })
+      .map((campusInfo) => ({
+        campusCode: campusInfo.campusCode,
+        campusName: campusInfo.campusName,
+        yearCounts: years.map((year) => Number(campusInfo.yearCountMap.get(year) || 0))
+      }));
+
+    return { years, campusSeries };
+  }
+
   async function refreshMemberKeyPopulation(campus, requestSeq) {
     if (memberKeyPopulationAbortController) {
       memberKeyPopulationAbortController.abort();
@@ -3883,10 +3959,17 @@
       return;
     }
 
-    const years = (data.years || []).map((year) => String(year));
-    const campusSeries = data.campusSeries || [];
-    memberKeyPopulationTableData = data.rows || [];
+    const { normalizedRows, correctedRowCount } = normalizeMemberKeyPopulationRows(data.rows || []);
+    const { years, campusSeries } = buildMemberKeySeriesFromRows(normalizedRows);
+    memberKeyPopulationTableData = normalizedRows;
     renderMemberKeyPopulationTable();
+
+    if (correctedRowCount > 0) {
+      console.info(
+        "[통계] 학번 기반 인구 연도 보정 적용",
+        { correctedRowCount, currentYear: new Date().getFullYear() }
+      );
+    }
 
     if (years.length === 0 || campusSeries.length === 0) {
       if (memberKeyPopulationChartInstance) {
@@ -3914,7 +3997,9 @@
       updateChart(memberKeyPopulationChartInstance, years, datasets);
     }
 
-    const totalMembers = Number(data.totalMembers || 0).toLocaleString();
+    const totalMembers = normalizedRows
+      .reduce((sum, row) => sum + Number(row?.memberCount || 0), 0)
+      .toLocaleString();
     setMemberKeyPopulationStatus(
       `기준=학번(MEMBER_KEY) / 캠퍼스=${campus || "전체"} / 집계인원=${totalMembers}명`
     );
@@ -3934,7 +4019,7 @@
     const populationYear = document.getElementById("populationYear").value;
 
     setPopulationStatus("조회 중...");
-    // 왜: 임시 비활성화 상태에서는 학번 기반 그래프 API를 호출하지 않아 불필요한 오류 로그를 막습니다.
+    // 왜: 학번 기반 통계는 캠퍼스 필터만 연동되므로 별도 API를 함께 호출합니다.
     if (enableMemberKeyPopulation) {
       // 왜: 학번 기반 연도/캠퍼스 표는 "캠퍼스 전용" 통계라서, 연도/행정구역 필터와 무관하게 캠퍼스만 전달합니다.
       refreshMemberKeyPopulation(campus, requestSeq);
