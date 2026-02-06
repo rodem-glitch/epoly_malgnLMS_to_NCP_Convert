@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-05 10:19
+최근 자동 갱신: 2026-02-06 15:40
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -39,6 +39,14 @@
   - `project/index.html`에 CSP 메타가 있어, 기본적으로 외부 CSS/폰트 로드가 막힙니다(보안상 장점).
   - 학생 메인(`public_html/html/css/custom.css`)은 Pretendard를 CDN으로 불러오지만, 교수자 앱에서 같은 방식으로 적용하려면 CSP 완화 또는 폰트 파일 자체 호스팅이 필요합니다(보안/배포 영향).
 - Spring Boot 설정/시크릿: `polytech-lms-api/src/main/resources/application.yml` (키/토큰/DB정보 노출 금지)
+- 통계 대시보드 프런트-실행산출물 동기화:
+  - 파일: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/build/resources/main/static/statistics/dashboard.html`
+  - 위험: `src`/`build`가 갈라지면 화면에서 카드가 숨김인데 소스는 노출(또는 반대)처럼 동작이 달라짐
+  - 확인 기준: 노출/비활성 제어값(`memberKeyPopulationCard`, `enableMemberKeyPopulation`)을 두 파일에서 동일하게 맞추고 UI에서 즉시 확인
+- 학번 기반 연도 보정(인구 통계):
+  - 파일: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+  - 위험: 학번 2자리 연도 확장값이 미래 연도로 표시되면(예: 2099) 그래프/표 해석이 틀어짐
+  - 확인 기준: `normalizeMemberKeyYear()`에서 현재 연도 초과 시 `19YY`로 보정되고, 보정 후 데이터로 차트/표가 함께 렌더링되는지 확인
 
 ## 갱신 기준(강제)
 - 권한/세션/결제/수료/통계/업로드처럼 “운영 영향이 큰” 부분을 수정했으면,

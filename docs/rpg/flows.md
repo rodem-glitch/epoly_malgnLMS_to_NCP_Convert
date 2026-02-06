@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-05 10:19
+최근 자동 갱신: 2026-02-06 15:40
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -97,3 +97,24 @@
   - 권한/리다이렉트/빌드 안내 분기 코드를 파일에서 확인(`public_html/tutor_lms/index.jsp`)
   - 로컬 빌드로 산출물 갱신 확인(`cd project && npm run build`)
 - 최근 갱신: 2026-02-05
+
+### FLOW-3001: 통계 대시보드 인구 탭(학번 기반 연도·캠퍼스 그래프) 노출 복구
+- 사용자 동작(의도): 교수자 LMS 통계 > 인구별 통계에서 학번 기반 연도·캠퍼스 인구 그래프를 다시 확인
+- 진입점: `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`
+- 처리(핵심):
+  - 학번 기반 카드 DOM(`memberKeyPopulationCard`)을 기본 노출 상태로 유지
+  - 비활성 플래그(`enableMemberKeyPopulation`)를 `true`로 원복해 API 호출 재개
+  - 학번 기반 통계는 캠퍼스 기준 통계이므로 캠퍼스 값만 전달
+  - 학번 연도(2자리) 확장값이 현재 연도보다 크면 `19YY`로 보정해 표/그래프 연도 불일치 방지
+- DB:
+  - 프런트는 `/statistics/api/population/member-key-campus` 엔드포인트만 호출
+  - 실제 테이블/뷰 매핑은 백엔드 저장소 구현 기준(`MemberKeyPopulation*`)을 따름
+- 출력:
+  - 차트: `memberKeyPopulationChart`
+  - 표: `memberKeyPopulationTableBody`
+  - 상태 문구: `memberKeyPopulationStatus`
+- 확인(근거):
+  - `src` 파일에서 카드 숨김 스타일 제거, 플래그 `true` 반영 확인
+  - `build/resources` 파일도 동일하게 반영해 실행 중 화면과 소스 불일치 제거
+  - `refreshMemberKeyPopulation()`에서 응답 행 기준으로 연도 보정 후 차트/표 재구성 확인
+- 최근 갱신: 2026-02-06
