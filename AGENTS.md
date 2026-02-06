@@ -33,7 +33,6 @@
   - `public_html/api/`: 외부/내부 API용 JSP 엔드포인트.
   - `public_html/data/`: 업로드/생성 파일 저장 위치(실서버에서는 doc_root 하위).
 - `var/log/growailms/`: 에러/접속 등 로그.
-- `resin/`, `resin.xml`: Resin WAS 설정(로컬/배포 환경별).
 
 ## 요청 처리 흐름(일반 패턴)
 - JSP 상단에서 `init.jsp` 포함 → 공통 객체/권한/사이트 정보를 준비합니다.

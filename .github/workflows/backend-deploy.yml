@@ -2,9 +2,9 @@
 # Backend Cloud Run Deploy
 # ============================================
 #
-# 배포 대상:
-#   1. growailms-backend (eGovFrame 4.3, MyBatis 3.5, JWT + Keycloak)
-#   2. growailms-legacy (Java 8, JSP, Tomcat 9)
+# 왜: 레거시(Java 8, JSP, Tomcat 9) 서비스가 Phase 4에서 제거되었으므로,
+#     growailms-backend(eGovFrame)만 배포합니다.
+#     growailms-api(Spring Boot)는 gcp-deploy.yml에서 별도 배포합니다.
 #
 
 name: Backend Cloud Run Deploy
@@ -16,22 +16,17 @@ on:
       - develop
     paths:
       - 'growailms-backend/**'
-      - 'public_html/**'
-      - 'src/**'
-      - 'Dockerfile.legacy'
       - '.github/workflows/backend-deploy.yml'
   workflow_dispatch:
     inputs:
       service:
         description: 'Service to deploy'
-        default: 'all'
+        default: 'backend'
         type: choice
         options:
-          - all
           - backend
-          - legacy
 
 env:
-  PROJECT_ID: \${{ secrets.GCP_PROJECT_ID }}
-  REGION: \${{ secrets.GCP_REGION || 'asia-northeast1' }}
-  ARTIFACT_REGISTRY: \${{ secrets.GCP_REGION || 'asia-northeast1' }}-docker.pkg.dev
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION || 'asia-northeast1' }}
+  ARTIFACT_REGISTRY: ${{ secrets.GCP_REGION || 'asia-northeast1' }}-docker.pkg.dev
