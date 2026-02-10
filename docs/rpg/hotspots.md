@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 11:49
+최근 자동 갱신: 2026-02-10 16:22
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -27,6 +27,21 @@
 - 상태값 관례: `status`의 의미(테이블마다 다를 수 있으니 항상 확인)
 - 템플릿 렌더링: JSP의 `p.setVar()/p.setLoop()` ↔ 템플릿 `.html` 변수/루프 매칭
 - 파일 업로드/경로: `public_html/data/` 및 저장 경로/권한
+- Resin 실행 conf 경로:
+  - IntelliJ 실행 기준은 `.idea/runConfigurations/Resin.xml`의 `SCRIPT_OPTIONS`입니다.
+  - 현재 기준값은 `console --conf C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml`입니다.
+  - 외부 conf(`resin-4.0.67/conf/resin.xml`)의 ROOT 웹앱 경로가 `C:\Users\newkl\Desktop\polytech-lms\public_html`인지 반드시 확인합니다.
+  - ROOT 웹앱 경로가 다른 저장소(예: 구 `MalgnLMS`)를 가리키면 `/mypage/*`가 구 로그인으로 빠지거나 404가 발생합니다.
+- Resin 클래스패스/컴파일:
+  - `public_html/WEB-INF/classes`가 비어 있으면 JSP 컴파일 시 `package dao does not exist`로 `/mypage/*`가 500이 납니다.
+  - 로컬 실행은 `public_html/WEB-INF/resin-web.xml`의 `compiling-loader(source=C:/Users/newkl/Desktop/polytech-lms/src)`를 기준으로 유지합니다.
+  - 수동 컴파일이 필요하면 Resin lib를 classpath에 포함해 `src/dao`, `src/malgnsoft`를 `public_html/WEB-INF/classes`로 컴파일합니다.
+  - 확인 근거: `curl -s /mypage/new_main/index.jsp` 응답에 `import dao.*` 컴파일 에러가 출력되면 클래스 누락 상태입니다.
+- Resin JNDI(DB) 누락:
+  - 증상: `/mypage/new_main/index.jsp`가 `200`인데 본문이 비거나(`Content-Length: 12/0`) 흰 화면으로 보입니다.
+  - 원인: `jdbc/malgn` DataSource가 null이면 `public_html/init.jsp` siteinfo 조회가 실패하고 조기 종료됩니다.
+  - 기준 설정: `public_html/WEB-INF/resin-web.xml`에 `jdbc/malgn`, `jdbc/lms`를 모두 정의해 둡니다.
+  - 확인 근거: `public_html/data/log/error_YYYYMMDD.log`에 `DataSource.jndi jdbc/malgn` + `ds is null` 로그가 보이면 JNDI 누락입니다.
 - 개인정보 동의(게이트/버전):
   - 동의 화면 재사용: `public_html/member/privacy_agree.jsp` (`ag=sso|cert`)
   - 리다이렉트 안전: `returl`은 외부 URL 차단/검증 필수(오픈 리다이렉트 방지)
@@ -35,6 +50,7 @@
     - 증명서: `/common/images/consent/consent_cert_1.png` 또는 `/common/images/consent/consent_cert_2.png` (둘 다 없으면 차단)
   - 이력: `TB_AGREEMENT_LOG`에 `type/module` 조합으로 버전 관리(`sso_20260120`, `cert_20260120`)
 - 로그인 게이트/모달(권한·세션):
+  - `/mypage/*` 공통 진입은 `public_html/mypage/init.jsp`에서 먼저 가드됩니다. 이 지점이 `auth.loginForm()`로 되돌아가면 다시 구 로그인 화면으로 빠질 수 있습니다.
   - 구 로그인 페이지 렌더 대신 `public_html/member/login.jsp` GET에서 `/mypage/new_main/?login_required=Y&returl=...`로 우회합니다.
   - 예외 분기(`access_token`, `ek`, SSO)는 기존 로그인 처리 경로를 유지해야 합니다. 이 분기를 건드리면 SSL 토큰 로그인/외부 SSO가 깨질 수 있습니다.
   - `returl`은 레거시 비인코딩 케이스가 있어 쿼리 원문 재파싱을 같이 유지해야 하며, 외부 도메인 차단 검사도 함께 유지해야 합니다.

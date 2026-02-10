@@ -25,6 +25,15 @@ SiteDao Site = new SiteDao();
 DataSet siteinfo = Site.getSiteInfo(request.getServerName());
 SiteConfigDao SiteConfig = new SiteConfigDao(siteinfo.i("id"));
 if(1 != siteinfo.i("status") || "".equals(siteinfo.s("doc_root"))) {
+	// 왜: siteinfo/status/doc_root가 비정상일 때는 화면이 흰색으로 끝날 수 있어,
+	//     로컬/운영에서 원인을 즉시 추적할 수 있도록 최소 진단 로그를 남깁니다.
+	m.log(
+		"siteinfo_invalid",
+		"host=" + request.getServerName()
+		+ " site_id=" + siteinfo.i("id")
+		+ " status=" + siteinfo.i("status")
+		+ " doc_root_empty=" + "".equals(siteinfo.s("doc_root"))
+	);
 	return;
 }
 

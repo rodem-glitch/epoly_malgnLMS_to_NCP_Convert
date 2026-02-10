@@ -939,7 +939,13 @@
 		<!-- 메인 네비게이션 -->
 		<nav class="nm-header__nav">
 			<a href="javascript:void(0)" class="nm-header__nav-item active" onclick="alert('메뉴 연결 예정')">홈</a>
+			<!--@if(login_block)-->
 			<a href="/mypage/index.jsp" class="nm-header__nav-item">나의강의실</a>
+			<!--/if(login_block)-->
+			<!--@nif(login_block)-->
+			<!-- 왜: 비로그인 사용자가 나의강의실을 눌렀을 때 구페이지로 이동하지 않고 현재 화면의 로그인 모달을 사용하도록 통일합니다. -->
+			<a href="javascript:void(0)" class="nm-header__nav-item" onclick="openLoginModal(); return false;">나의강의실</a>
+			<!--/nif(login_block)-->
 			
 			<!-- 이러닝 드롭다운 -->
 			<div class="nm-header__dropdown">

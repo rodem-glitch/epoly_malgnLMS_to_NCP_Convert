@@ -855,7 +855,13 @@
 
 			<nav class="nm-header__nav">
 				<a href="/" class="nm-header__nav-item">홈</a>
+				<!--@if(login_block)-->
 				<a href="/mypage/index.jsp" class="nm-header__nav-item">나의강의실</a>
+				<!--/if(login_block)-->
+				<!--@nif(login_block)-->
+				<!-- 왜: 코스 레이아웃에서도 비로그인 사용자는 구 로그인 페이지 대신 신규 메인 로그인 모달로 진입해야 합니다. -->
+				<a href="/mypage/new_main/?login_required=Y&returl=%2Fmypage%2Findex.jsp" class="nm-header__nav-item">나의강의실</a>
+				<!--/nif(login_block)-->
 				<div class="nm-header__dropdown">
 					<span class="nm-header__dropdown-toggle">이러닝 <i class="bi bi-chevron-down"></i></span>
 					<div class="nm-header__dropdown-menu">

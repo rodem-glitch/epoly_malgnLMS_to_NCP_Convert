@@ -1,0 +1,2 @@
+[2026-02-10 16:27:56] 0:0:0:0:0:0:0:1 : /member/login.jsp
+path=/member/login.jsp method=GET returl=/mypage/new_main/ udid=0 from=/member/login.jsp

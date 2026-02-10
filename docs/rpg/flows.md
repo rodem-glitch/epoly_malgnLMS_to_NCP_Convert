@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 11:49
+최근 자동 갱신: 2026-02-10 16:22
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -79,9 +79,11 @@
 ### FLOW-1003: 비로그인 권한 진입 시 신규 메인 로그인 모달 게이트
 - 사용자 동작(의도): 로그인 없이 권한 필요한 URL(예: 게시글 작성, 수강 기능)에 진입
 - 진입점:
+  - 0차 마이페이지 공통 가드: `public_html/mypage/init.jsp`
   - 1차 로그인 엔드포인트: `public_html/member/login.jsp` (GET)
   - 모달 랜딩 페이지: `public_html/mypage/new_main/index.jsp`
 - 처리(핵심):
+  - `mypage/init.jsp`에서 비로그인(`userId==0`)이면 `auth.loginForm()` 대신 `/mypage/new_main/?login_required=Y&returl=...`로 즉시 리다이렉트
   - `member/login.jsp`에서 `GET + (access_token/ek 없음)`이면 로그인 화면을 직접 렌더링하지 않고 `/mypage/new_main/?login_required=Y&returl=...`로 리다이렉트
   - returl은 쿼리 원문에서 재파싱해(레거시 `Auth.loginForm()` 비인코딩 대응) 쿼리 손실을 줄이고, 외부 도메인은 `/mypage/new_main/`으로 차단
   - `mypage/new_main/index.jsp`에서 `login_required`, `returl`, `udid`를 세팅하고 로그(`login_modal_request_*`)를 남김
@@ -91,8 +93,54 @@
   - 신규 메인 페이지 내 로그인 모달(`public_html/html/mypage/new_main_full.html`)
   - 로그인 처리 엔드포인트는 기존과 동일하게 `POST /member/login.jsp`
 - 확인(근거):
-  - 코드 경로 확인: `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/html/mypage/new_main_full.html`
-  - 시나리오 점검(정적): `권한 페이지 -> /member/login.jsp?returl=... -> /mypage/new_main/?login_required=Y&returl=... -> 모달 POST`
+  - 코드 경로 확인: `public_html/mypage/init.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/html/mypage/new_main_full.html`
+  - 시나리오 점검(정적): `권한 페이지(/mypage/*) -> /mypage/new_main/?login_required=Y&returl=... -> 모달 POST`
+- 최근 갱신: 2026-02-10
+
+### FLOW-1004: 신규 메인 헤더 `나의강의실` 클릭 시 로그인 모달 분기
+- 사용자 동작(의도): 비로그인 사용자가 신규 메인 상단의 `나의강의실` 메뉴를 클릭
+- 진입점:
+  - 레이아웃 템플릿: `public_html/html/layout/layout_new_main.html`
+  - 단독 템플릿: `public_html/html/mypage/new_main_full.html`, `public_html/html/mypage/new_main_manual.html`
+  - 코스 레이아웃 템플릿: `public_html/html/layout/layout_course.html`, `public_html/html/layout/layout_course135.html`, `public_html/html/layout/layout_course173.html`
+- 처리(핵심):
+  - `login_block`일 때만 기존 경로(`/mypage/index.jsp`)로 이동
+  - `nif(login_block)`일 때:
+    - 신규 메인 템플릿(`layout_new_main`, `new_main_full`, `new_main_manual`)은 `openLoginModal()` 직접 호출
+    - 코스 레이아웃(`layout_course*`)은 `/mypage/new_main/?login_required=Y&returl=%2Fmypage%2Findex.jsp`로 이동
+  - 어떤 경로에서든 최종적으로 신규 메인 로그인 모달로 수렴되게 통일
+- DB: 없음(템플릿 분기/클라이언트 동작 제어)
+- 출력:
+  - 비로그인: 신규 메인 로그인 모달(`nm-login-modal`) 표시
+  - 로그인: 기존 `나의강의실` 경로 유지(`/mypage/index.jsp`)
+- 확인(근거):
+  - 템플릿 분기 코드 확인: `public_html/html/layout/layout_new_main.html`, `public_html/html/mypage/new_main_full.html`, `public_html/html/mypage/new_main_manual.html`, `public_html/html/layout/layout_course.html`, `public_html/html/layout/layout_course135.html`, `public_html/html/layout/layout_course173.html`
+  - 시나리오 점검(정적): `비로그인 상태 -> 헤더 나의강의실 클릭 -> 신규 메인 모달 오픈(openLoginModal 또는 login_required 리다이렉트)`
+- 최근 갱신: 2026-02-10
+
+### FLOW-1005: 로컬 Resin 실행 시 `/mypage/*` 흰화면(200 + 빈 본문) 복구
+- 사용자 동작(의도): 로컬 IntelliJ Resin에서 `나의강의실` 또는 로그인 URL 진입 시 정상 화면 렌더링
+- 진입점:
+  - `public_html/init.jsp`
+  - `public_html/WEB-INF/resin-web.xml`
+  - `C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml`
+- 처리(핵심):
+  - 원인: `jdbc/malgn` JNDI DataSource 미설정으로 DB 연결 실패(`ds is null`) → `init.jsp`의 siteinfo/doc_root 검증 구간에서 조기 종료되어 빈 본문 반환
+  - 조치:
+    - `public_html/WEB-INF/resin-web.xml` 추가
+    - Resin class-loader에 `compiling-loader` 설정(`source=C:/Users/newkl/Desktop/polytech-lms/src`)
+    - JNDI DB 2종 정의(`jdbc/malgn`, `jdbc/lms`)
+    - `public_html/init.jsp`에 `siteinfo_invalid` 진단 로그 추가
+  - 실행 설정은 기존 IntelliJ Resin conf(`...resin-4.0.67/conf/resin.xml`)를 유지하고, 외부 conf의 ROOT 웹앱 경로를 `C:\Users\newkl\Desktop\polytech-lms\public_html`로 사용
+- DB:
+  - JNDI: `jdbc/malgn`, `jdbc/lms`
+  - URL: `jdbc:mysql://192.168.0.55:3306/lms?useSSL=false&allowPublicKeyRetrieval=true`
+- 출력:
+  - `/mypage/new_main/index.jsp` 정상 HTML 렌더링
+  - 비로그인 `/mypage/index.jsp`, `/member/login.jsp?returl=/mypage/index.jsp`는 `/mypage/new_main/?login_required=Y...`로 302 이동
+- 확인(근거):
+  - 수정 전: `curl -i /mypage/new_main/index.jsp` → `200`, `Content-Length: 12`(빈 본문), `/mypage/index.jsp` `Content-Length: 0`
+  - 수정 후: `curl -i /mypage/new_main/index.jsp` → HTML 본문 반환(로그인 모달 스크립트 포함), `/mypage/index.jsp`/`/member/login.jsp?...` → `302` 정상
 - 최근 갱신: 2026-02-10
 
 ### FLOW-2001: 교수자 LMS(React) 진입/라우팅 및 UI 톤 적용

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 11:49
+최근 자동 갱신: 2026-02-10 16:22
 
 - JSP 총합(전체): 1226
 - JSP(public_html): 1225 (sysop: 715, api: 18)
@@ -37,6 +37,7 @@
 - 프론트 공통 초기화: `public_html/init.jsp`
 - 관리자 공통 초기화: `public_html/sysop/init.jsp`
 - Resin 루트 설정: `resin/resin.xml` (root-directory=`public_html`)
+- Resin 웹앱 런타임 설정: `public_html/WEB-INF/resin-web.xml` (JNDI/클래스 로더)
 - React UI 빌드 설정: `project/vite.config.ts` (outDir=`public_html/tutor_lms/app`)
 - Spring Boot API 빌드 설정: `polytech-lms-api/build.gradle`
 
@@ -55,7 +56,7 @@
 ## 최근 작업(로그인 모달 게이트)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
-| 비로그인 권한 진입 시 신규 메인 모달로 로그인 유도 | `public_html/member/login.jsp`(GET 게이트) → `public_html/mypage/new_main/index.jsp` | `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` | `public_html/html/mypage/new_main_full.html` | 구 로그인 페이지 직접 렌더 대신 `login_required=Y`로 모달 자동 오픈, `returl`/`udid` hidden 전달, `access_token`/`ek`(SSL 토큰 로그인)은 기존 분기 유지 |
+| 비로그인 권한 진입 시 신규 메인 모달로 로그인 유도 | `public_html/mypage/init.jsp`(0차 게이트), `public_html/member/login.jsp`(GET 게이트) → `public_html/mypage/new_main/index.jsp` | `public_html/mypage/init.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` | `public_html/html/mypage/new_main_full.html` | 구 로그인 페이지 직접 렌더 대신 `login_required=Y`로 모달 자동 오픈, `returl`/`udid` hidden 전달, `access_token`/`ek`(SSL 토큰 로그인)은 기존 분기 유지 |
 
 ## 최근 작업(교수자 UI 톤 맞춤)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스(React) | 산출물 | 비고 |
@@ -73,3 +74,13 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
 |---|---|---|---|---|
 | 팀 에이전트 기본 모드 강제 | (문서 규칙) | `AGENTS.md` | 세션 공통 작업 절차 규칙 | 새 세션 첫 작업 지시에서도 Planner/Explorer/Builder/Reviewer/Reporter 및 병렬 탐색 기본 적용 근거를 문서화 |
+
+## 최근 작업(개발환경 실행설정)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
+|---|---|---|---|---|
+| IntelliJ Resin/Polytech API 실행설정 이관 | IntelliJ Run/Debug (`Resin`, `PolytechLmsApiApplication`) | `.idea/runConfigurations/Resin.xml`, `.idea/runConfigurations/PolytechLmsApiApplication.xml` | 프로젝트 공유 실행설정 2종 | `C:\Users\newkl\Desktop\MalgnLMS\.idea\workspace.xml`의 설정을 기준으로 `C:\Users\newkl\Desktop\polytech-lms`에 이관. 확인 근거: `Get-ChildItem .idea/runConfigurations`로 2개 파일 생성 확인 |
+
+## 최근 작업(로컬 Resin 흰화면 복구)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
+|---|---|---|---|---|
+| `/mypage/*` 흰화면(200 + 빈 본문) 복구 | `public_html/init.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/member/login.jsp` | `public_html/WEB-INF/resin-web.xml`, `public_html/init.jsp`, `C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml` | 로컬 Resin JNDI(`jdbc/malgn`, `jdbc/lms`) + src 자동 컴파일 | 확인 근거: `curl -i /mypage/new_main/index.jsp`가 `Content-Length: 12/0` 빈 응답에서 HTML 본문 응답으로 변경, `/mypage/index.jsp`와 `/member/login.jsp`가 `302 -> /mypage/new_main/?login_required=Y...` 정상 확인 |
