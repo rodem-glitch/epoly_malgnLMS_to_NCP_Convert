@@ -262,6 +262,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   useEffect(() => {
     let cancelled = false;
     const currentYear = String(new Date().getFullYear());
+    const prismDefaultYear = '2024';
 
     const fetchYears = async () => {
       try {
@@ -272,13 +273,17 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
           .map((r) => String(r.year || '').trim())
           .filter(Boolean);
 
-        const uniq = Array.from(new Set(years)).sort((a, b) => b.localeCompare(a));
+        // 왜: 비정규 탭 기본값(2024)이 목록에 없으면 select 표시가 깨질 수 있어 옵션에는 항상 포함합니다.
+        const uniq = Array.from(new Set([...years, prismDefaultYear])).sort((a, b) => b.localeCompare(a));
         const options = ['전체', ...uniq];
 
         if (cancelled) return;
         setYearOptions(options.length > 1 ? options : ['전체', currentYear]);
       } catch {
-        if (!cancelled) setYearOptions(['전체', currentYear]);
+        if (!cancelled) {
+          const fallbackYears = Array.from(new Set([currentYear, prismDefaultYear])).sort((a, b) => b.localeCompare(a));
+          setYearOptions(['전체', ...fallbackYears]);
+        }
       }
     };
 

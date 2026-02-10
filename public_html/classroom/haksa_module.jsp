@@ -124,10 +124,11 @@ if(!moduleMatched) {
 
 String startDateTime = buildDateTime(targetSession.optString("startDate", ""), targetSession.optString("startTime", ""), true);
 String endDateTime = buildDateTime(targetSession.optString("endDate", ""), targetSession.optString("endTime", ""), false);
-String now = m.time("yyyyMMddHHmmss");
+// 왜: classroom/init.jsp에서도 now 변수를 선언하므로, include 충돌을 피하려고 이름을 분리합니다.
+String nowDt = m.time("yyyyMMddHHmmss");
 
 if(!"".equals(startDateTime) && !"".equals(endDateTime)) {
-	if(now.compareTo(startDateTime) < 0 || now.compareTo(endDateTime) > 0) {
+	if(nowDt.compareTo(startDateTime) < 0 || nowDt.compareTo(endDateTime) > 0) {
 		m.jsErrClose("차시 수강기간이 아닙니다.");
 		return;
 	}

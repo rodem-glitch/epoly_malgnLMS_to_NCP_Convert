@@ -23,8 +23,26 @@ export interface Question {
   createdAt: string;
 }
 
+const buildDefaultChoices = (): QuestionChoice[] => [
+  { id: '1', text: '', isCorrect: false },
+  { id: '2', text: '', isCorrect: false },
+  { id: '3', text: '', isCorrect: false },
+  { id: '4', text: '', isCorrect: false },
+];
+
+const normalizeNumber = (value: unknown, defaultValue = 0): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : defaultValue;
+};
+
+const getRowField = (row: TutorQuestionBankRow, lowerKey: string, upperKey: string): unknown => {
+  const raw = row as unknown as Record<string, unknown>;
+  return raw[lowerKey] ?? raw[upperKey];
+};
+
 // 서버 question_type을 프론트엔드 타입으로 변환
-const serverTypeToLocal = (serverType: number): QuestionType => {
+const serverTypeToLocal = (serverTypeRaw: unknown): QuestionType => {
+  const serverType = normalizeNumber(serverTypeRaw);
   if (serverType === 1) return 'multiple_choice'; // 단일선택
   if (serverType === 2) return 'multiple_choice'; // 다중선택도 객관식으로 처리
   if (serverType === 3) return 'short_answer';    // 단답형
@@ -42,35 +60,39 @@ const localTypeToServer = (localType: QuestionType): number => {
 
 // 서버 데이터를 프론트엔드 형식으로 변환
 const serverToLocal = (row: TutorQuestionBankRow): Question => {
-  const type = serverTypeToLocal(row.question_type);
+  const questionType = normalizeNumber(getRowField(row, 'question_type', 'QUESTION_TYPE'));
+  const itemCount = Math.max(1, Math.min(5, normalizeNumber(getRowField(row, 'item_cnt', 'ITEM_CNT'), 4)));
+  const answerRaw = String(getRowField(row, 'answer', 'ANSWER') ?? '');
+  const answerParts = answerRaw.split(/\|\|?/).map(part => part.trim()).filter(Boolean);
+  const score = normalizeNumber(getRowField(row, 'score', 'SCORE'), 5);
+  const type = serverTypeToLocal(questionType);
   const choices: QuestionChoice[] = [];
   
   // 객관식인 경우 보기 변환
-  if (row.question_type === 1 || row.question_type === 2) {
-    for (let i = 1; i <= (row.item_cnt || 4); i++) {
-      const itemKey = `item${i}` as keyof TutorQuestionBankRow;
-      const itemText = row[itemKey] as string;
-      if (itemText) {
-        const answerParts = (row.answer || '').split('||');
-        choices.push({
-          id: String(i),
-          text: itemText,
-          isCorrect: answerParts.includes(String(i)),
-        });
-      }
+  if (questionType === 1 || questionType === 2) {
+    for (let i = 1; i <= itemCount; i++) {
+      // 왜: 운영 환경별 JSON 키 케이스(item1/ITEM1)가 달라질 수 있어 둘 다 확인합니다.
+      const itemText = String(getRowField(row, `item${i}`, `ITEM${i}`) ?? '');
+      choices.push({
+        id: String(i),
+        text: itemText,
+        isCorrect: answerParts.includes(String(i)),
+      });
     }
   }
 
   return {
-    id: String(row.id),
-    categoryId: row.category_id ? String(row.category_id) : null,
+    id: String(getRowField(row, 'id', 'ID') ?? row.id),
+    categoryId: normalizeNumber(getRowField(row, 'category_id', 'CATEGORY_ID')) > 0
+      ? String(getRowField(row, 'category_id', 'CATEGORY_ID'))
+      : null,
     type,
-    title: row.question,
-    content: row.question_text || '',
+    title: String(getRowField(row, 'question', 'QUESTION') ?? ''),
+    content: String(getRowField(row, 'question_text', 'QUESTION_TEXT') ?? ''),
     choices: type === 'multiple_choice' ? choices : undefined,
-    correctAnswer: type !== 'multiple_choice' ? row.answer : undefined,
-    points: row.score || 5,
-    createdAt: row.reg_date || new Date().toISOString(),
+    correctAnswer: type !== 'multiple_choice' ? String(getRowField(row, 'answer', 'ANSWER') ?? '') : undefined,
+    points: score > 0 ? score : 5,
+    createdAt: String(getRowField(row, 'reg_date', 'REG_DATE') ?? new Date().toISOString()),
   };
 };
 
@@ -142,6 +164,13 @@ export function QuestionBankPage() {
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
       
       const localQuestions = (res.rst_data ?? []).map(serverToLocal);
+      // 왜: 객관식 문항의 선택지가 비어 보이는 현상을 빠르게 추적하기 위해 개수만 로그로 남깁니다.
+      const emptyChoiceQuestions = localQuestions.filter(
+        q => q.type === 'multiple_choice' && (q.choices ?? []).every(choice => !choice.text.trim())
+      );
+      if (emptyChoiceQuestions.length > 0) {
+        console.warn(`[QuestionBankPage] 객관식 선택지 비어있는 문항 수=${emptyChoiceQuestions.length}`);
+      }
       setQuestions(localQuestions);
     } catch (e) {
       setError(e instanceof Error ? e.message : '문제를 불러오는 중 오류가 발생했습니다.');
@@ -162,18 +191,16 @@ export function QuestionBankPage() {
       title: '',
       content: '',
       points: 5,
-      choices: [
-        { id: '1', text: '', isCorrect: false },
-        { id: '2', text: '', isCorrect: false },
-        { id: '3', text: '', isCorrect: false },
-        { id: '4', text: '', isCorrect: false },
-      ],
+      choices: buildDefaultChoices(),
       correctAnswer: '',
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = (question: Question) => {
+    const editChoices = question.choices && question.choices.length > 0
+      ? question.choices
+      : buildDefaultChoices();
     setEditingQuestion(question);
     setFormData({
       categoryId: question.categoryId,
@@ -181,12 +208,7 @@ export function QuestionBankPage() {
       title: question.title,
       content: question.content,
       points: question.points,
-      choices: question.choices || [
-        { id: '1', text: '', isCorrect: false },
-        { id: '2', text: '', isCorrect: false },
-        { id: '3', text: '', isCorrect: false },
-        { id: '4', text: '', isCorrect: false },
-      ],
+      choices: editChoices,
       correctAnswer: question.correctAnswer || '',
     });
     setIsModalOpen(true);
@@ -212,7 +234,8 @@ export function QuestionBankPage() {
 
       // 객관식 보기 배열
       const items = formData.type === 'multiple_choice' 
-        ? formData.choices.map(c => c.text).filter(t => t.trim())
+        // 왜: 보기 순서(정답 인덱스)를 유지해야 하므로 빈 값도 포함해 원본 순서대로 전송합니다.
+        ? formData.choices.map(c => c.text.trim())
         : undefined;
 
       if (editingQuestion) {
@@ -375,6 +398,18 @@ export function QuestionBankPage() {
                     <div className="font-medium text-gray-900">{question.title}</div>
                     {question.content && (
                       <div className="text-sm text-gray-500 truncate max-w-md">{question.content}</div>
+                    )}
+                    {question.type === 'multiple_choice' && question.choices && question.choices.some(choice => choice.text.trim()) && (
+                      <div className="mt-2 space-y-1">
+                        {question.choices
+                          .filter(choice => choice.text.trim())
+                          .slice(0, 5)
+                          .map(choice => (
+                            <div key={`choice-preview-${question.id}-${choice.id}`} className="text-xs text-gray-500 truncate max-w-md">
+                              {choice.id}. {choice.text}
+                            </div>
+                          ))}
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4 text-center">

@@ -533,25 +533,80 @@ if(mappedCourseId > 0) {
 					// 동영상(=video)
 					else if("video".equalsIgnoreCase(contentType)) {
 						int lessonId = content.optInt("lessonId", 0);
+						String rawLessonId = content.optString("lessonId", "").trim();
+						// 왜: lessonId가 문자열로 저장된 케이스(예: "123", "00123")도 숫자 ID로 통일해야 학생 재생이 깨지지 않습니다.
+						if(lessonId <= 0 && !"".equals(rawLessonId)) {
+							try { lessonId = Integer.parseInt(rawLessonId); } catch(Exception ignore) {}
+						}
 						if(lessonId <= 0) {
-							// 왜: lessonId가 비어도 mediaKey(start_url)로 기존 레슨을 찾을 수 있습니다(운영 실수/구버전 호환).
-							String mediaKey = content.optString("mediaKey", "");
+							// 왜: lessonId가 비어도 mediaKey(start_url)로 기존 레슨을 찾거나 생성해서 커리큘럼을 정상 상태로 되돌립니다.
+							String mediaKey = content.optString("mediaKey", "").trim();
 							if(!"".equals(mediaKey)) {
 								String safeMediaKey = m.replace(mediaKey, "'", "''");
 								DataSet lfind = lesson.find(
 									"site_id = " + siteId
 									+ " AND start_url = '" + safeMediaKey + "'"
+									+ " AND lesson_type = '05'"
 									+ " AND status != -1"
 									, "id"
 								);
 								if(lfind.next()) {
 									lessonId = lfind.i("id");
-									content.put("lessonId", lessonId);
-									curriculumChanged = true;
+								} else {
+									int createTotalTime = content.optInt("totalTime", 0);
+									if(createTotalTime <= 0) createTotalTime = content.optInt("total_time", 0);
+									int createCompleteTime = content.optInt("completeTime", 0);
+									if(createCompleteTime <= 0) createCompleteTime = content.optInt("complete_time", 0);
+									if(createTotalTime <= 0 && createCompleteTime > 0) createTotalTime = createCompleteTime;
+									if(createCompleteTime <= 0 && createTotalTime > 0) createCompleteTime = createTotalTime;
+									int createContentWidth = content.optInt("contentWidth", 0);
+									if(createContentWidth <= 0) createContentWidth = content.optInt("content_width", 0);
+									int createContentHeight = content.optInt("contentHeight", 0);
+									if(createContentHeight <= 0) createContentHeight = content.optInt("content_height", 0);
+									String lessonTitle = content.optString("title", "");
+
+									int newLessonId = lesson.getSequence();
+									lesson.clear();
+									lesson.item("id", newLessonId);
+									lesson.item("site_id", siteId);
+									lesson.item("content_id", 0);
+									lesson.item("lesson_nm", !"".equals(lessonTitle) ? lessonTitle : ("콜러스 " + mediaKey));
+									lesson.item("onoff_type", "N");
+									lesson.item("lesson_type", "05");
+									lesson.item("author", "");
+									lesson.item("start_url", mediaKey);
+									lesson.item("mobile_a", mediaKey);
+									lesson.item("mobile_i", mediaKey);
+									lesson.item("total_page", 0);
+									lesson.item("total_time", createTotalTime);
+									lesson.item("complete_time", createCompleteTime);
+									lesson.item("content_width", createContentWidth);
+									lesson.item("content_height", createContentHeight);
+									lesson.item("description", "");
+									lesson.item("manager_id", userId);
+									lesson.item("use_yn", "Y");
+									lesson.item("sort", 0);
+									lesson.item("reg_date", now);
+									lesson.item("status", 1);
+
+									if(lesson.insert()) {
+										lessonId = newLessonId;
+										m.log("haksa_curriculum", "[update] lesson created course_id=" + mappedCourseId + ", media_key=" + mediaKey + ", lesson_id=" + lessonId);
+									} else {
+										m.log("haksa_curriculum", "[update] lesson create failed course_id=" + mappedCourseId + ", media_key=" + mediaKey);
+									}
 								}
 							}
 						}
-						if(lessonId <= 0) continue;
+						if(lessonId <= 0) {
+							m.log("haksa_curriculum", "[update] unresolved video lessonId course_id=" + mappedCourseId + ", session_no=" + sessionNo + ", raw_lesson_id=" + rawLessonId);
+							continue;
+						}
+						if(content.optInt("lessonId", 0) != lessonId) {
+							content.put("lessonId", lessonId);
+							curriculumChanged = true;
+							m.log("haksa_curriculum", "[update] lessonId normalized course_id=" + mappedCourseId + ", session_no=" + sessionNo + ", lesson_id=" + lessonId);
+						}
 
 						// 1) 인정시간(completeTime) → LM_LESSON.complete_time 동기화
 						int completeTime = content.optInt("completeTime", 0);

@@ -24,7 +24,18 @@ interface Question {
   content?: string;
   points: number;
   categoryId?: string;
+  choices?: Array<{ id: string; text: string }>;
 }
+
+const normalizeNumber = (value: unknown, defaultValue = 0): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : defaultValue;
+};
+
+const getRowField = (row: TutorQuestionBankRow, lowerKey: string, upperKey: string): unknown => {
+  const raw = row as unknown as Record<string, unknown>;
+  return raw[lowerKey] ?? raw[upperKey];
+};
 
 // 서버 데이터를 프론트엔드 형식으로 변환
 const serverExamToLocal = (row: TutorExamTemplateRow): Exam => ({
@@ -41,16 +52,29 @@ const serverExamToLocal = (row: TutorExamTemplateRow): Exam => ({
 });
 
 const serverQuestionToLocal = (row: TutorQuestionBankRow): Question => {
+  const questionType = normalizeNumber(getRowField(row, 'question_type', 'QUESTION_TYPE'));
   let type: 'multiple_choice' | 'short_answer' | 'ox' = 'multiple_choice';
-  if (row.question_type === 3 || row.question_type === 4) type = 'short_answer';
+  if (questionType === 3 || questionType === 4) type = 'short_answer';
+  const choices: Array<{ id: string; text: string }> = [];
+  if (questionType === 1 || questionType === 2) {
+    const itemCount = Math.max(1, Math.min(5, normalizeNumber(getRowField(row, 'item_cnt', 'ITEM_CNT'), 4)));
+    for (let i = 1; i <= itemCount; i++) {
+      // 왜: 운영 환경 JSON 키 대소문자 차이를 흡수해 선택지 누락을 막습니다.
+      const itemText = String(getRowField(row, `item${i}`, `ITEM${i}`) ?? '');
+      choices.push({ id: String(i), text: itemText });
+    }
+  }
   
   return {
-    id: String(row.id),
+    id: String(getRowField(row, 'id', 'ID') ?? row.id),
     type,
-    title: row.question,
-    content: row.question_text,
-    points: row.score || 5,
-    categoryId: row.category_id ? String(row.category_id) : undefined,
+    title: String(getRowField(row, 'question', 'QUESTION') ?? ''),
+    content: String(getRowField(row, 'question_text', 'QUESTION_TEXT') ?? ''),
+    points: Math.max(1, normalizeNumber(getRowField(row, 'score', 'SCORE'), 5)),
+    categoryId: normalizeNumber(getRowField(row, 'category_id', 'CATEGORY_ID')) > 0
+      ? String(getRowField(row, 'category_id', 'CATEGORY_ID'))
+      : undefined,
+    choices: type === 'multiple_choice' ? choices : undefined,
   };
 };
 
@@ -153,6 +177,13 @@ export function ExamManagementPage() {
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
       
       const localQuestions = (res.rst_data ?? []).map(serverQuestionToLocal);
+      // 왜: 출제 모달에서 선택지가 비어 보이는 이슈를 운영 중 빠르게 확인하기 위한 최소 로그입니다.
+      const emptyChoiceQuestions = localQuestions.filter(
+        q => q.type === 'multiple_choice' && (q.choices ?? []).every(choice => !choice.text.trim())
+      );
+      if (emptyChoiceQuestions.length > 0) {
+        console.warn(`[ExamManagementPage] 선택지 비어있는 객관식 문항 수=${emptyChoiceQuestions.length}`);
+      }
       setQuestions(localQuestions);
     } catch (e) {
       setError(e instanceof Error ? e.message : '문제 목록을 불러오는 중 오류가 발생했습니다.');
@@ -603,6 +634,18 @@ export function ExamManagementPage() {
                           <div className="font-medium text-gray-900">{question.title}</div>
                           {question.content && (
                             <div className="text-sm text-gray-500 mt-1 truncate">{question.content}</div>
+                          )}
+                          {question.type === 'multiple_choice' && question.choices && question.choices.some(choice => choice.text.trim()) && (
+                            <div className="mt-2 space-y-1">
+                              {question.choices
+                                .filter(choice => choice.text.trim())
+                                .slice(0, 5)
+                                .map(choice => (
+                                  <div key={`question-choice-${question.id}-${choice.id}`} className="text-xs text-gray-500 truncate">
+                                    {choice.id}. {choice.text}
+                                  </div>
+                                ))}
+                            </div>
                           )}
                           <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                             <span className={`px-2 py-0.5 rounded-full ${

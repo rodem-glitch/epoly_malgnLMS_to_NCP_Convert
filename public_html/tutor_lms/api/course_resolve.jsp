@@ -7,6 +7,7 @@
 
 CourseDao course = new CourseDao();
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
 CourseUserDao courseUser = new CourseUserDao();
 SubjectDao subject = new SubjectDao();
 PolyCourseDao polyCourse = new PolyCourseDao();
@@ -51,8 +52,9 @@ if(!isAdmin) {
 		int allowed = course.getOneInt(
 			" SELECT COUNT(*) FROM " + course.table + " c "
 			+ " LEFT JOIN " + courseTutor.table + " ct ON ct.course_id = c.id AND ct.user_id = " + userId + " AND ct.site_id = " + siteId + " "
+			+ " LEFT JOIN " + courseManager.table + " cm ON cm.course_id = c.id AND cm.user_id = " + userId + " AND cm.site_id = " + siteId + " "
 			+ " WHERE c.id = " + courseId + " AND c.site_id = " + siteId + " AND c.status != -1 "
-			+ " AND (c.manager_id = " + userId + " OR ct.type IN ('major','minor')) "
+			+ " AND (c.manager_id = " + userId + " OR ct.type IN ('major','minor') OR cm.user_id IS NOT NULL) "
 		);
 		if(allowed <= 0) {
 			result.put("rst_code", "4030");

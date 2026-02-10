@@ -250,45 +250,156 @@ if(euinfo.i("status") == 0) {
 
 	//난이도별 문제 추출
 	int totalCnt = 0;
+	int[] reqMcnts = new int[7];
+	int[] reqTcnts = new int[7];
 	DataSet grades = m.arr2loop(question.grades);
-
-	Vector<String> v = new Vector<String>();
-	String rangeIdx = "'" + m.join("','" , info.s("range_idx").split(",")) + "'";
 	while(grades.next()) {
-		totalCnt += info.getInt("mcnt" + grades.i("id"));
-		totalCnt += info.getInt("tcnt" + grades.i("id"));
+		int gradeId = grades.i("id");
+		if(gradeId < 1 || gradeId > 6) continue;
+		reqMcnts[gradeId] = info.getInt("mcnt" + gradeId);
+		reqTcnts[gradeId] = info.getInt("tcnt" + gradeId);
+		totalCnt += reqMcnts[gradeId];
+		totalCnt += reqTcnts[gradeId];
+	}
+	if(totalCnt <= 0) {
+		m.log("exam_apply", "invalid_question_count exam_id=" + eid + ", course_user_id=" + cuid + ", total_cnt=" + totalCnt);
+		m.jsErrClose(_message.get("alert.classroom.error_question"));
+		return;
+	}
 
-		if(info.getInt("mcnt" + grades.i("id")) > 0) {
-			v.add(
-				"SELECT * FROM " + question.table + " WHERE id IN ( SELECT ua.id FROM ( "
-				+ question.randomQuery(
-					"SELECT id FROM " + question.table + " "
-					+ " WHERE status = 1 AND site_id = " + siteId + " "
-					+ " AND category_id IN (" + rangeIdx + ") "
-					+ " AND grade = " + grades.i("id") + " AND question_type IN ('1','2') "
-					, info.i("mcnt" + grades.i("id"))
-				) + " ) ua ) "
+	Vector<String> rangeIds = new Vector<String>();
+	String[] rawRangeIds = info.s("range_idx").split(",");
+	for(int i = 0; i < rawRangeIds.length; i++) {
+		int rangeId = m.parseInt(rawRangeIds[i]);
+		if(rangeId > 0) rangeIds.add("" + rangeId);
+	}
+
+	// 왜: 시험 범위(range_idx)에 잘못된 값(빈값/문자열)이 들어오면 IN 조건이 깨져 문제를 못 뽑으므로,
+	//      숫자 ID만 정규화해서 출제 쿼리에 사용합니다.
+	if(rangeIds.size() == 0) {
+		m.log("exam_apply", "invalid_range exam_id=" + eid + ", course_user_id=" + cuid + ", range_idx=" + info.s("range_idx"));
+		m.jsErrClose("시험 문제 범위가 설정되지 않아 출제할 수 없습니다. 관리자에게 문의하세요.");
+		return;
+	}
+	String rangeIdx = m.join("," , rangeIds.toArray());
+	boolean useQuestionIdMode = false;
+	int templateQuestionCnt = info.i("question_cnt");
+	if(templateQuestionCnt > 0 && rangeIds.size() == templateQuestionCnt) {
+		int validQuestionIdCnt = question.findCount(
+			"status = 1 AND site_id = " + siteId + " AND id IN (" + rangeIdx + ")"
+		);
+		// 왜: 최근 템플릿 저장은 range_idx에 "카테고리 ID"가 아니라 "문제 ID 목록"을 넣습니다.
+		//      학생 응시 시 이 값을 카테고리로 오해하면 가용문항이 0으로 떨어져 응시가 막히므로, 여기서 명확히 분기합니다.
+		useQuestionIdMode = validQuestionIdCnt == rangeIds.size();
+	}
+	m.log(
+		"exam_apply",
+		"range_mode exam_id=" + eid + ", course_user_id=" + cuid
+		+ ", mode=" + (useQuestionIdMode ? "question_id" : "category_id")
+		+ ", range_ids=" + rangeIdx
+		+ ", question_cnt=" + templateQuestionCnt
+		+ ", total_cnt=" + totalCnt
+	);
+
+	Vector<String> shortageLogs = new Vector<String>();
+	DataSet qlist = new DataSet();
+	if(useQuestionIdMode) {
+		int[] availMcnts = new int[7];
+		int[] availTcnts = new int[7];
+		DataSet selectedQuestions = question.query(
+			"SELECT id, grade, question_type "
+			+ " FROM " + question.table
+			+ " WHERE status = 1 AND site_id = " + siteId
+			+ " AND id IN (" + rangeIdx + ")"
+		);
+		while(selectedQuestions.next()) {
+			int gradeId = selectedQuestions.i("grade");
+			if(gradeId < 1 || gradeId > 6) gradeId = 1;
+			String questionType = selectedQuestions.s("question_type");
+			if("1".equals(questionType) || "2".equals(questionType)) availMcnts[gradeId]++;
+			else availTcnts[gradeId]++;
+		}
+		for(int gradeId = 1; gradeId <= 6; gradeId++) {
+			if(reqMcnts[gradeId] > availMcnts[gradeId]) shortageLogs.add("grade=" + gradeId + ",type=M,req=" + reqMcnts[gradeId] + ",avail=" + availMcnts[gradeId]);
+			if(reqTcnts[gradeId] > availTcnts[gradeId]) shortageLogs.add("grade=" + gradeId + ",type=T,req=" + reqTcnts[gradeId] + ",avail=" + availTcnts[gradeId]);
+		}
+		if(shortageLogs.size() == 0) {
+			qlist = question.query(
+				"SELECT * FROM " + question.table
+				+ " WHERE status = 1 AND site_id = " + siteId
+				+ " AND id IN (" + rangeIdx + ")"
+				+ " ORDER BY category_id ASC, id ASC "
 			);
 		}
-		if(info.getInt("tcnt" + grades.i("id")) > 0) {
-			v.add(
-				"SELECT * FROM " + question.table + " WHERE id IN ( SELECT ua.id FROM ( "
-				+ question.randomQuery(
-					"SELECT * FROM " + question.table + " "
-					+ " WHERE status = 1 AND site_id = " + siteId + " "
-					+ " AND category_id IN (" + rangeIdx + ") "
-					+ " AND grade = " + grades.i("id") + " AND question_type IN ('3','4') "
-					, info.i("tcnt" + grades.i("id"))
-				) + " ) ua ) "
+	} else {
+		Vector<String> v = new Vector<String>();
+		for(int gradeId = 1; gradeId <= 6; gradeId++) {
+			int reqMcnt = reqMcnts[gradeId];
+			int reqTcnt = reqTcnts[gradeId];
+
+			// 왜: 실출제 전 "요청 문항 수 <= 현재 문제은행 가용 수"를 검증해,
+			//      나중에 총문항 불일치로 실패하는 원인을 로그/메시지로 즉시 확인할 수 있게 합니다.
+			int availMcnt = question.findCount(
+				"status = 1 AND site_id = " + siteId + " "
+				+ " AND category_id IN (" + rangeIdx + ") "
+				+ " AND grade = " + gradeId + " AND question_type IN ('1','2') "
+			);
+			int availTcnt = question.findCount(
+				"status = 1 AND site_id = " + siteId + " "
+				+ " AND category_id IN (" + rangeIdx + ") "
+				+ " AND grade = " + gradeId + " AND question_type IN ('3','4') "
+			);
+			if(reqMcnt > availMcnt) shortageLogs.add("grade=" + gradeId + ",type=M,req=" + reqMcnt + ",avail=" + availMcnt);
+			if(reqTcnt > availTcnt) shortageLogs.add("grade=" + gradeId + ",type=T,req=" + reqTcnt + ",avail=" + availTcnt);
+
+			if(reqMcnt > 0) {
+				v.add(
+					"SELECT * FROM " + question.table + " WHERE id IN ( SELECT ua.id FROM ( "
+					+ question.randomQuery(
+						"SELECT id FROM " + question.table + " "
+						+ " WHERE status = 1 AND site_id = " + siteId + " "
+						+ " AND category_id IN (" + rangeIdx + ") "
+						+ " AND grade = " + gradeId + " AND question_type IN ('1','2') "
+						, reqMcnt
+					) + " ) ua ) "
+				);
+			}
+			if(reqTcnt > 0) {
+				v.add(
+					"SELECT * FROM " + question.table + " WHERE id IN ( SELECT ua.id FROM ( "
+					+ question.randomQuery(
+						"SELECT * FROM " + question.table + " "
+						+ " WHERE status = 1 AND site_id = " + siteId + " "
+						+ " AND category_id IN (" + rangeIdx + ") "
+						+ " AND grade = " + gradeId + " AND question_type IN ('3','4') "
+						, reqTcnt
+					) + " ) ua ) "
+				);
+			}
+		}
+		if(shortageLogs.size() == 0 && v.size() > 0) {
+			qlist = question.query(
+				"SELECT ru.* "
+				+ " FROM (" + m.join(" UNION ALL ", v.toArray()) + ") ru "
+				+ " ORDER BY ru.category_id ASC, ru.id ASC "
 			);
 		}
 	}
-
-	DataSet qlist = question.query(
-		"SELECT ru.* "
-		+ " FROM (" + m.join(" UNION ALL ", v.toArray()) + ") ru "
-		+ " ORDER BY ru.category_id ASC, ru.id ASC "
-	);
+	if(shortageLogs.size() > 0) {
+		m.log(
+			"exam_apply",
+			"question_shortage exam_id=" + eid + ", course_user_id=" + cuid
+			+ ", range_ids=" + rangeIdx
+			+ ", detail=" + m.join(" | ", shortageLogs.toArray())
+		);
+		m.jsErrClose("출제 가능한 문제가 부족합니다. 관리자에게 문의하세요.");
+		return;
+	}
+	if(qlist.size() == 0) {
+		m.log("exam_apply", "empty_qlist exam_id=" + eid + ", course_user_id=" + cuid + ", range_ids=" + rangeIdx + ", mode=" + (useQuestionIdMode ? "question_id" : "category_id"));
+		m.jsErrClose(_message.get("alert.classroom.error_question"));
+		return;
+	}
 
 	while(qlist.next()) {
 		examResult.item("exam_id", eid);
@@ -302,7 +413,11 @@ if(euinfo.i("status") == 0) {
 		examResult.item("answer", "");
 		examResult.item("reg_date", now);
 		examResult.item("status", 1);
-		examResult.insert();
+		if(!examResult.insert()) {
+			m.log("exam_apply", "exam_result_insert_failed exam_id=" + eid + ", course_user_id=" + cuid + ", question_id=" + qlist.i("id"));
+			m.jsErrClose("시험 문제를 저장하는 중 오류가 발생했습니다. 관리자에게 문의하세요.");
+			return;
+		}
 	}
 
 	//목록-출제된문항
@@ -321,6 +436,12 @@ if(euinfo.i("status") == 0) {
 
 	//제한-문항갯수및점수
 	if(totalCnt != assignCnt || 100 != assignScore) {
+		m.log(
+			"exam_apply",
+			"question_assign_mismatch exam_id=" + eid + ", course_user_id=" + cuid
+			+ ", expected_cnt=" + totalCnt + ", assigned_cnt=" + assignCnt
+			+ ", assigned_score=" + assignScore
+		);
 		m.jsErrClose(_message.get("alert.classroom.error_question"));
 		return;
 	}

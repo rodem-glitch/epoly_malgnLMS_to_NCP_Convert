@@ -5,6 +5,7 @@
 
 CourseDao course = new CourseDao();
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
 SubjectDao subject = new SubjectDao();
 
 String keyword = m.rs("s_keyword");
@@ -29,11 +30,25 @@ if(!"".equals(keyword)) {
 }
 
 //왜: 교수자는 본인 과목만, 관리자는 전체(또는 특정 교수자) 과목을 조회할 수 있어야 합니다.
-String joinTutor = "";
+String accessWhere = "";
 if(!isAdmin) {
-	joinTutor = " INNER JOIN " + courseTutor.table + " ct ON ct.course_id = c.id AND ct.user_id = " + userId + " AND ct.type = 'major' AND ct.site_id = " + siteId + " ";
+	// 왜: 과정담당자만 지정된 과목도 담당과목 화면에서 누락되지 않게
+	//     주강사/보조강사 + 과정담당자 + LM_COURSE.manager_id를 모두 권한 기준으로 봅니다.
+	accessWhere =
+		" AND (c.manager_id = " + userId
+		+ " OR EXISTS (SELECT 1 FROM " + courseTutor.table + " ct "
+		+ " WHERE ct.course_id = c.id AND ct.user_id = " + userId + " AND ct.site_id = " + siteId
+		+ " AND ct.type IN ('major', 'minor')) "
+		+ " OR EXISTS (SELECT 1 FROM " + courseManager.table + " cm "
+		+ " WHERE cm.course_id = c.id AND cm.user_id = " + userId + " AND cm.site_id = " + siteId + ")) ";
 } else if(0 < tutorId) {
-	joinTutor = " INNER JOIN " + courseTutor.table + " ct ON ct.course_id = c.id AND ct.user_id = " + tutorId + " AND ct.type = 'major' AND ct.site_id = " + siteId + " ";
+	accessWhere =
+		" AND (c.manager_id = " + tutorId
+		+ " OR EXISTS (SELECT 1 FROM " + courseTutor.table + " ct "
+		+ " WHERE ct.course_id = c.id AND ct.user_id = " + tutorId + " AND ct.site_id = " + siteId
+		+ " AND ct.type IN ('major', 'minor')) "
+		+ " OR EXISTS (SELECT 1 FROM " + courseManager.table + " cm "
+		+ " WHERE cm.course_id = c.id AND cm.user_id = " + tutorId + " AND cm.site_id = " + siteId + ")) ";
 }
 
 DataSet list = course.query(
@@ -42,9 +57,9 @@ DataSet list = course.query(
 	+ " , (SELECT COUNT(*) FROM " + new CourseUserDao().table + " cu "
 		+ " WHERE cu.site_id = " + siteId + " AND cu.course_id = c.id AND cu.status != -1) student_cnt "
 	+ " FROM " + course.table + " c "
-	+ joinTutor
 	+ " LEFT JOIN " + subject.table + " s ON s.id = c.subject_id AND s.site_id = " + siteId + " AND s.status != -1 "
 	+ " WHERE c.site_id = " + siteId + " AND c.status != -1 AND c.onoff_type != 'P' "
+	+ accessWhere
 	+ where
 	+ " ORDER BY c.id DESC "
 	, params.toArray()

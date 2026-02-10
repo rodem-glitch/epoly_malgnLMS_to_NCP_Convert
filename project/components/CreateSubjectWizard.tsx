@@ -273,8 +273,13 @@ export function CreateSubjectWizard({ initialStep, onStepChange }: CreateSubject
       setErrorMessage('과목명을 입력해 주세요.');
       return;
     }
-    if (!formData.year.trim()) {
+    const yearValue = formData.year.trim();
+    if (!yearValue) {
       setErrorMessage('년도를 입력해 주세요.');
+      return;
+    }
+    if (!/^\d{4}$/.test(yearValue)) {
+      setErrorMessage('년도는 4자리 숫자(예: 2026)로 입력해 주세요.');
       return;
     }
     if (!formData.startDate || !formData.endDate) {
@@ -286,15 +291,18 @@ export function CreateSubjectWizard({ initialStep, onStepChange }: CreateSubject
     try {
       const programId = formData.selectedCourse ? Number(formData.selectedCourse.id) : 0;
       const lessonTime = String(normalizeSessionCount(formData.hours));
+      // 왜: 학사 정규 과목은 학점 필수값이 있어, 미입력일 때 기본 2학점으로 저장합니다.
+      const creditValue = formData.credits.trim() ? formData.credits.trim() : '2';
       const createRes = await tutorLmsApi.createCourse({
         courseName,
-        year: formData.year.trim(),
+        year: yearValue,
         studyStartDate: formData.startDate,
         studyEndDate: formData.endDate,
         programId: programId > 0 ? programId : undefined,
         categoryId: formData.categoryId > 0 ? formData.categoryId : undefined,
         semester: formData.semester,
-        credit: formData.credits,
+        credit: creditValue,
+        lessonDay: lessonTime,
         lessonTime,
         content1: formData.description,
         content2: formData.objectives,
@@ -637,8 +645,14 @@ function BasicInfoStep({
             <input
               type="text"
               value={formData.year}
-              onChange={(e) => updateFormData({ year: e.target.value })}
+              onChange={(e) => {
+                // 왜: 년도는 DB에서 4자리 숫자 컬럼으로 관리하므로, 입력 단계에서 숫자 4자리로 고정합니다.
+                const onlyDigits = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+                updateFormData({ year: onlyDigits });
+              }}
               placeholder="2024"
+              inputMode="numeric"
+              maxLength={4}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <select

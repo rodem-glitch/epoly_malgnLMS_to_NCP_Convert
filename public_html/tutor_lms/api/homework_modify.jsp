@@ -20,6 +20,8 @@ f.addElement("course_id", null, "hname:'course_id', required:'Y'");
 f.addElement("homework_id", null, "hname:'homework_id', required:'Y'");
 f.addElement("title", null, "hname:'과제 제목', required:'Y'");
 f.addElement("description", null, "hname:'과제 설명', allowhtml:'Y'");
+f.addElement("startDate", null, "hname:'제출 시작 날짜'");
+f.addElement("startTime", null, "hname:'제출 시작 시간'");
 f.addElement("dueDate", null, "hname:'마감 날짜', required:'Y'");
 f.addElement("dueTime", null, "hname:'마감 시간', required:'Y'");
 f.addElement("totalScore", 100, "hname:'배점', required:'Y', option:'number'");
@@ -101,6 +103,28 @@ String endH = (endHm != null && 5 <= endHm.length()) ? endHm.substring(0, 2) : "
 String endM = (endHm != null && 5 <= endHm.length()) ? endHm.substring(3, 5) : "59";
 String endDateTime = endYmd + endH + endM + "59";
 
+String startDateTime = minfo.s("start_date");
+if("".equals(startDateTime)) startDateTime = m.time("yyyyMMddHHmmss");
+String startDate = f.get("startDate");
+String startTime = f.get("startTime");
+// 왜: 시작일시 입력값이 있으면 course_module.start_date를 함께 갱신해,
+//      학생 화면의 제출 가능 기간 판단(대기/진행/종료)이 교수자 설정과 동일하게 맞춰집니다.
+if(!"".equals(startDate)) {
+	String startYmd = m.time("yyyyMMdd", startDate);
+	String startH = (startTime != null && 5 <= startTime.length()) ? startTime.substring(0, 2) : "00";
+	String startM = (startTime != null && 5 <= startTime.length()) ? startTime.substring(3, 5) : "00";
+	startDateTime = startYmd + startH + startM + "00";
+}
+
+if(m.parseLong(startDateTime) > m.parseLong(endDateTime)) {
+	result.put("rst_code", "1103");
+	result.put("rst_message", "제출 시작일시는 마감일시보다 늦을 수 없습니다.");
+	result.print();
+	return;
+}
+
+m.log("tutor_homework", "modify course_id=" + courseId + ", homework_id=" + homeworkId + ", start=" + startDateTime + ", end=" + endDateTime + ", user_id=" + userId);
+
 //과제 수정
 homework.item("homework_nm", title);
 homework.item("onoff_type", onoffType);
@@ -126,6 +150,7 @@ if(!homework.update("id = " + homeworkId + " AND site_id = " + siteId + " AND st
 courseModule.item("module_nm", title);
 courseModule.item("assign_score", assignScore);
 courseModule.item("apply_type", "1");
+courseModule.item("start_date", startDateTime);
 courseModule.item("end_date", endDateTime);
 if(!courseModule.update("course_id = " + courseId + " AND module = 'homework' AND module_id = " + homeworkId + " AND status = 1")) {
 	result.put("rst_code", "2001");

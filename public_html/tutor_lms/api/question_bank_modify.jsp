@@ -5,6 +5,38 @@
 
 QuestionDao question = new QuestionDao();
 
+// 왜: 정규과정 운영 DB 중 일부는 LM_QUESTION.SCORE 컬럼이 아직 없어서,
+//      배점 저장 시 Unknown column 오류가 발생합니다.
+boolean hasScoreColumn = false;
+try {
+	hasScoreColumn = question.getOneInt(
+		" SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+		+ " WHERE TABLE_SCHEMA = DATABASE() "
+		+ " AND TABLE_NAME = 'LM_QUESTION' "
+		+ " AND COLUMN_NAME = 'SCORE' "
+	) > 0;
+} catch(Exception e) {
+	m.log("question_bank_modify", "score_column_check_failed manager_id=" + userId + ", message=" + e.getMessage());
+}
+if(!hasScoreColumn) {
+	int altered = -1;
+	try {
+		altered = question.execute(
+			"ALTER TABLE " + question.table + " "
+			+ " ADD COLUMN score INT NOT NULL DEFAULT 5 COMMENT '문제 배점' "
+		);
+	} catch(Exception e) {
+		m.log("question_bank_modify", "score_column_alter_failed manager_id=" + userId + ", message=" + e.getMessage());
+	}
+	if(altered == -1) {
+		result.put("rst_code", "5001");
+		result.put("rst_message", "문제 배점 컬럼이 없어 저장할 수 없습니다. 관리자에게 DB 점검을 요청해 주세요.");
+		result.print();
+		return;
+	}
+	m.log("question_bank_modify", "score_column_alter_ok manager_id=" + userId);
+}
+
 // 파라미터 수집
 int questionId = m.ri("id");
 int categoryId = m.ri("category_id");
@@ -14,6 +46,7 @@ String questionText = m.rs("question_text");
 int grade = m.ri("grade");
 String answer = m.rs("answer");
 String description = m.rs("description");
+String pointsRaw = m.rs("points");
 
 // 검증
 if(questionId <= 0) {
@@ -38,6 +71,18 @@ if(!isAdmin && info.i("manager_id") != userId && info.i("manager_id") != -99) {
 	result.put("rst_message", "해당 문제를 수정할 권한이 없습니다.");
 	result.print();
 	return;
+}
+
+// 왜: 문제은행 배점이 저장되지 않으면 시험 배점 합계(100점) 계산이 틀어져 응시가 막힐 수 있습니다.
+if(!"".equals(pointsRaw)) {
+	int score = m.parseInt(pointsRaw);
+	if(score <= 0) {
+		result.put("rst_code", "1002");
+		result.put("rst_message", "문제 배점은 1점 이상이어야 합니다.");
+		result.print();
+		return;
+	}
+	question.item("score", score);
 }
 
 // 수정
@@ -70,11 +115,13 @@ if(isChoice) {
 }
 
 if(!question.update("id = " + questionId + " AND site_id = " + siteId)) {
+	m.log("question_bank_modify", "update_failed id=" + questionId + ", manager_id=" + userId + ", points_raw=" + pointsRaw);
 	result.put("rst_code", "5000");
 	result.put("rst_message", "문제 수정 중 오류가 발생했습니다.");
 	result.print();
 	return;
 }
+m.log("question_bank_modify", "update_ok id=" + questionId + ", manager_id=" + userId + ", points_raw=" + pointsRaw);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "문제가 수정되었습니다.");

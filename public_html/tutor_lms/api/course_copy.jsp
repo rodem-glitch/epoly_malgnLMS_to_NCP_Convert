@@ -33,6 +33,7 @@ CourseDao course = new CourseDao();
 CourseLessonDao courseLesson = new CourseLessonDao();
 CourseSectionDao courseSection = new CourseSectionDao();
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
 TutorDao tutor = new TutorDao();
 
 DataSet tinfo = tutor.find("user_id = " + tutorId + " AND site_id = " + siteId + " AND status = 1");
@@ -122,6 +123,12 @@ try {
 	courseTutor.item("type", "major");
 	courseTutor.item("class", "1");
 	if(!courseTutor.insert()) throw new Exception("담당 교수 등록에 실패했습니다.");
+
+	// 왜: 관리자 화면의 "과정담당자"와 튜터 담당과목 기준을 맞추기 위해 복사본에도 과정담당자를 함께 등록합니다.
+	courseManager.item("course_id", newId);
+	courseManager.item("user_id", tutorId);
+	courseManager.item("site_id", siteId);
+	if(!courseManager.insert()) throw new Exception("과정담당자 등록에 실패했습니다.");
 
 	result.put("rst_code", "0000");
 	result.put("rst_message", "성공");

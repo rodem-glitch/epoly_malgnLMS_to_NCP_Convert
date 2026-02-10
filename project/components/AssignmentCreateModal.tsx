@@ -11,6 +11,8 @@ interface AssignmentCreateModalProps {
   initialData?: {
     title?: string;
     description?: string;
+    startDate?: string;
+    startTime?: string;
     dueDate?: string;
     dueTime?: string;
     totalScore?: number;
@@ -34,11 +36,14 @@ export function AssignmentCreateModal({
   initialData,
 }: AssignmentCreateModalProps) {
   const sessionCount = 10;
+  const today = new Date().toISOString().slice(0, 10);
   const [assignmentData, setAssignmentData] = useState({
     title: '',
     description: '',
+    startDate: today,
+    startTime: '00:00',
     dueDate: '',
-    dueTime: '',
+    dueTime: '23:59',
     totalScore: 100,
     submissionType: 'file', // file, text, both
     fileTypes: '',
@@ -56,8 +61,10 @@ export function AssignmentCreateModal({
       setAssignmentData({
         title: initialData.title || '',
         description: initialData.description || '',
+        startDate: initialData.startDate || today,
+        startTime: initialData.startTime || '00:00',
         dueDate: initialData.dueDate || '',
-        dueTime: initialData.dueTime || '',
+        dueTime: initialData.dueTime || '23:59',
         totalScore: initialData.totalScore ?? 100,
         submissionType: initialData.submissionType || 'file',
         fileTypes: initialData.fileTypes || '',
@@ -73,8 +80,10 @@ export function AssignmentCreateModal({
       setAssignmentData({
         title: '',
         description: '',
+        startDate: today,
+        startTime: '00:00',
         dueDate: '',
-        dueTime: '',
+        dueTime: '23:59',
         totalScore: 100,
         submissionType: 'file',
         fileTypes: '',
@@ -86,7 +95,7 @@ export function AssignmentCreateModal({
         file: null,
       });
     }
-  }, [isOpen, mode, initialData]);
+  }, [isOpen, mode, initialData, today]);
 
   if (!isOpen) return null;
 
@@ -186,8 +195,32 @@ export function AssignmentCreateModal({
             />
           </div>
 
-          {/* 제출 마감일 */}
+          {/* 제출 기간 */}
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">
+                제출 시작 날짜 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={assignmentData.startDate}
+                onChange={(e) => setAssignmentData({ ...assignmentData, startDate: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">
+                제출 시작 시간 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="time"
+                value={assignmentData.startTime}
+                onChange={(e) => setAssignmentData({ ...assignmentData, startTime: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+              />
+            </div>
             <div>
               <label className="block text-sm text-gray-700 mb-2">
                 마감 날짜 <span className="text-red-500">*</span>
@@ -197,6 +230,7 @@ export function AssignmentCreateModal({
                 value={assignmentData.dueDate}
                 onChange={(e) => setAssignmentData({ ...assignmentData, dueDate: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                min={assignmentData.startDate || undefined}
                 required
               />
             </div>

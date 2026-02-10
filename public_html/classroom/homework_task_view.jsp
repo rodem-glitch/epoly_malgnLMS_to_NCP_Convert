@@ -30,6 +30,8 @@ if(!info.next()) { m.jsError(_message.get("alert.common.nodata")); return; }
 boolean isReady = false; //대기
 boolean isEnd = false; //완료
 boolean isPeriodApply = "1".equals(hinfo.s("apply_type"));
+boolean isHaksaCourse = cuinfo.b("is_haksa");
+boolean hasSubmitted = info.b("submit_yn");
 if("1".equals(hinfo.s("apply_type"))) { //기간
 	hinfo.put("start_date_conv", m.time(_message.get("format.datetime.dot"), hinfo.s("start_date")));
 	hinfo.put("end_date_conv",
@@ -60,11 +62,20 @@ if("1".equals(hinfo.s("apply_type"))) { //기간
 // 왜: 학기(progress)가 종료(E)라도, 기간(apply_type=1)형 과제는 종료일 전까지 제출/재제출을 허용합니다.
 boolean canOpenByProgress = "I".equals(progress) || ("E".equals(progress) && isPeriodApply);
 
-//왜: 기본 과제는 '평가완료(confirm_yn)' 이후 수정이 막히는데, 추가 과제도 같은 기준으로 제출/수정을 막아야 혼선이 없습니다.
-boolean isOpen = !isReady && !isEnd && canOpenByProgress && !info.b("confirm_yn") && "N".equals(hinfo.s("onoff_type"));
-
-//왜: 피드백을 받은 후에는 기간이 종료되었더라도 재제출을 허용합니다.
-boolean isResubmit = info.b("confirm_yn") && canOpenByProgress && "N".equals(hinfo.s("onoff_type"));
+boolean isOpen = false;
+boolean isResubmit = false;
+if(isHaksaCourse) {
+	// 왜: 학사(정규) 추가 과제는 "제출 완료 후 입력란 숨김"이 원칙입니다.
+	//     제출 완료(submit_yn=Y) 상태에서는 교수 피드백(confirm_yn=Y)이 오기 전까지 입력란을 다시 열지 않습니다.
+	isOpen = !hasSubmitted && !isReady && !isEnd && canOpenByProgress && !info.b("confirm_yn") && "N".equals(hinfo.s("onoff_type"));
+	// 왜: 학사 과정에서는 교수 피드백이 온 건(confirm_yn=Y)에 대해서만 재제출 입력란을 노출합니다.
+	isResubmit = hasSubmitted && info.b("confirm_yn") && canOpenByProgress && "N".equals(hinfo.s("onoff_type"));
+} else {
+	//왜: 기본 과제는 '평가완료(confirm_yn)' 이후 수정이 막히는데, 추가 과제도 같은 기준으로 제출/수정을 막아야 혼선이 없습니다.
+	isOpen = !isReady && !isEnd && canOpenByProgress && !info.b("confirm_yn") && "N".equals(hinfo.s("onoff_type"));
+	//왜: 피드백을 받은 후에는 기간이 종료되었더라도 재제출을 허용합니다.
+	isResubmit = info.b("confirm_yn") && canOpenByProgress && "N".equals(hinfo.s("onoff_type"));
+}
 
 info.put("open_block", isOpen);
 info.put("resubmit_block", isResubmit);
@@ -75,6 +86,8 @@ f.addElement("content", null, "hname:'내용', allowhtml:'Y'");
 
 //제출/수정
 if(m.isPost() && f.validate()) {
+
+	m.log("homework_task_view", "submit_attempt hid=" + hid + ", tid=" + tid + ", cuid=" + cuid + ", is_haksa=" + (isHaksaCourse ? "Y" : "N") + ", submit_yn=" + info.s("submit_yn") + ", confirm_yn=" + info.s("confirm_yn") + ", open=" + (isOpen ? "Y" : "N") + ", resubmit=" + (isResubmit ? "Y" : "N"));
 
 	if(!isOpen && !isResubmit) { m.jsAlert(_message.get("alert.common.abnormal_access")); return; }
 
@@ -105,6 +118,7 @@ if(m.isPost() && f.validate()) {
 	if(!homeworkTask.update("id = " + tid + " AND homework_id = " + hid + " AND course_user_id = " + cuid + "")) {
 		m.jsAlert(_message.get("alert.common.error_modify")); return;
 	}
+	m.log("homework_task_view", "submit_done hid=" + hid + ", tid=" + tid + ", cuid=" + cuid + ", is_haksa=" + (isHaksaCourse ? "Y" : "N") + ", resubmit_submit=" + (isResubmit ? "Y" : "N"));
 
 	m.jsAlert(isResubmit ? "재제출이 완료되었습니다." : "제출이 완료되었습니다.");
 	m.jsReplace("homework_task_view.jsp?cuid=" + cuid + "&hid=" + hid + "&tid=" + tid, "parent");

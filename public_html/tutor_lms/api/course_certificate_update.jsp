@@ -21,10 +21,14 @@ if(0 == courseId) {
 
 CourseDao course = new CourseDao();
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
 
 //권한
 if(!isAdmin) {
-	if(0 >= courseTutor.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId)) {
+	int tutorAccessCount = courseTutor.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId);
+	int managerAccessCount = courseManager.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND site_id = " + siteId);
+	int ownerAccessCount = course.findCount("id = " + courseId + " AND manager_id = " + userId + " AND site_id = " + siteId + " AND status != -1");
+	if(0 >= tutorAccessCount && 0 >= managerAccessCount && 0 >= ownerAccessCount) {
 		result.put("rst_code", "4031");
 		result.put("rst_message", "해당 과목의 증명서 설정을 수정할 권한이 없습니다.");
 		result.print();

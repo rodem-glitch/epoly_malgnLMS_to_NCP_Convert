@@ -391,38 +391,60 @@ if(cuinfo.b("is_haksa")) {
 			if(cuinfo.s("end_date").length() >= 8) endDateTime = cuinfo.s("end_date").substring(0, 8) + "235959";
 			if("".equals(endDateTime)) endDateTime = now;
 
-			JSONObject ekMap = new JSONObject();
-			java.util.HashSet<Integer> haksaLessonIds = new java.util.HashSet<Integer>();
-			int maxWeek = 0;
-			JSONArray weeks = new JSONArray(haksaCurriculumJson);
-			for(int i = 0; i < weeks.length(); i++) {
-				JSONObject w = weeks.optJSONObject(i);
-				if(w == null) continue;
+				JSONObject ekMap = new JSONObject();
+				java.util.HashSet<Integer> haksaLessonIds = new java.util.HashSet<Integer>();
+				java.util.HashSet<Integer> activeHaksaHomeworkIds = new java.util.HashSet<Integer>();
+				if(haksaCourseId > 0) {
+					DataSet activeHomeworkModules = courseModule.query(
+						"SELECT cm.module_id "
+						+ " FROM " + courseModule.table + " cm "
+						+ " INNER JOIN " + homework.table + " h ON h.id = cm.module_id "
+							+ " AND h.site_id = " + siteId + " AND h.status != -1 "
+						+ " WHERE cm.course_id = " + haksaCourseId + " "
+						+ " AND cm.module = 'homework' AND cm.status = 1 "
+					);
+					while(activeHomeworkModules.next()) {
+						activeHaksaHomeworkIds.add(activeHomeworkModules.i("module_id"));
+					}
+				}
+				int maxWeek = 0;
+				JSONArray weeks = new JSONArray(haksaCurriculumJson);
+				for(int i = 0; i < weeks.length(); i++) {
+					JSONObject w = weeks.optJSONObject(i);
+					if(w == null) continue;
 				int wnum = w.optInt("weekNumber", 0);
 				if(wnum > maxWeek) maxWeek = wnum;
 				JSONArray sessions = w.optJSONArray("sessions");
 				if(sessions == null) continue;
-				for(int s = 0; s < sessions.length(); s++) {
-					JSONObject sessionObj = sessions.optJSONObject(s);
-					if(sessionObj == null) continue;
-					JSONArray contents = sessionObj.optJSONArray("contents");
-					if(contents == null) continue;
-					for(int c = 0; c < contents.length(); c++) {
-						JSONObject content = contents.optJSONObject(c);
-						if(content == null) continue;
+					for(int s = 0; s < sessions.length(); s++) {
+						JSONObject sessionObj = sessions.optJSONObject(s);
+						if(sessionObj == null) continue;
+						JSONArray contents = sessionObj.optJSONArray("contents");
+						if(contents == null) continue;
+						JSONArray normalizedContents = new JSONArray();
+						for(int c = 0; c < contents.length(); c++) {
+							JSONObject content = contents.optJSONObject(c);
+							if(content == null) continue;
 
-						String contentType = content.optString("type", "");
-						String title = content.optString("title", "");
-						String safeTitle = m.replace(title, "'", "''");
+							String contentType = content.optString("type", "");
+							String title = content.optString("title", "");
+							String safeTitle = m.replace(title, "'", "''");
 
-						// 왜: 학사 커리큘럼에 등록된 과제/시험/자료가 실제 LMS 모듈과 연결되어야 학생이 제출/열람할 수 있습니다.
-						if(haksaCourseId > 0 && "assignment".equalsIgnoreCase(contentType)) {
-							int homeworkId = content.optInt("homeworkId", 0);
-							if(homeworkId <= 0 && !"".equals(safeTitle)) {
-								DataSet hwLink = courseModule.query(
-									"SELECT module_id FROM " + courseModule.table
-									+ " WHERE course_id = " + haksaCourseId + " AND module = 'homework' AND module_nm = '" + safeTitle + "' AND status = 1"
-								);
+							// 왜: 학사 커리큘럼에 등록된 과제/시험/자료가 실제 LMS 모듈과 연결되어야 학생이 제출/열람할 수 있습니다.
+							if(haksaCourseId > 0 && "assignment".equalsIgnoreCase(contentType)) {
+								int homeworkId = content.optInt("homeworkId", 0);
+								// 왜: 운영에서 과제를 삭제하면 course_module 연결이 끊기므로,
+								//     커리큘럼 JSON에 남아 있는 과제 항목도 학생 화면에서 같이 숨겨야 "삭제했는데 보임" 혼선을 막을 수 있습니다.
+								if(homeworkId > 0 && !activeHaksaHomeworkIds.contains(homeworkId)) {
+									curriculumChanged = true;
+									m.log("haksa_curriculum", "[index] stale assignment removed course_id=" + haksaCourseId + ", homework_id=" + homeworkId + ", session_id=" + sessionObj.optString("sessionId", ""));
+									continue;
+								}
+								if(homeworkId <= 0 && !"".equals(safeTitle)) {
+									DataSet hwLink = courseModule.query(
+										"SELECT module_id FROM " + courseModule.table
+										+ " WHERE course_id = " + haksaCourseId + " AND module = 'homework' AND module_nm = '" + safeTitle + "' AND status = 1"
+									);
 								if(hwLink.next()) homeworkId = hwLink.i("module_id");
 							}
 							if(homeworkId <= 0) {
@@ -458,7 +480,10 @@ if(cuinfo.b("is_haksa")) {
 									courseModule.item("review_yn", "N");
 									courseModule.item("result_yn", "Y");
 									courseModule.item("status", 1);
-									if(courseModule.insert()) homeworkId = newHomeworkId;
+									if(courseModule.insert()) {
+										homeworkId = newHomeworkId;
+										activeHaksaHomeworkIds.add(homeworkId);
+									}
 									else {
 										homework.item("status", -1);
 										homework.update("id = " + newHomeworkId);
@@ -554,16 +579,94 @@ if(cuinfo.b("is_haksa")) {
 							}
 						}
 
-						if(!"video".equalsIgnoreCase(contentType)) continue;
+						if(!"video".equalsIgnoreCase(contentType)) {
+							normalizedContents.put(content);
+							continue;
+						}
 						int lid = content.optInt("lessonId", 0);
-						if(lid <= 0) continue;
+						String rawLessonId = content.optString("lessonId", "").trim();
+						// 왜: 커리큘럼 lessonId가 문자열로 저장된 경우(예: mediaKey)도 숫자 ID로 정규화해야 학생 재생이 정상 동작합니다.
+						if(lid <= 0 && !"".equals(rawLessonId)) {
+							try { lid = Integer.parseInt(rawLessonId); } catch(Exception ignore) {}
+						}
+						if(lid <= 0) {
+							String mediaKey = content.optString("mediaKey", "").trim();
+							if(!"".equals(mediaKey)) {
+								String safeMediaKey = m.replace(mediaKey, "'", "''");
+								DataSet lfind = lesson.find(
+									"site_id = " + siteId
+									+ " AND start_url = '" + safeMediaKey + "'"
+									+ " AND lesson_type = '05'"
+									+ " AND status != -1"
+									, "id"
+								);
+								if(lfind.next()) {
+									lid = lfind.i("id");
+								} else {
+									int totalTime = content.optInt("totalTime", 0);
+									if(totalTime <= 0) totalTime = content.optInt("total_time", 0);
+									int completeTime = content.optInt("completeTime", 0);
+									if(completeTime <= 0) completeTime = content.optInt("complete_time", 0);
+									if(totalTime <= 0 && completeTime > 0) totalTime = completeTime;
+									if(completeTime <= 0 && totalTime > 0) completeTime = totalTime;
+									int contentWidth = content.optInt("contentWidth", 0);
+									if(contentWidth <= 0) contentWidth = content.optInt("content_width", 0);
+									int contentHeight = content.optInt("contentHeight", 0);
+									if(contentHeight <= 0) contentHeight = content.optInt("content_height", 0);
+									String lessonTitle = content.optString("title", "");
+
+									int newLessonId = lesson.getSequence();
+									lesson.clear();
+									lesson.item("id", newLessonId);
+									lesson.item("site_id", siteId);
+									lesson.item("content_id", 0);
+									lesson.item("lesson_nm", !"".equals(lessonTitle) ? lessonTitle : ("콜러스 " + mediaKey));
+									lesson.item("onoff_type", "N");
+									lesson.item("lesson_type", "05");
+									lesson.item("author", "");
+									lesson.item("start_url", mediaKey);
+									lesson.item("mobile_a", mediaKey);
+									lesson.item("mobile_i", mediaKey);
+									lesson.item("total_page", 0);
+									lesson.item("total_time", totalTime);
+									lesson.item("complete_time", completeTime);
+									lesson.item("content_width", contentWidth);
+									lesson.item("content_height", contentHeight);
+									lesson.item("description", "");
+									lesson.item("manager_id", userId);
+									lesson.item("use_yn", "Y");
+									lesson.item("sort", 0);
+									lesson.item("reg_date", m.time("yyyyMMddHHmmss"));
+									lesson.item("status", 1);
+
+									if(lesson.insert()) {
+										lid = newLessonId;
+										m.log("haksa_curriculum", "[index] lesson created course_id=" + haksaCourseId + ", media_key=" + mediaKey + ", lesson_id=" + lid);
+									} else {
+										m.log("haksa_curriculum", "[index] lesson create failed course_id=" + haksaCourseId + ", media_key=" + mediaKey);
+									}
+								}
+							}
+						}
+						if(lid <= 0) {
+							m.log("haksa_curriculum", "[index] unresolved video lessonId course_id=" + haksaCourseId + ", session_id=" + sessionObj.optString("sessionId", "") + ", raw_lesson_id=" + rawLessonId);
+							normalizedContents.put(content);
+							continue;
+						}
+						if(content.optInt("lessonId", 0) != lid) {
+							content.put("lessonId", lid);
+							curriculumChanged = true;
+							m.log("haksa_curriculum", "[index] lessonId normalized course_id=" + haksaCourseId + ", session_id=" + sessionObj.optString("sessionId", "") + ", lesson_id=" + lid);
+						}
 						String lidKey = "" + lid;
 						if(!ekMap.has(lidKey)) {
 							ekMap.put(lidKey, m.encrypt(lid + "|0|" + m.time("yyyyMMdd")));
 						}
 						// 왜: 학사 탭에서 인정시간(complete_time)을 보여주기 위해 영상 ID를 모아둡니다.
 						haksaLessonIds.add(Integer.valueOf(lid));
+						normalizedContents.put(content);
 					}
+					sessionObj.put("contents", normalizedContents);
 				}
 			}
 

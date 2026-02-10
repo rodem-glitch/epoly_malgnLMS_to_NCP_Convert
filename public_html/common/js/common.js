@@ -165,6 +165,24 @@ function OpenLayer(nLink, nTarget, nWidth, nHeight, xPos, yPos, scr) {
 	frm.src = nLink;
 	frm.setAttribute("name", nTarget);
 	frm.setAttribute("id", nTarget);
+	frm.onload = function() {
+		try {
+			var layerWindow = frm.contentWindow;
+			if(!layerWindow) return;
+
+			// 왜: 기존 선택 팝업들은 opener/window.close 기반으로 부모창 값을 채우는데,
+			//      OpenLayer(iframe)에서는 opener가 비어 있어 선택 동작이 막히는 문제가 반복됩니다.
+			if(!layerWindow.opener) layerWindow.opener = window;
+
+			// 왜: iframe 안에서 window.close()는 대부분 동작하지 않으므로,
+			//      기존 레거시 스크립트를 바꾸지 않고도 레이어를 닫을 수 있게 맞춥니다.
+			layerWindow.close = function() {
+				try { CloseLayer(); } catch(e) { }
+			}
+		} catch(e) {
+			console.warn("[OpenLayer] iframe bridge setup failed:", e);
+		}
+	};
 
 	wrap.appendChild(btn);
 	wrap.appendChild(frm);

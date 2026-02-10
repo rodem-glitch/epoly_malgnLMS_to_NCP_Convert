@@ -7,6 +7,7 @@
 
 CourseDao course = new CourseDao();
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
 PolyCourseDao polyCourse = new PolyCourseDao();
 PolyCourseProfDao polyCourseProf = new PolyCourseProfDao();
 PolyMemberKeyDao polyMemberKey = new PolyMemberKeyDao();
@@ -21,19 +22,33 @@ java.util.HashSet<String> yearSet = new java.util.HashSet<String>();
 // 1) 프리즘(LM_COURSE) 기준 년도
 //------------------------------------------------------------------------------
 //왜: 교수자는 본인 과목만, 관리자는 전체(또는 특정 교수자) 과목의 년도를 조회할 수 있어야 합니다.
-String joinTutor = "";
+String accessWhere = "";
 if(!isAdmin) {
-	joinTutor = " INNER JOIN " + courseTutor.table + " ct ON ct.course_id = c.id AND ct.user_id = " + userId + " AND ct.type = 'major' AND ct.site_id = " + siteId + " ";
+	// 왜: 연도 필터도 담당과목과 같은 기준(주/보조강사 + 과정담당자 + manager_id)으로 계산해야
+	//     목록에는 보이는데 년도 필터에는 안 뜨는 불일치를 막을 수 있습니다.
+	accessWhere =
+		" AND (c.manager_id = " + userId
+		+ " OR EXISTS (SELECT 1 FROM " + courseTutor.table + " ct "
+		+ " WHERE ct.course_id = c.id AND ct.user_id = " + userId + " AND ct.site_id = " + siteId
+		+ " AND ct.type IN ('major', 'minor')) "
+		+ " OR EXISTS (SELECT 1 FROM " + courseManager.table + " cm "
+		+ " WHERE cm.course_id = c.id AND cm.user_id = " + userId + " AND cm.site_id = " + siteId + ")) ";
 } else if(0 < tutorId) {
-	joinTutor = " INNER JOIN " + courseTutor.table + " ct ON ct.course_id = c.id AND ct.user_id = " + tutorId + " AND ct.type = 'major' AND ct.site_id = " + siteId + " ";
+	accessWhere =
+		" AND (c.manager_id = " + tutorId
+		+ " OR EXISTS (SELECT 1 FROM " + courseTutor.table + " ct "
+		+ " WHERE ct.course_id = c.id AND ct.user_id = " + tutorId + " AND ct.site_id = " + siteId
+		+ " AND ct.type IN ('major', 'minor')) "
+		+ " OR EXISTS (SELECT 1 FROM " + courseManager.table + " cm "
+		+ " WHERE cm.course_id = c.id AND cm.user_id = " + tutorId + " AND cm.site_id = " + siteId + ")) ";
 }
 
 try {
 	DataSet prismYears = course.query(
 		" SELECT DISTINCT c.year "
 		+ " FROM " + course.table + " c "
-		+ joinTutor
 		+ " WHERE c.site_id = " + siteId + " AND c.status != -1 AND c.onoff_type != 'P' AND c.year > 0 "
+		+ accessWhere
 		+ " ORDER BY c.year DESC "
 	);
 	while(prismYears.next()) {

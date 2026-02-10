@@ -1,4 +1,14 @@
 <link rel="stylesheet" type="text/css" href="{{SYS_COMMON_CDN}}/common/css/fontawesome/css/font-awesome.min.css">
+		<style>
+		/* 왜: 팝업/브라우저 배율 환경에서 가로폭이 부족할 때 우측 문항표 고정 노출로 본문 보기 영역이 잘리는 문제를 방지합니다. */
+		.exam_container.exam_compact .exam_q {margin:0 !important; width:100% !important; float:none !important;}
+		.exam_container.exam_compact .exam_info {display:none !important; position:relative !important; width:100% !important; float:none !important; margin:0 !important; right:auto !important; top:auto !important; padding:0 !important;}
+		.exam_container.exam_compact .exam_info.exam_info_open {display:block !important;}
+		.exam_container.exam_compact .exam_btn .toggle_info_btn {display:inline !important;}
+		.exam_container.exam_compact .exam_table {margin-bottom:0 !important;}
+		.exam_container.exam_compact .exam_table .toggle_info_row {display:table-row !important;}
+		.exam_container.exam_compact .exam_table .toggle_info_row .button {width:100%;}
+		</style>
 		<div class="pop_exam pop_wrap">
 			<div class="pop_title">
 				<h6>시험명 : {{info.exam_nm}}</h6>
@@ -146,6 +156,25 @@
 				
 			<script>
 			var unload = true;
+			var EXAM_INFO_PANEL_WIDTH = 258;
+			var EXAM_MIN_QUESTION_WIDTH = 760;
+
+			// 왜: 창 폭이 좁아지는 환경(팝업 축소/고배율)에서는 본문을 우선 노출해 보기(선택지)가 잘리지 않게 합니다.
+			function syncExamLayoutByWidth() {
+				var isCompact = (window.innerWidth - EXAM_INFO_PANEL_WIDTH) < EXAM_MIN_QUESTION_WIDTH;
+				var $container = $(".exam_container");
+				if(isCompact) {
+					$container.addClass("exam_compact");
+					$("#exam_info").removeClass("exam_info_open");
+					$("#exam_q").show();
+					$("#exam_info").hide();
+				} else {
+					$container.removeClass("exam_compact");
+					$("#exam_info").removeClass("exam_info_open");
+					$("#exam_q").show();
+					$("#exam_info").show();
+				}
+			}
 
 			$(document).ready(function() {
 				if(!opener) {
@@ -155,21 +184,14 @@
 				$("body").attr("oncontextmenu", "return false");
 				$("body").attr("onselectstart", "return false");
 				$("body").attr("ondragstart", "return false");
+				syncExamLayoutByWidth();
 			});
 
 			$(window).on("beforeunload", function(){
 				if(unload) return "이 페이지를 벗어나면 작성된 내용은 저장되지 않습니다.";
 			});
 
-			$(window).resize(function() {
-				if(window.innerWidth > 750) {
-					$("#exam_q").show();
-					$("#exam_info").show();
-				} else {
-					$("#exam_q").show();
-					$("#exam_info").hide();
-				}
-			});
+			$(window).resize(syncExamLayoutByWidth);
 
 			/* timer script */
 			addEvent("onload", timer2);
@@ -299,11 +321,14 @@
 			}
 
 			function toggleInfo() {
+				if(!$(".exam_container").hasClass("exam_compact")) return;
 				if($("#exam_q").css("display") == "block") {
 					$("#exam_q").hide();
+					$("#exam_info").addClass("exam_info_open");
 					$("#exam_info").show();
 				} else {
 					$("#exam_q").show();
+					$("#exam_info").removeClass("exam_info_open");
 					$("#exam_info").hide();
 				}
 			}

@@ -8,6 +8,7 @@ interface AssignmentDetailModalProps {
     id: number;
     title: string;
     description?: string;
+    startDate?: string;
     dueDate?: string;
     totalScore?: number;
     submitted?: number;
@@ -72,6 +73,15 @@ export function AssignmentDetailModal({
 
           {/* 정보 그리드 */}
           <div className="grid grid-cols-2 gap-4">
+            {/* 시작일 */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
+                <Clock className="w-4 h-4" />
+                <span>제출 시작일</span>
+              </div>
+              <p className="text-gray-900 font-medium">{assignment.startDate || '-'}</p>
+            </div>
+
             {/* 마감일 */}
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">

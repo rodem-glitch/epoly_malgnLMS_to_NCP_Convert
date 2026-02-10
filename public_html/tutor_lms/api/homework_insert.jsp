@@ -19,6 +19,8 @@ HomeworkDao homework = new HomeworkDao();
 f.addElement("course_id", null, "hname:'course_id', required:'Y'");
 f.addElement("title", null, "hname:'과제 제목', required:'Y'");
 f.addElement("description", null, "hname:'과제 설명', required:'Y', allowhtml:'Y'");
+f.addElement("startDate", null, "hname:'제출 시작 날짜'");
+f.addElement("startTime", null, "hname:'제출 시작 시간'");
 f.addElement("dueDate", null, "hname:'마감 날짜', required:'Y'");
 f.addElement("dueTime", null, "hname:'마감 시간', required:'Y'");
 f.addElement("totalScore", 100, "hname:'배점', required:'Y', option:'number'");
@@ -86,8 +88,25 @@ String endH = (endHm != null && 5 <= endHm.length()) ? endHm.substring(0, 2) : "
 String endM = (endHm != null && 5 <= endHm.length()) ? endHm.substring(3, 5) : "59";
 String endDateTime = endYmd + endH + endM + "59";
 
-//시작일은 "지금"으로 두는 게 가장 안전합니다(왜: 시작일이 비어있으면 정렬/노출 조건이 환경마다 다르게 동작할 수 있습니다)
 String startDateTime = m.time("yyyyMMddHHmmss");
+String startDate = f.get("startDate");
+String startTime = f.get("startTime");
+// 왜: 교수자 화면에서 시작일시를 입력하면 그 값을 우선 적용하고, 값이 없으면 기존처럼 "지금"을 사용합니다.
+if(!"".equals(startDate)) {
+	String startYmd = m.time("yyyyMMdd", startDate);
+	String startH = (startTime != null && 5 <= startTime.length()) ? startTime.substring(0, 2) : "00";
+	String startM = (startTime != null && 5 <= startTime.length()) ? startTime.substring(3, 5) : "00";
+	startDateTime = startYmd + startH + startM + "00";
+}
+
+if(m.parseLong(startDateTime) > m.parseLong(endDateTime)) {
+	result.put("rst_code", "1103");
+	result.put("rst_message", "제출 시작일시는 마감일시보다 늦을 수 없습니다.");
+	result.print();
+	return;
+}
+
+m.log("tutor_homework", "insert course_id=" + courseId + ", start=" + startDateTime + ", end=" + endDateTime + ", user_id=" + userId);
 
 //과제(LM_HOMEWORK) 생성
 int newId = homework.getSequence();

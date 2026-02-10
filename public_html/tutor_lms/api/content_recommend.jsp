@@ -102,21 +102,75 @@ try {
 
 // 왜: 콜러스 외부 영상은 LMS DB에 없으므로, API 응답(TB_RECO_CONTENT 데이터)을 직접 사용합니다.
 DataSet list = new DataSet();
+KollusMediaDao kollusMedia = new KollusMediaDao();
+int metaHitCount = 0;
+int metaMissCount = 0;
 
 while(recoRows.next()) {
-	String lessonId = recoRows.s("lessonId");  // 콜러스 영상 키값 (예: "5vcd73vW")
-	if("".equals(lessonId)) continue;
+	String mediaKey = recoRows.s("lessonId").trim(); // 추천 API 원본 키
+	if("".equals(mediaKey)) mediaKey = recoRows.s("media_content_key").trim();
+	if("".equals(mediaKey)) continue;
+
+	String title = recoRows.s("title");
+	String categoryNm = recoRows.s("categoryNm");
+	String categoryKey = recoRows.s("categoryKey");
+	String summary = recoRows.s("summary");
+	String keywordsVal = recoRows.s("keywords");
+	String scoreVal = recoRows.s("score");
+	String snapshotUrl = recoRows.s("snapshot_url");
+	if("".equals(snapshotUrl)) snapshotUrl = recoRows.s("thumbnail");
+	String originalFileName = recoRows.s("original_file_name");
+
+	int totalTime = recoRows.i("total_time");
+	if(totalTime <= 0) totalTime = m.parseInt(recoRows.s("totalTime"));
+	int contentWidth = recoRows.i("content_width");
+	if(contentWidth <= 0) contentWidth = m.parseInt(recoRows.s("contentWidth"));
+	int contentHeight = recoRows.i("content_height");
+	if(contentHeight <= 0) contentHeight = m.parseInt(recoRows.s("contentHeight"));
+
+	DataSet minfo = kollusMedia.find("site_id = " + siteId + " AND media_content_key = ?", new Object[] { mediaKey });
+	if(minfo.next()) {
+		metaHitCount++;
+		if("".equals(title)) title = minfo.s("title");
+		if("".equals(categoryNm)) categoryNm = minfo.s("category_nm");
+		if("".equals(categoryKey)) categoryKey = minfo.s("category_key");
+		if("".equals(snapshotUrl)) snapshotUrl = minfo.s("snapshot_url");
+		if("".equals(originalFileName)) originalFileName = minfo.s("original_file_name");
+		if(totalTime <= 0) totalTime = minfo.i("total_time");
+		if(contentWidth <= 0) contentWidth = minfo.i("content_width");
+		if(contentHeight <= 0) contentHeight = minfo.i("content_height");
+	} else {
+		metaMissCount++;
+	}
+
+	String duration = "-";
+	if(totalTime > 0) {
+		int mm = totalTime / 60;
+		int ss = totalTime % 60;
+		duration = (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss;
+	}
 
 	list.addRow();
-	list.put("id", lessonId);                              // 프론트 선택키 (콜러스 키값)
-	list.put("lesson_id", lessonId);                       // 콜러스 영상 키값
-	list.put("media_content_key", lessonId);               // 콜러스 재생용 키값
-	list.put("title", recoRows.s("title"));
-	list.put("category_nm", recoRows.s("categoryNm"));
-	list.put("summary", recoRows.s("summary"));
-	list.put("keywords", recoRows.s("keywords"));
-	list.put("score", recoRows.s("score"));
+	list.put("id", mediaKey);                              // 프론트 선택키 (콜러스 키값)
+	list.put("lesson_id", mediaKey);                       // 추천 원본 키(문자열)
+	list.put("media_content_key", mediaKey);               // 콜러스 재생용 키값
+	list.put("title", title);
+	list.put("category_nm", categoryNm);
+	list.put("category_key", categoryKey);
+	list.put("snapshot_url", snapshotUrl);
+	list.put("thumbnail", snapshotUrl);
+	list.put("original_file_name", originalFileName);
+	list.put("total_time", totalTime);
+	list.put("duration", duration);
+	list.put("content_width", contentWidth);
+	list.put("content_height", contentHeight);
+	list.put("summary", summary);
+	list.put("keywords", keywordsVal);
+	list.put("score", scoreVal);
 }
+
+// 왜: 추천 응답에 메타가 비는 경우를 운영에서 빠르게 추적하기 위해 요약 로그를 남깁니다.
+m.log("content_recommend", "rows=" + list.size() + ", meta_hit=" + metaHitCount + ", meta_miss=" + metaMissCount);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "성공");

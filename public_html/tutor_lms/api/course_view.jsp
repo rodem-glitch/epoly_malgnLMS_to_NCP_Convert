@@ -13,11 +13,15 @@ if(0 == id) {
 
 CourseDao course = new CourseDao();
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
 SubjectDao subject = new SubjectDao();
 
 //왜: 교수자는 내 과목(주강사)만, 관리자는 전체 과목을 조회할 수 있어야 합니다.
 if(!isAdmin) {
-	if(0 >= courseTutor.findCount("course_id = " + id + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId)) {
+	int tutorAccessCount = courseTutor.findCount("course_id = " + id + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId);
+	int managerAccessCount = courseManager.findCount("course_id = " + id + " AND user_id = " + userId + " AND site_id = " + siteId);
+	int ownerAccessCount = course.findCount("id = " + id + " AND manager_id = " + userId + " AND site_id = " + siteId + " AND status != -1");
+	if(0 >= tutorAccessCount && 0 >= managerAccessCount && 0 >= ownerAccessCount) {
 		result.put("rst_code", "4031");
 		result.put("rst_message", "해당 과목을 조회할 권한이 없습니다.");
 		result.print();

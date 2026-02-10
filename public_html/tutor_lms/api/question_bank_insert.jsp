@@ -6,6 +6,38 @@
 
 QuestionDao question = new QuestionDao();
 
+// 왜: 정규과정 운영 DB 중 일부는 LM_QUESTION.SCORE 컬럼이 아직 없어서,
+//      배점 저장 시 Unknown column 오류가 발생합니다.
+boolean hasScoreColumn = false;
+try {
+	hasScoreColumn = question.getOneInt(
+		" SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+		+ " WHERE TABLE_SCHEMA = DATABASE() "
+		+ " AND TABLE_NAME = 'LM_QUESTION' "
+		+ " AND COLUMN_NAME = 'SCORE' "
+	) > 0;
+} catch(Exception e) {
+	m.log("question_bank_insert", "score_column_check_failed manager_id=" + userId + ", message=" + e.getMessage());
+}
+if(!hasScoreColumn) {
+	int altered = -1;
+	try {
+		altered = question.execute(
+			"ALTER TABLE " + question.table + " "
+			+ " ADD COLUMN score INT NOT NULL DEFAULT 5 COMMENT '문제 배점' "
+		);
+	} catch(Exception e) {
+		m.log("question_bank_insert", "score_column_alter_failed manager_id=" + userId + ", message=" + e.getMessage());
+	}
+	if(altered == -1) {
+		result.put("rst_code", "5001");
+		result.put("rst_message", "문제 배점 컬럼이 없어 저장할 수 없습니다. 관리자에게 DB 점검을 요청해 주세요.");
+		result.print();
+		return;
+	}
+	m.log("question_bank_insert", "score_column_alter_ok manager_id=" + userId);
+}
+
 // 파라미터 수집
 int categoryId = m.ri("category_id");
 int questionType = m.ri("question_type"); // 1=단일선택, 2=다중선택, 3=단답형, 4=서술형
@@ -14,6 +46,8 @@ String questionText = m.rs("question_text");
 int grade = m.ri("grade") > 0 ? m.ri("grade") : 3; // 기본 난이도 C
 String answer = m.rs("answer");
 String description = m.rs("description");
+String pointsRaw = m.rs("points");
+int score = "".equals(pointsRaw) ? 5 : m.parseInt(pointsRaw);
 
 // 검증
 if(questionType < 1 || questionType > 4) {
@@ -29,6 +63,12 @@ if("".equals(questionTitle)) {
 	result.print();
 	return;
 }
+if(score <= 0) {
+	result.put("rst_code", "1003");
+	result.put("rst_message", "문제 배점은 1점 이상이어야 합니다.");
+	result.print();
+	return;
+}
 
 // 등록
 int newId = question.getSequence();
@@ -39,6 +79,7 @@ question.item("question_type", questionType);
 question.item("question", questionTitle);
 question.item("question_text", questionText);
 question.item("grade", grade);
+question.item("score", score);
 question.item("answer", answer);
 question.item("description", description);
 question.item("manager_id", userId);
@@ -71,11 +112,13 @@ if(isChoice) {
 }
 
 if(!question.insert()) {
+	m.log("question_bank_insert", "insert_failed id=" + newId + ", manager_id=" + userId + ", category_id=" + categoryId + ", grade=" + grade + ", score=" + score);
 	result.put("rst_code", "5000");
 	result.put("rst_message", "문제 등록 중 오류가 발생했습니다.");
 	result.print();
 	return;
 }
+m.log("question_bank_insert", "insert_ok id=" + newId + ", manager_id=" + userId + ", category_id=" + categoryId + ", grade=" + grade + ", score=" + score);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "문제가 등록되었습니다.");

@@ -11,13 +11,18 @@ if(0 == courseId) {
 	return;
 }
 
+CourseDao course = new CourseDao();
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
 CourseUserDao courseUser = new CourseUserDao();
 UserDao user = new UserDao();
 
 //권한: 교수자는 본인 과목(주강사)만, 관리자는 전체
 if(!isAdmin) {
-	if(0 >= courseTutor.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId)) {
+	int tutorAccessCount = courseTutor.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId);
+	int managerAccessCount = courseManager.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND site_id = " + siteId);
+	int ownerAccessCount = course.findCount("id = " + courseId + " AND manager_id = " + userId + " AND site_id = " + siteId + " AND status != -1");
+	if(0 >= tutorAccessCount && 0 >= managerAccessCount && 0 >= ownerAccessCount) {
 		result.put("rst_code", "4031");
 		result.put("rst_message", "해당 과목의 수강생을 조회할 권한이 없습니다.");
 		result.print();
@@ -61,4 +66,3 @@ result.put("rst_data", list);
 result.print();
 
 %>
-

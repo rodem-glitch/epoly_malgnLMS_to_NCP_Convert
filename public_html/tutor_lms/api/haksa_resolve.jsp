@@ -25,6 +25,7 @@ try {
 	CourseDao course = new CourseDao();
 	CourseUserDao courseUser = new CourseUserDao();
 	CourseTutorDao courseTutor = new CourseTutorDao();
+	CourseManagerDao courseManager = new CourseManagerDao();
 	ClBoardDao board = new ClBoardDao(siteId);
 
 	PolyCourseDao polyCourse = new PolyCourseDao();
@@ -186,6 +187,18 @@ if(mappedCourseId > 0) {
 			courseTutor.item("type", "major");
 			courseTutor.item("class", "1");
 			courseTutor.insert();
+		}
+	} catch(Exception ignore) {}
+
+	// 왜: sysop "과정담당자" 목록과 교수자 화면 기준을 맞추기 위해 과정담당자도 함께 보장합니다.
+	try {
+		if(0 >= courseManager.findCount(
+			"course_id = " + mappedCourseId + " AND user_id = " + userId + " AND site_id = " + siteId
+		)) {
+			courseManager.item("course_id", mappedCourseId);
+			courseManager.item("user_id", userId);
+			courseManager.item("site_id", siteId);
+			courseManager.insert();
 		}
 	} catch(Exception ignore) {}
 }

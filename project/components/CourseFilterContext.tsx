@@ -48,6 +48,7 @@ export type CourseFilterAction =
   | { type: 'RESET_FILTERS' };
 
 const currentYear = String(new Date().getFullYear());
+const PRISM_DEFAULT_YEAR = '2024';
 
 // 왜: 초기 상태를 한 곳에 정의해두면 리셋할 때도 편리합니다.
 export const DEFAULT_FILTER_STATE: CourseFilterState = {
@@ -159,8 +160,17 @@ export function buildParamsFromFilters(state: CourseFilterState): Record<string,
 function filterReducer(state: CourseFilterState, action: CourseFilterAction): CourseFilterState {
   switch (action.type) {
     case 'SET_TAB':
-      // 왜: 탭을 바꾸면 페이지를 1로 리셋해야 어색하지 않습니다.
-      return { ...state, tab: action.payload, page: 1 };
+      // 왜: 비정규 탭 기본값은 2024지만, 사용자가 직접 고른 년도(예: 2025)는 유지해야 합니다.
+      //     그래서 "초기 기본년도(currentYear) 상태에서 prism으로 처음 전환"할 때만 2024를 적용합니다.
+      return {
+        ...state,
+        tab: action.payload,
+        year:
+          action.payload === 'prism' && state.year === currentYear
+            ? PRISM_DEFAULT_YEAR
+            : state.year,
+        page: 1,
+      };
 
     case 'SET_YEAR':
       return { ...state, year: action.payload, page: 1 };
@@ -252,7 +262,9 @@ export function CourseFilterProvider({
   // 왜: 초기 상태는 기본값 + URL에서 파싱한 값을 합칩니다.
   const initialState = useMemo<CourseFilterState>(() => {
     const fromUrl = parseFiltersFromParams(initialParams);
-    return { ...DEFAULT_FILTER_STATE, ...fromUrl };
+    const initialTab = fromUrl.tab ?? DEFAULT_FILTER_STATE.tab;
+    const initialYear = fromUrl.year ?? (initialTab === 'prism' ? PRISM_DEFAULT_YEAR : DEFAULT_FILTER_STATE.year);
+    return { ...DEFAULT_FILTER_STATE, ...fromUrl, tab: initialTab, year: initialYear };
   }, []); // 의도적으로 빈 의존성: 마운트 시 한 번만 계산
 
   const [filters, dispatch] = useReducer(filterReducer, initialState);
@@ -288,10 +300,12 @@ export function CourseFilterProvider({
   // 왜: 뒤로가기/앞으로가기 시 URL에서 상태를 복원합니다.
   const syncFromUrl = useCallback((params: Record<string, string>) => {
     const parsed = parseFiltersFromParams(params);
+    const parsedTab = parsed.tab ?? DEFAULT_FILTER_STATE.tab;
+    const parsedYear = parsed.year ?? (parsedTab === 'prism' ? PRISM_DEFAULT_YEAR : DEFAULT_FILTER_STATE.year);
     // 왜: 기본값으로 채워서 누락된 필드도 초기화되도록 합니다.
     const newState: Partial<CourseFilterState> = {
-      tab: parsed.tab ?? DEFAULT_FILTER_STATE.tab,
-      year: parsed.year ?? DEFAULT_FILTER_STATE.year,
+      tab: parsedTab,
+      year: parsedYear,
       keyword: parsed.keyword ?? DEFAULT_FILTER_STATE.keyword,
       page: parsed.page ?? DEFAULT_FILTER_STATE.page,
       pageSize: parsed.pageSize ?? DEFAULT_FILTER_STATE.pageSize,

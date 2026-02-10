@@ -1291,6 +1291,7 @@ export const tutorLmsApi = {
     categoryId?: number;
     semester?: string;
     credit?: string | number;
+    lessonDay?: string | number;
     lessonTime?: string | number;
     content1?: string;
     content2?: string;
@@ -1305,6 +1306,7 @@ export const tutorLmsApi = {
     if (payload.categoryId) body.set('category_id', String(payload.categoryId));
     if (payload.semester) body.set('semester', payload.semester);
     if (payload.credit !== undefined && payload.credit !== null && String(payload.credit) !== '') body.set('credit', String(payload.credit));
+    if (payload.lessonDay !== undefined && payload.lessonDay !== null && String(payload.lessonDay) !== '') body.set('lesson_day', String(payload.lessonDay));
     if (payload.lessonTime !== undefined && payload.lessonTime !== null && String(payload.lessonTime) !== '') body.set('lesson_time', String(payload.lessonTime));
     if (payload.content1) body.set('content1', payload.content1);
     if (payload.content2) body.set('content2', payload.content2);
@@ -1946,6 +1948,8 @@ export const tutorLmsApi = {
     courseId: number;
     title: string;
     description: string;
+    startDate?: string;
+    startTime?: string;
     dueDate: string;
     dueTime: string;
     totalScore: number;
@@ -1956,6 +1960,8 @@ export const tutorLmsApi = {
     body.set('course_id', String(payload.courseId));
     body.set('title', payload.title);
     body.set('description', payload.description);
+    if (payload.startDate) body.set('startDate', payload.startDate);
+    if (payload.startTime) body.set('startTime', payload.startTime);
     body.set('dueDate', payload.dueDate);
     body.set('dueTime', payload.dueTime);
     body.set('totalScore', String(payload.totalScore));
@@ -1973,6 +1979,8 @@ export const tutorLmsApi = {
     homeworkId: number;
     title: string;
     description: string;
+    startDate?: string;
+    startTime?: string;
     dueDate: string;
     dueTime: string;
     totalScore: number;
@@ -1984,6 +1992,8 @@ export const tutorLmsApi = {
     body.set('homework_id', String(payload.homeworkId));
     body.set('title', payload.title);
     body.set('description', payload.description);
+    if (payload.startDate) body.set('startDate', payload.startDate);
+    if (payload.startTime) body.set('startTime', payload.startTime);
     body.set('dueDate', payload.dueDate);
     body.set('dueTime', payload.dueTime);
     body.set('totalScore', String(payload.totalScore));

@@ -6,6 +6,37 @@
 ExamDao exam = new ExamDao();
 QuestionDao question = new QuestionDao();
 
+// 왜: 시험 배점 계산은 LM_QUESTION.SCORE를 기준으로 하므로, 컬럼이 없으면 저장 자체가 불가능합니다.
+boolean hasScoreColumn = false;
+try {
+	hasScoreColumn = question.getOneInt(
+		" SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+		+ " WHERE TABLE_SCHEMA = DATABASE() "
+		+ " AND TABLE_NAME = 'LM_QUESTION' "
+		+ " AND COLUMN_NAME = 'SCORE' "
+	) > 0;
+} catch(Exception e) {
+	m.log("exam_template_modify", "score_column_check_failed manager_id=" + userId + ", message=" + e.getMessage());
+}
+if(!hasScoreColumn) {
+	int altered = -1;
+	try {
+		altered = question.execute(
+			"ALTER TABLE " + question.table + " "
+			+ " ADD COLUMN score INT NOT NULL DEFAULT 5 COMMENT '문제 배점' "
+		);
+	} catch(Exception e) {
+		m.log("exam_template_modify", "score_column_alter_failed manager_id=" + userId + ", message=" + e.getMessage());
+	}
+	if(altered == -1) {
+		result.put("rst_code", "5001");
+		result.put("rst_message", "문제 배점 컬럼이 없어 시험을 저장할 수 없습니다. 관리자에게 DB 점검을 요청해 주세요.");
+		result.print();
+		return;
+	}
+	m.log("exam_template_modify", "score_column_alter_ok manager_id=" + userId);
+}
+
 // 파라미터
 int examId = m.ri("id");
 String examName = m.rs("exam_nm");
@@ -54,10 +85,21 @@ if(!"".equals(questionIds)) {
 		if(qid.matches("\\d+")) questionIdList.add(qid);
 	}
 }
+if(questionIdList.size() == 0) {
+	result.put("rst_code", "1002");
+	result.put("rst_message", "출제할 문제를 1개 이상 선택해 주세요.");
+	result.print();
+	return;
+}
 
 int[] mcnt = new int[7];
 int[] tcnt = new int[7];
+int[] assigns = new int[7];
+boolean[] assignedByGrade = new boolean[7];
 int questionCntFinal = 0;
+int totalScore = 0;
+Vector<String> invalidScoreLogs = new Vector<String>();
+Vector<String> gradeScoreMismatchLogs = new Vector<String>();
 if(questionIdList.size() > 0) {
 	String[] idArr = (String[]) questionIdList.toArray(new String[0]);
 	DataSet qlist = question.find(
@@ -67,18 +109,55 @@ if(questionIdList.size() > 0) {
 		questionCntFinal++;
 		int grade = qlist.i("grade");
 		if(grade < 1 || grade > 6) grade = 1;
+		int qscore = qlist.i("score");
 
 		String qtype = qlist.s("question_type");
 		if("1".equals(qtype) || "2".equals(qtype)) mcnt[grade]++;
 		else tcnt[grade]++;
+
+		// 왜: 수정 시에도 배점 합계/난이도별 배점 규칙이 깨지면 학생 응시가 막히므로 즉시 차단합니다.
+		if(qscore <= 0) {
+			invalidScoreLogs.add("question_id=" + qlist.i("id") + ", grade=" + grade + ", score=" + qscore);
+			continue;
+		}
+		if(!assignedByGrade[grade]) {
+			assigns[grade] = qscore;
+			assignedByGrade[grade] = true;
+		} else if(assigns[grade] != qscore) {
+			gradeScoreMismatchLogs.add("grade=" + grade + ", question_id=" + qlist.i("id") + ", score=" + qscore + ", expected=" + assigns[grade]);
+		}
+		totalScore += qscore;
 	}
 }
 
-int[] assigns = new int[7];
-for(int i = 1; i <= 6; i++) {
-	assigns[i] = (mcnt[i] + tcnt[i]) > 0 ? 1 : 0;
+if(questionCntFinal != questionIdList.size()) {
+	m.log("exam_template_modify", "invalid_question_selection exam_id=" + examId + ", manager_id=" + userId + ", selected_cnt=" + questionIdList.size() + ", found_cnt=" + questionCntFinal + ", question_ids=" + m.join(",", (String[]) questionIdList.toArray(new String[0])));
+	result.put("rst_code", "1003");
+	result.put("rst_message", "선택한 문제 중 사용할 수 없는 문제가 포함되어 있습니다. 문제 목록을 다시 확인해 주세요.");
+	result.print();
+	return;
 }
-if(passingScore > 0) assigns[1] = passingScore;
+if(invalidScoreLogs.size() > 0) {
+	m.log("exam_template_modify", "invalid_question_score exam_id=" + examId + ", manager_id=" + userId + ", detail=" + m.join(" | ", invalidScoreLogs.toArray()));
+	result.put("rst_code", "1004");
+	result.put("rst_message", "선택한 문제의 배점이 비어 있습니다. 문제은행에서 배점을 먼저 설정해 주세요.");
+	result.print();
+	return;
+}
+if(gradeScoreMismatchLogs.size() > 0) {
+	m.log("exam_template_modify", "grade_score_mismatch exam_id=" + examId + ", manager_id=" + userId + ", detail=" + m.join(" | ", gradeScoreMismatchLogs.toArray()));
+	result.put("rst_code", "1005");
+	result.put("rst_message", "같은 난이도 문제의 배점이 서로 다릅니다. 난이도별 배점을 동일하게 맞춰 주세요.");
+	result.print();
+	return;
+}
+if(totalScore != 100) {
+	m.log("exam_template_modify", "invalid_total_score exam_id=" + examId + ", manager_id=" + userId + ", total_score=" + totalScore + ", passing_score=" + passingScore + ", question_ids=" + m.join(",", (String[]) questionIdList.toArray(new String[0])));
+	result.put("rst_code", "1006");
+	result.put("rst_message", "선택한 문제 배점의 합계가 100점이어야 합니다.");
+	result.print();
+	return;
+}
 
 String rangeIdx = questionIdList.size() > 0 ? m.join(",", (String[]) questionIdList.toArray(new String[0])) : "";
 exam.item("range_idx", rangeIdx);
@@ -106,11 +185,13 @@ exam.item("assign6", assigns[6]);
 exam.item("content", content);
 
 if(!exam.update("id = " + examId + " AND site_id = " + siteId)) {
+	m.log("exam_template_modify", "update_failed exam_id=" + examId + ", manager_id=" + userId + ", question_cnt=" + questionCntFinal + ", total_score=" + totalScore);
 	result.put("rst_code", "5000");
 	result.put("rst_message", "시험 수정 중 오류가 발생했습니다.");
 	result.print();
 	return;
 }
+m.log("exam_template_modify", "update_ok exam_id=" + examId + ", manager_id=" + userId + ", question_cnt=" + questionCntFinal + ", total_score=" + totalScore);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "시험이 수정되었습니다.");

@@ -1865,6 +1865,7 @@ const isHaksaCourse =
         id: Number(row.homework_id),
         title: row.homework_nm || row.module_nm || '과제',
         description: row.content || '',
+        startDate: row.start_date_conv || row.start_date || '-',
         dueDate: row.end_date_conv || row.end_date || '-',
         totalScore: Number(row.assign_score ?? 100),
         submitted: Number(row.submitted_cnt ?? 0),
@@ -1940,29 +1941,34 @@ const isHaksaCourse =
     );
   }
 
+  const parseDateTimeInput = (value: string, defaultTime: string) => {
+    const digits = String(value || '').replace(/\D/g, '');
+    let date = '';
+    let time = defaultTime;
+    if (digits.length >= 8) {
+      date = `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+    }
+    if (digits.length >= 12) {
+      time = `${digits.slice(8, 10)}:${digits.slice(10, 12)}`;
+    }
+    return { date, time };
+  };
+
   // 왜: 과제 수정을 시작하면 모달을 열고 기존 데이터를 채웁니다.
   const handleEditHomework = (homework: any) => {
-    // 마감일 파싱 (YYYYMMDD 형식에서 YYYY-MM-DD 형식으로 변환)
-    let dueDate = '';
-    let dueTime = '';
-    if (homework.dueDate) {
-      // "YYYY-MM-DD" 또는 "YYYYMMDD" 형식 처리
-      const raw = homework.dueDate.replace(/-/g, '');
-      if (raw.length >= 8) {
-        dueDate = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
-      }
-      // 시간이 포함되어 있는 경우
-      if (raw.length >= 12) {
-        dueTime = `${raw.slice(8, 10)}:${raw.slice(10, 12)}`;
-      }
-    }
+    // 왜: API 응답이 yyyyMMddHHmmss / yyyy.MM.dd HH:mm / yyyy-MM-dd HH:mm 처럼 섞여 들어올 수 있어
+    //      숫자만 추출해서 입력용 날짜/시간으로 변환합니다.
+    const parsedStart = parseDateTimeInput(homework.startDate || '', '00:00');
+    const parsedEnd = parseDateTimeInput(homework.dueDate || '', '23:59');
     
     setEditingHomework({
       id: homework.id,
       title: homework.title || '',
       description: homework.description || '',
-      dueDate: dueDate,
-      dueTime: dueTime || '23:59',
+      startDate: parsedStart.date,
+      startTime: parsedStart.time || '00:00',
+      dueDate: parsedEnd.date,
+      dueTime: parsedEnd.time || '23:59',
       totalScore: homework.totalScore || 100,
     });
     setShowEditModal(true);
@@ -1978,6 +1984,8 @@ const isHaksaCourse =
           homeworkId: editingHomework.id,
           title: data.title,
           description: data.description,
+          startDate: data.startDate,
+          startTime: data.startTime,
           dueDate: data.dueDate,
           dueTime: data.dueTime,
           totalScore: Number(data.totalScore || 0),
@@ -2067,8 +2075,8 @@ const isHaksaCourse =
                     {/* 설정 항목들 테이블 형태로 표시 (시험과 동일한 스타일) */}
                     <div className="ml-7 text-sm space-y-2 bg-gray-50 p-3 rounded-lg">
                       <div className="flex items-center">
-                        <span className="w-24 text-gray-500">마감일</span>
-                        <span className="text-gray-900">{assignment.dueDate || '-'}</span>
+                        <span className="w-24 text-gray-500">제출기간</span>
+                        <span className="text-gray-900">{assignment.startDate || '-'} ~ {assignment.dueDate || '-'}</span>
                       </div>
                       <div className="flex items-center">
                         <span className="w-24 text-gray-500">배점</span>
@@ -2122,6 +2130,8 @@ const isHaksaCourse =
                   courseId,
                   title: assignmentData.title,
                   description: assignmentData.description,
+                  startDate: assignmentData.startDate,
+                  startTime: assignmentData.startTime,
                   dueDate: assignmentData.dueDate,
                   dueTime: assignmentData.dueTime,
                   totalScore: Number(assignmentData.totalScore || 0),

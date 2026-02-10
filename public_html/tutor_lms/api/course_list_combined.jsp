@@ -6,6 +6,7 @@
 
 CourseDao course = new CourseDao();
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
 CourseUserDao courseUser = new CourseUserDao();
 SubjectDao subject = new SubjectDao();
 UserDao user = new UserDao();
@@ -20,7 +21,9 @@ if(!isAdmin) {
 	prismWhere = " AND (c.manager_id = " + userId
 		+ " OR EXISTS (SELECT 1 FROM " + courseTutor.table + " ct "
 		+ " WHERE ct.course_id = c.id AND ct.user_id = " + userId + " AND ct.site_id = " + siteId
-		+ " AND ct.type IN ('major','minor'))) ";
+		+ " AND ct.type IN ('major','minor')) "
+		+ " OR EXISTS (SELECT 1 FROM " + courseManager.table + " cm "
+		+ " WHERE cm.course_id = c.id AND cm.user_id = " + userId + " AND cm.site_id = " + siteId + ")) ";
 
 	// 왜: 교수자의 학사 과목은 LM_POLY_COURSE_PROF 기준으로 필터링해야 일관되게 보입니다.
 	//     또한 login_id ↔ member_key 매핑이 섞여 있으므로 둘 다 시도해 안전하게 키를 해석합니다.
@@ -58,10 +61,44 @@ if(!isAdmin) {
 		}
 	} catch(Exception ignore) {}
 
-	haksaWhere = " AND EXISTS (SELECT 1 FROM " + polyCourseProf.table + " cp "
-		+ " WHERE cp.course_code = c.course_code AND cp.open_year = c.open_year "
-		+ " AND cp.open_term = c.open_term AND cp.bunban_code = c.bunban_code "
-		+ " AND cp.group_code = c.group_code AND cp.member_key = '" + safeResolvedMemberKey + "') ";
+	// 왜: 운영 중에는 학사 교수 매핑(LM_POLY_COURSE_PROF) 동기화 시차가 생길 수 있어,
+	//     LMS에서 이미 담당자로 연결된 학사 과정(etc1 키 기반)도 정규 탭에 같이 보여야 "내 과목이 안 보임"을 막을 수 있습니다.
+	try {
+		DataSet mappedHaksaKeys = course.query(
+			"SELECT lc.etc1 haksa_key "
+			+ " FROM " + course.table + " lc "
+			+ " LEFT JOIN " + courseTutor.table + " lct ON lct.course_id = lc.id AND lct.site_id = " + siteId
+				+ " AND lct.user_id = " + userId + " AND lct.type IN ('major','minor') "
+			+ " LEFT JOIN " + courseManager.table + " lcm ON lcm.course_id = lc.id AND lcm.site_id = " + siteId
+				+ " AND lcm.user_id = " + userId + " "
+			+ " WHERE lc.site_id = " + siteId + " AND lc.status != -1 "
+			+ " AND lc.etc2 = 'HAKSA_MAPPED' AND lc.etc1 IS NOT NULL AND lc.etc1 != '' "
+			+ " AND (lc.manager_id = " + userId + " OR lct.user_id IS NOT NULL OR lcm.user_id IS NOT NULL) "
+		);
+		while(mappedHaksaKeys.next()) {
+			haksaKeySet.add(mappedHaksaKeys.s("haksa_key"));
+		}
+	} catch(Exception ignore) {}
+
+	// 왜: 테이블별 collation 차이로 EXISTS 비교가 실패할 수 있어,
+	//     교수자 기준 학사키 집합을 먼저 만든 뒤, 미러 테이블에서는 동일 키(IN)로만 필터링합니다.
+	if(0 < haksaKeySet.size()) {
+		StringBuilder haksaIn = new StringBuilder();
+		for(String hk : haksaKeySet) {
+			if(haksaIn.length() > 0) haksaIn.append(",");
+			haksaIn.append("'").append(m.replace(hk, "'", "''")).append("'");
+		}
+		haksaWhere = " AND CONCAT(c.course_code, '_', c.open_year, '_', c.open_term, '_', c.bunban_code, '_', c.group_code) IN (" + haksaIn.toString() + ") ";
+	} else {
+		haksaWhere = " AND 1 = 0 ";
+	}
+
+	m.log(
+		"course_list_combined",
+		"haksa_filter_keys user_id=" + userId
+		+ ", site_id=" + siteId
+		+ ", key_count=" + haksaKeySet.size()
+	);
 }
 
 String tab = m.rs("tab"); // "prism" 또는 "haksa"

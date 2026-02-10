@@ -13,7 +13,8 @@ interface Content {
   totalTime?: number;
   contentWidth?: number;
   contentHeight?: number;
-  lessonId?: string;  // 콜러스 영상 키값 (문자열)
+  lessonId?: number; // LMS 레슨 ID(숫자)
+  recommendKey?: string; // 추천 응답의 원본 키(콜러스 media_content_key)
   originalFileName?: string;
   score?: number;
   summary?: string;
@@ -253,13 +254,13 @@ export function ContentLibraryModal({
 
           const rows = res.rst_data ?? [];
           const mapped: Content[] = rows.map((row, idx) => {
-            const baseLessonId = String(row.lesson_id ?? row.id ?? row.media_content_key ?? '').trim();
+            const baseRecommendKey = String(row.lesson_id ?? row.media_content_key ?? row.id ?? '').trim();
 
             return {
               // 왜: 중복을 그대로 보여줄 때는 row의 고유 id가 겹칠 수 있어서, index를 붙여 React key/선택 id 충돌을 막습니다.
               //     (중복 제거를 다시 켜면 baseLessonId만 써도 안전합니다.)
-              id: enableRecommendDedupe ? (baseLessonId || String(idx)) : (baseLessonId ? `${baseLessonId}__${idx}` : String(idx)),
-              mediaKey: row.media_content_key || baseLessonId,
+              id: enableRecommendDedupe ? (baseRecommendKey || String(idx)) : (baseRecommendKey ? `${baseRecommendKey}__${idx}` : String(idx)),
+              mediaKey: row.media_content_key || baseRecommendKey,
               title: row.title,
               description: '',
               category: (row.category_nm as string) || '카테고리 없음',
@@ -268,8 +269,8 @@ export function ContentLibraryModal({
               totalTime: Number((row.total_time as number) ?? 0),
               contentWidth: Number((row.content_width as number) ?? 0),
               contentHeight: Number((row.content_height as number) ?? 0),
-              // 왜: 추천 탭은 "레슨ID(=영상키)" 기준으로 추가/제외/중복 판단을 합니다.
-              lessonId: baseLessonId || undefined,
+              // 왜: 추천 탭 원본 키를 유지해 로그/추적 시 어떤 추천 항목이었는지 식별합니다.
+              recommendKey: baseRecommendKey || undefined,
               originalFileName: (row.original_file_name as string) || '',
               score: row.score ? Number(row.score) : undefined,
               summary: row.summary || '',
@@ -323,11 +324,12 @@ export function ContentLibraryModal({
 
     const filtered = recommendationsRaw
       .filter((c) => {
-        if (!c.lessonId) return false;
-        if (excludeSet.has(c.lessonId)) return false;
+        if (!c.mediaKey) return false;
+        if (c.lessonId && excludeSet.has(String(c.lessonId))) return false;
+        if (c.recommendKey && excludeSet.has(c.recommendKey)) return false;
         // if (enableRecommendDedupe) {
-        //   if (dedupe.has(c.lessonId)) return false;
-        //   dedupe.add(c.lessonId);
+        //   if (dedupe.has(c.recommendKey || c.mediaKey)) return false;
+        //   dedupe.add(c.recommendKey || c.mediaKey);
         // }
         return true;
       })
@@ -356,13 +358,7 @@ export function ContentLibraryModal({
   const handleSingleSelect = async (content: Content) => {
     try {
       setSelecting(true);
-      if (content.lessonId) {
-        // 왜: 추천 탭은 콜러스 영상 키값을 바로 사용합니다.
-        const next = { ...content, id: content.lessonId };
-        onSelect(next);
-        onClose();
-        return;
-      }
+      // 왜: 추천/전체 탭 모두 "같은 영상 추가 경로"를 타야 lessonId/시간정보가 일관되게 저장됩니다.
       const res = await tutorLmsApi.upsertKollusLesson({
         mediaContentKey: content.mediaKey,
         title: content.title,
@@ -373,6 +369,7 @@ export function ContentLibraryModal({
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
       const lessonId = Number(res.rst_data ?? 0);
+      if (lessonId <= 0) throw new Error('레슨 ID를 생성하지 못했습니다.');
       const next = { ...content, lessonId, id: String(lessonId) };
       onSelect(next);
       onClose();
@@ -391,10 +388,7 @@ export function ContentLibraryModal({
       setSelecting(true);
       const mapped = await Promise.all(
         selected.map(async (content) => {
-          if (content.lessonId) {
-            // 왜: 추천 탭은 콜러스 영상 키값이 있으므로, 레슨 생성(upsert)을 건너뜁니다.
-            return { ...content, id: content.lessonId };
-          }
+          // 왜: 추천/전체 탭 모두 업서트 경로를 통일해 저장 포맷을 동일하게 유지합니다.
           const res = await tutorLmsApi.upsertKollusLesson({
             mediaContentKey: content.mediaKey,
             title: content.title,
@@ -404,6 +398,7 @@ export function ContentLibraryModal({
           });
           if (res.rst_code !== '0000') throw new Error(res.rst_message);
           const lessonId = Number(res.rst_data ?? 0);
+          if (lessonId <= 0) throw new Error('레슨 ID를 생성하지 못했습니다.');
           return { ...content, lessonId, id: String(lessonId) };
         })
       );
@@ -681,11 +676,9 @@ export function ContentLibraryModal({
                     <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">
                       {activeTab === 'recommend' ? '제목 / 키워드' : '강의명'}
                     </th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-600">시간</th>
                     {activeTab !== 'recommend' && (
-                      <>
-                        <th className="px-3 py-2 text-center text-xs font-medium text-gray-600">시간</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">원본파일</th>
-                      </>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-600">원본파일</th>
                     )}
                     <th className="px-3 py-2 text-center text-xs font-medium text-gray-600">미리보기</th>
                     {activeTab === 'recommend' && (
@@ -732,15 +725,13 @@ export function ContentLibraryModal({
                             )}
                           </div>
                         </td>
+                        <td className="px-3 py-2 text-center text-sm text-gray-600">
+                          {content.totalTime ? `${content.totalTime}분` : content.duration}
+                        </td>
                         {activeTab !== 'recommend' && (
-                          <>
-                            <td className="px-3 py-2 text-center text-sm text-gray-600">
-                              {content.totalTime ? `${content.totalTime}분` : content.duration}
-                            </td>
-                            <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">
-                              {content.originalFileName || '-'}
-                            </td>
-                          </>
+                          <td className="px-3 py-2 text-sm text-gray-500 max-w-xs truncate">
+                            {content.originalFileName || '-'}
+                          </td>
                         )}
                         <td className="px-3 py-2 text-center">
                           <button
@@ -772,7 +763,7 @@ export function ContentLibraryModal({
                       {/* 왜: 추천 탭에서 요약 내용을 펼쳐서 보여주는 아코디언 행 */}
                       {activeTab === 'recommend' && expandedId === content.id && content.summary && (
                         <tr className="bg-gray-50">
-                          <td colSpan={multiSelect ? 5 : 4} className="px-6 py-4">
+                          <td colSpan={multiSelect ? 7 : 6} className="px-6 py-4">
                             <div className="text-sm text-gray-700 whitespace-pre-wrap">
                               <strong className="text-gray-900">요약:</strong> {content.summary}
                             </div>
