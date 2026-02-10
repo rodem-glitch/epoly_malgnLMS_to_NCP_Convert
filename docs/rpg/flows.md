@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 17:59
+최근 자동 갱신: 2026-02-10 18:15
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -143,6 +143,27 @@
 - 확인(근거):
   - 수정 전: `curl -i /mypage/new_main/index.jsp` → `200`, `Content-Length: 12`(빈 본문), `/mypage/index.jsp` `Content-Length: 0`
   - 수정 후: `curl -i /mypage/new_main/index.jsp` → HTML 본문 반환(로그인 모달 스크립트 포함), `/mypage/index.jsp`/`/member/login.jsp?...` → `302` 정상
+- 최근 갱신: 2026-02-10
+
+### FLOW-1006: 신규 메인 매뉴얼(학생/교직원) 페이지 노출
+- 사용자 동작(의도): `/mypage/new_main/manual.jsp`에서 학생/교직원 매뉴얼을 열어 사용 방법을 확인
+- 진입점:
+  - 매뉴얼 진입: `public_html/mypage/new_main/manual.jsp`
+  - 매뉴얼 선택 화면(템플릿): `public_html/html/mypage/new_main_manual.html`
+  - 학생 매뉴얼(정적): `public_html/mypage/new_main/student_manual.html`
+  - 교직원 매뉴얼(정적): `public_html/mypage/new_main/tutor_manual.html`
+- 처리(핵심):
+  - `manual.jsp`에서 `p.setLayout("blank")`, `p.setBody("mypage.new_main_manual")`로 매뉴얼 선택 화면을 렌더링
+  - `login_block` 값에 따라 헤더 메뉴/우측 로그인 UI가 분기됨(신규 메인 패턴)
+  - 상세 매뉴얼은 정적 HTML을 새 탭으로 오픈하며, 스크린샷 이미지는 같은 폴더의 파일을 상대경로로 참조
+- DB:
+  - 사용자 표시용 조회: `src/dao/UserDao.java` → `TB_USER` (`id`, `status`)
+- 출력:
+  - 선택 화면: `public_html/html/mypage/new_main_manual.html`
+  - 상세 화면: `public_html/mypage/new_main/student_manual.html`, `public_html/mypage/new_main/tutor_manual.html`
+- 확인(근거):
+  - 링크/경로 확인: `public_html/html/mypage/new_main_manual.html`의 `/mypage/new_main/*_manual.html` 링크
+  - 정적 검증: `*_manual.html`에서 참조하는 `src` 이미지 파일이 `public_html/mypage/new_main/`에 모두 존재함(Test-Path로 확인)
 - 최근 갱신: 2026-02-10
 
 ### FLOW-2001: 교수자 LMS(React) 진입/라우팅 및 UI 톤 적용

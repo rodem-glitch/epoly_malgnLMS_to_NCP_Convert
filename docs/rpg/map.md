@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 17:59
+최근 자동 갱신: 2026-02-10 18:15
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -57,6 +57,11 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
 | 비로그인 권한 진입 시 신규 메인 모달로 로그인 유도 | `public_html/mypage/init.jsp`(0차 게이트), `public_html/member/login.jsp`(GET 게이트) → `public_html/mypage/new_main/index.jsp` | `public_html/mypage/init.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` | `public_html/html/mypage/new_main_full.html` | 구 로그인 페이지 직접 렌더 대신 `login_required=Y`로 모달 자동 오픈, `returl`/`udid` hidden 전달, `access_token`/`ek`(SSL 토큰 로그인)은 기존 분기 유지 |
+
+## 최근 작업(매뉴얼)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 정적 파일(HTML/이미지) | 비고 |
+|---|---|---|---|---|
+| 신규 메인 매뉴얼(학생/교직원) 스크린샷/스타일 갱신 | `public_html/mypage/new_main/manual.jsp` | `public_html/html/mypage/new_main_manual.html` | `public_html/mypage/new_main/student_manual.html`, `public_html/mypage/new_main/tutor_manual.html`, `public_html/mypage/new_main/*.png` | 학생 매뉴얼: 표 헤더 색상 통일 + 하위 항목 스크린샷 추가. 교수자 매뉴얼: 스크린샷 캡션/레이아웃 통일 |
 
 ## 최근 작업(교수자 UI 톤 맞춤)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스(React) | 산출물 | 비고 |
