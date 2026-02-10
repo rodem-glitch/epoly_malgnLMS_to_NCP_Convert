@@ -5,14 +5,14 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-06 14:05
+최근 자동 갱신: 2026-02-10 09:44
 
 - JSP 총합(전체): 1226
 - JSP(public_html): 1225 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 178
-- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 109
-- polytech-lms-api(Java/Spring Boot) Java 파일 수: 160
+- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 105
+- polytech-lms-api(Java/Spring Boot) Java 파일 수: 147
 
 생성된 인덱스:
 - docs/rpg/generated/jsp_setBody_index.tsv
