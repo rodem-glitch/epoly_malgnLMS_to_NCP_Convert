@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 16:22
+최근 자동 갱신: 2026-02-10 16:39
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -147,7 +147,8 @@
 - 사용자 동작(의도): 교수자가 `/tutor_lms/`로 접속하여 교수자 기능을 사용
 - 진입점: `public_html/tutor_lms/index.jsp`
 - 처리(핵심):
-  - 미로그인(`userId == 0`)이면 로그인 화면으로 이동
+  - 미로그인(`userId == 0`)이면 `returl=/tutor_lms/index.jsp(현재 URI)`를 붙여 `/member/login.jsp`로 이동
+  - `/member/login.jsp` GET 게이트가 신규 메인 로그인 모달(`/mypage/new_main/?login_required=Y&returl=...`)로 넘기고, 로그인 성공 시 다시 `/tutor_lms/index.jsp`로 복귀
   - 운영자(S/A)는 통과, 그 외는 `TB_USER.tutor_yn='Y'` 교수자만 통과
   - `public_html/tutor_lms/app/index.html` 정적 빌드 파일이 없으면 “빌드 필요” 안내 페이지를 출력
   - 정상일 때 `app/index.html`로 리다이렉트(React SPA)
@@ -161,9 +162,9 @@
 - 출력:
   - 빌드 산출물: `public_html/tutor_lms/app/assets/*`
 - 확인(근거):
-  - 권한/리다이렉트/빌드 안내 분기 코드를 파일에서 확인(`public_html/tutor_lms/index.jsp`)
-  - 로컬 빌드로 산출물 갱신 확인(`cd project && npm run build`)
-- 최근 갱신: 2026-02-05
+  - 코드 분기 확인: `public_html/tutor_lms/index.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp`
+  - 로컬 응답 확인: `curl /tutor_lms/index.jsp`가 `top.location.replace('/member/login.jsp?returl=...')`를 반환하고, `curl /member/login.jsp?returl=%2Ftutor_lms%2Findex.jsp`가 `302 -> /mypage/new_main/?login_required=Y&returl=%2Ftutor_lms%2Findex.jsp`를 반환함
+- 최근 갱신: 2026-02-10
 
 ### FLOW-3001: 교수자 통계 > 산업별 통계(산업분포 분석)
 - 사용자 동작(의도): 교수자 통계 화면에서 캠퍼스/행정구역/연도를 선택해 “행정구역(종사자) vs 캠퍼스(학생)” 산업 분포를 비교

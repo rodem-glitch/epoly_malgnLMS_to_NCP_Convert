@@ -6,7 +6,11 @@
 
 //로그인 확인(미로그인: 로그인 페이지로 이동)
 if(0 == userId) {
-	m.jsReplace(auth.loginURL, "top");
+	// 왜: tutor_lms를 직접 열었을 때 로그인 모달 완료 후 다시 같은 URL로 돌아오게 returl을 명시합니다.
+	String returl = m.getThisURI();
+	String loginUrl = auth.loginURL + (!auth.loginURL.contains("?") ? "?" : "&") + "returl=" + m.urlencode(returl);
+	m.log("tutor_lms_login_gate_" + siteId, "path=/tutor_lms/index.jsp user_id=0 returl=" + returl);
+	m.jsReplace(loginUrl, "top");
 	return;
 }
 
