@@ -556,6 +556,24 @@ export type TutorHomeworkUserRow = {
   task_cnt?: number;
 };
 
+export type TutorHomeworkSubmissionFileRow = {
+  id: number;
+  filename: string;
+  ek: string;
+  download_url: string;
+};
+
+export type TutorHomeworkSubmissionDetail = {
+  course_id: number;
+  homework_id: number;
+  course_user_id: number;
+  submitted: boolean;
+  submitted_at: string;
+  subject: string;
+  content: string;
+  files: TutorHomeworkSubmissionFileRow[];
+};
+
 export type TutorMaterialRow = {
   library_id: number;
   library_nm: string;
@@ -2021,6 +2039,16 @@ export const tutorLmsApi = {
   async getHomeworkUsers(params: { courseId: number; homeworkId: number }) {
     const url = `/tutor_lms/api/homework_users.jsp${buildQuery({ course_id: params.courseId, homework_id: params.homeworkId })}`;
     return requestJson<TutorHomeworkUserRow[]>(url);
+  },
+
+  // 왜: 피드백 관리 화면에서 학생 제출물(제목/내용/첨부파일)을 모달로 확인해야 합니다.
+  async getHomeworkSubmissionDetail(params: { courseId: number; homeworkId: number; courseUserId: number }) {
+    const url = `/tutor_lms/api/homework_user_submission.jsp${buildQuery({
+      course_id: params.courseId,
+      homework_id: params.homeworkId,
+      course_user_id: params.courseUserId,
+    })}`;
+    return requestJson<TutorHomeworkSubmissionDetail>(url);
   },
 
   async updateHomeworkFeedback(payload: {

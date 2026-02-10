@@ -29,6 +29,7 @@ import { ExamCreateModal } from './ExamCreateModal';
 import { AssignmentCreateModal } from './AssignmentCreateModal';
 import { AssignmentDetailModal } from './AssignmentDetailModal';
 import { HomeworkTaskDetailModal } from './HomeworkTaskDetailModal';
+import { HomeworkSubmissionDetailModal } from './HomeworkSubmissionDetailModal';
 import { tutorLmsApi, type HaksaCourseKey } from '../api/tutorLmsApi';
 import { buildHaksaCourseKey } from '../utils/haksa';
 import { CurriculumTab } from './courseManagement/CurriculumTab';
@@ -2212,6 +2213,18 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
   const [tempScore, setTempScore] = useState<string>('0');
   const [feedbackText, setFeedbackText] = useState<string>('');
 
+  // 왜: 학생 제출물(제목/내용/첨부파일)을 모달로 확인할 수 있어야 합니다.
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
+  const [submissionLoading, setSubmissionLoading] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [submissionDetail, setSubmissionDetail] = useState<null | {
+    submitted: boolean;
+    submittedAt: string;
+    subject: string;
+    content: string;
+    files: { id: number; filename: string; downloadUrl: string }[];
+  }>(null);
+
   const [loadingHomeworks, setLoadingHomeworks] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -2305,6 +2318,46 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
     const student = students.find((s: any) => s.courseUserId === courseUserId);
     setTempScore(String(student?.markingScore ?? 0));
     setFeedbackText(String(student?.feedback ?? ''));
+  };
+
+  const handleOpenSubmissionModal = () => {
+    if (!selectedHomeworkId || !selectedCourseUserId) return;
+    setShowSubmissionModal(true);
+    setSubmissionLoading(true);
+    setSubmissionError(null);
+    setSubmissionDetail(null);
+
+    void (async () => {
+      try {
+        const res = await tutorLmsApi.getHomeworkSubmissionDetail({
+          courseId,
+          homeworkId: selectedHomeworkId,
+          courseUserId: selectedCourseUserId,
+        });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+
+        const d: any = res.rst_data;
+        const files = Array.isArray(d?.files)
+          ? d.files.map((f: any) => ({
+              id: Number(f.id),
+              filename: String(f.filename ?? ''),
+              downloadUrl: String(f.download_url ?? ''),
+            }))
+          : [];
+
+        setSubmissionDetail({
+          submitted: Boolean(d?.submitted),
+          submittedAt: String(d?.submitted_at ?? '-'),
+          subject: String(d?.subject ?? ''),
+          content: String(d?.content ?? ''),
+          files,
+        });
+      } catch (e) {
+        setSubmissionError(e instanceof Error ? e.message : '제출물을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setSubmissionLoading(false);
+      }
+    })();
   };
 
     const handleSubmitFeedback = () => {
@@ -2520,7 +2573,18 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                     <h4 className="text-gray-900">
                       {selectedStudent.name} ({selectedStudent.studentId})
                     </h4>
-                    <p className="text-xs text-gray-500 mt-1">제출시간: {selectedStudent.submittedAt}</p>
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                      <p className="text-xs text-gray-500">제출시간: {selectedStudent.submittedAt}</p>
+                      {selectedStudent.submitted && (
+                        <button
+                          type="button"
+                          onClick={handleOpenSubmissionModal}
+                          className="px-3 py-1.5 text-xs border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          제출물 보기
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="p-4 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -2655,6 +2719,24 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
               )}
             </div>
           </div>
+
+          <HomeworkSubmissionDetailModal
+            open={showSubmissionModal}
+            onOpenChange={setShowSubmissionModal}
+            title="학생 제출물 확인"
+            meta={
+              selectedStudent
+                ? {
+                    studentName: selectedStudent.name,
+                    studentId: selectedStudent.studentId,
+                    submittedAt: selectedStudent.submittedAt,
+                  }
+                : undefined
+            }
+            loading={submissionLoading}
+            errorMessage={submissionError}
+            detail={submissionDetail}
+          />
 
           {/* 통계 요약 */}
           <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">

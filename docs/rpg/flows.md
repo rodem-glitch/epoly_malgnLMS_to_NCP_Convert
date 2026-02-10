@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 17:29
+최근 자동 갱신: 2026-02-10 17:59
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -228,3 +228,27 @@
   - 백엔드 컴파일: `cd polytech-lms-api && .\\gradlew.bat compileJava` 성공
   - 프론트 코드 경로 확인: `dashboard.html`의 `refreshMemberKeyPopulation()`, `renderMemberKeyPopulationTable()`, `memberKeyPopulationChart` 추가
 - 최근 갱신: 2026-02-06
+
+### FLOW-4001: 교수자 LMS > 과제 > 피드백 관리(학생 제출물 모달 확인)
+- 사용자 동작(의도): 교수자가 “피드백 관리”에서 학생을 선택한 뒤, 학생이 제출한 과제 내용/첨부파일을 모달로 확인
+- 진입점:
+  - 화면(React): `project/components/CourseManagement.tsx` (과제 > 피드백 관리 탭)
+  - API(JSP): `public_html/tutor_lms/api/homework_user_submission.jsp`
+- 처리(핵심):
+  - API는 `tutor_lms/api/init.jsp`에서 로그인/교수자 권한을 먼저 검사
+  - 과목 권한: 관리자가 아니면 `LM_COURSE_TUTOR(type='major')`(주강사)만 조회 허용
+  - 과제가 과목에 배치된 건인지 `LM_COURSE_MODULE(module='homework')`로 확인
+  - 제출 본문: `LM_HOMEWORK_USER(subject/content/submit_yn/reg_date)` 조회(레코드가 없으면 빈값 반환)
+  - 첨부파일: `CL_FILE(module='homework_{homework_id}', module_id={course_user_id})` 목록을 배열로 내려줌
+- DB:
+  - 과제 배치: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE` (`course_id`, `module`, `module_id`, `status`)
+  - 제출 본문: `src/dao/HomeworkUserDao.java` → `LM_HOMEWORK_USER` (`homework_id`, `course_user_id`, `subject`, `content`, `submit_yn`, `reg_date`, `status`)
+  - 첨부파일: `src/dao/ClFileDao.java` → `CL_FILE` (`module`, `module_id`, `filename`, `status`)
+- 출력:
+  - JSON: 제출 제목/내용 + 파일 목록(`download_url=/classroom/download_cl.jsp?id=...&ek=...`)
+  - React 모달: `project/components/HomeworkSubmissionDetailModal.tsx` (Dialog/ScrollArea)
+  - 표시 규칙: 제출 제목/내용은 HTML 태그가 있으면 제거 후 “텍스트만” 표시(`<p>` 등 태그가 화면에 노출되지 않도록)
+- 확인(근거):
+  - React에서 “제출물 보기” 버튼 클릭 시 API 호출 및 모달 렌더링 코드 확인(`CourseManagement.tsx`)
+  - 로컬 빌드: `cd project && npm run build` 성공(산출물 `public_html/tutor_lms/app/assets/*` 갱신)
+- 최근 갱신: 2026-02-10
