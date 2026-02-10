@@ -88,6 +88,60 @@ if(loginRequiredBlock) {
 	);
 }
 
+// 왜: 테스트 기간 반복 로그인 입력 시간을 줄이기 위해, 로컬 전용 설정으로 빠른 로그인 프리셋을 제공합니다.
+//     보안 규칙상 비밀번호를 소스코드에 하드코딩하지 않고 배포 제외 경로(WEB-INF/tmp)에서만 읽습니다.
+boolean quickLoginBlock = false;
+String quickLoginIdPrefix = ""; // 하위호환(id_prefix)
+String quickLoginTutorIdPrefix = "";
+String quickLoginStudentIdPrefix = "";
+String quickLoginIdSuffix = "01";
+String quickLoginPasswd = "";
+String quickLoginConfigPath = application.getRealPath("/WEB-INF/tmp/dev-login.properties");
+if(quickLoginConfigPath != null) {
+	File quickLoginConfig = new File(quickLoginConfigPath);
+	if(quickLoginConfig.exists()) {
+		Properties quickLoginProps = new Properties();
+		try(
+			FileInputStream fis = new FileInputStream(quickLoginConfig);
+			InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8)
+		) {
+			quickLoginProps.load(isr);
+			// 왜: 테스트 환경에서 교수/학생 계정을 함께 쓰므로 prefix를 2종까지 지원합니다.
+			//     기존 id_prefix는 하위호환을 위해 유지합니다.
+			quickLoginIdPrefix = quickLoginProps.getProperty("id_prefix", "").trim();
+			quickLoginTutorIdPrefix = quickLoginProps.getProperty("tutor_id_prefix", "").trim();
+			quickLoginStudentIdPrefix = quickLoginProps.getProperty("student_id_prefix", "").trim();
+			quickLoginIdSuffix = quickLoginProps.getProperty("id_suffix", "01").trim();
+			quickLoginPasswd = quickLoginProps.getProperty("password", "");
+
+			if(!quickLoginIdSuffix.matches("^[0-9]{1,2}$")) quickLoginIdSuffix = "01";
+			if(1 == quickLoginIdSuffix.length()) quickLoginIdSuffix = "0" + quickLoginIdSuffix;
+
+			// 왜: 새 설정(tutor/student)이 비어 있으면 기존 id_prefix를 tutor로 간주해 동작을 유지합니다.
+			if("".equals(quickLoginTutorIdPrefix) && !"".equals(quickLoginIdPrefix)) quickLoginTutorIdPrefix = quickLoginIdPrefix;
+
+			boolean hasPrefix = !"".equals(quickLoginTutorIdPrefix) || !"".equals(quickLoginStudentIdPrefix);
+			if(hasPrefix && !"".equals(quickLoginPasswd)) {
+				quickLoginBlock = true;
+				m.log(
+					"quick_login_config_" + siteId,
+					"path=/mypage/new_main/index.jsp enabled=Y tutor_prefix=" + quickLoginTutorIdPrefix + " student_prefix=" + quickLoginStudentIdPrefix + " id_suffix=" + quickLoginIdSuffix
+				);
+			} else {
+				m.log(
+					"quick_login_config_" + siteId,
+					"path=/mypage/new_main/index.jsp enabled=N reason=missing_required_fields"
+				);
+			}
+		} catch(Exception e) {
+			m.log(
+				"quick_login_config_" + siteId,
+				"path=/mypage/new_main/index.jsp enabled=N reason=load_failed error=" + e.getClass().getSimpleName()
+			);
+		}
+	}
+}
+
 // 사용자 정보 (로그인 상태에서만)
 DataSet uinfo = null;
 if(userId > 0) {
@@ -397,6 +451,12 @@ p.setVar("login_required_block", loginRequiredBlock);
 p.setVar("login_returl", loginReturl);
 p.setVar("login_udid_block", 0 < loginUdid);
 p.setVar("login_udid", loginUdid);
+p.setVar("quick_login_block", quickLoginBlock);
+p.setVar("quick_login_id_prefix", quickLoginIdPrefix);
+p.setVar("quick_login_tutor_id_prefix", quickLoginTutorIdPrefix);
+p.setVar("quick_login_student_id_prefix", quickLoginStudentIdPrefix);
+p.setVar("quick_login_id_suffix", quickLoginIdSuffix);
+p.setVar("quick_login_passwd", quickLoginPasswd);
 
 // 로그인 상태 및 사용자 정보
 p.setVar("login_block", userId > 0 && uinfo != null);

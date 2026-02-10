@@ -10,6 +10,7 @@ out/
 logs/
 var/log/
 var/log/**/*.log
+public_html/data/log/
 
 # Java build artifacts
 *.class

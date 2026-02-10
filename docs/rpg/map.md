@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 16:22
+최근 자동 갱신: 2026-02-10 17:29
 
 - JSP 총합(전체): 1226
 - JSP(public_html): 1225 (sysop: 715, api: 18)
@@ -15,10 +15,10 @@
 - polytech-lms-api(Java/Spring Boot) Java 파일 수: 147
 
 생성된 인덱스:
-- docs/rpg/generated/jsp_setBody_index.tsv
-- docs/rpg/generated/jsp_newDao_index.tsv
-- docs/rpg/generated/dao_table_index.tsv
-- docs/rpg/generated/polytech_controller_mapping_candidates.tsv
+- docs/rpg/generated/jsp_setBody_index.tsv (SummaryOnly에서는 갱신하지 않음)
+- docs/rpg/generated/jsp_newDao_index.tsv (SummaryOnly에서는 갱신하지 않음)
+- docs/rpg/generated/dao_table_index.tsv (SummaryOnly에서는 갱신하지 않음)
+- docs/rpg/generated/polytech_controller_mapping_candidates.tsv (SummaryOnly에서는 갱신하지 않음)
 <!-- @generated:end -->
 
 ## 자동 생성(권장)

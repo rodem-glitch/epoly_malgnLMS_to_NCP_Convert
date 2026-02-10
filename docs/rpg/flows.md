@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 16:39
+최근 자동 갱신: 2026-02-10 17:29
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -88,13 +88,15 @@
   - returl은 쿼리 원문에서 재파싱해(레거시 `Auth.loginForm()` 비인코딩 대응) 쿼리 손실을 줄이고, 외부 도메인은 `/mypage/new_main/`으로 차단
   - `mypage/new_main/index.jsp`에서 `login_required`, `returl`, `udid`를 세팅하고 로그(`login_modal_request_*`)를 남김
   - `html/mypage/new_main_full.html`에서 `login_required_block`일 때 모달을 자동 오픈하고, 로그인 POST 시 `returl/udid`를 hidden으로 전달
+  - 테스트 기간에는 `public_html/WEB-INF/tmp/dev-login.properties`가 있을 때만 빠른 로그인 UI를 노출하며, `id_prefix + 숫자 suffix` 조합으로 즉시 로그인 POST를 보냄
 - DB: 없음(세션/리다이렉트 제어만 수행)
 - 출력:
   - 신규 메인 페이지 내 로그인 모달(`public_html/html/mypage/new_main_full.html`)
   - 로그인 처리 엔드포인트는 기존과 동일하게 `POST /member/login.jsp`
 - 확인(근거):
   - 코드 경로 확인: `public_html/mypage/init.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/html/mypage/new_main_full.html`
-  - 시나리오 점검(정적): `권한 페이지(/mypage/*) -> /mypage/new_main/?login_required=Y&returl=... -> 모달 POST`
+  - 시나리오 점검: `권한 페이지(/mypage/*) -> /mypage/new_main/?login_required=Y&returl=... -> 모달 POST`
+  - 로컬 검증: `/mypage/new_main/index.jsp` 응답 HTML에 `테스트 빠른 로그인` 영역 노출, `POST /member/login.jsp(id=haksa_pf26_01)` 응답이 `/tutor_lms/index.jsp` 복귀 스크립트 반환
 - 최근 갱신: 2026-02-10
 
 ### FLOW-1004: 신규 메인 헤더 `나의강의실` 클릭 시 로그인 모달 분기
