@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-06
+최근 갱신: 2026-02-10
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 10:03
+최근 자동 갱신: 2026-02-10 11:49
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -75,6 +75,25 @@
   - 템플릿: `public_html/html/member/privacy_agree.html` (`consent_mode` 분기)
 - 확인(근거): 발급 진입점과 동의 게이트 분기 코드를 파일에서 확인(`public_html/mypage/certificate*.jsp`, `public_html/member/privacy_agree.jsp`)
 - 최근 갱신: 2026-02-04
+
+### FLOW-1003: 비로그인 권한 진입 시 신규 메인 로그인 모달 게이트
+- 사용자 동작(의도): 로그인 없이 권한 필요한 URL(예: 게시글 작성, 수강 기능)에 진입
+- 진입점:
+  - 1차 로그인 엔드포인트: `public_html/member/login.jsp` (GET)
+  - 모달 랜딩 페이지: `public_html/mypage/new_main/index.jsp`
+- 처리(핵심):
+  - `member/login.jsp`에서 `GET + (access_token/ek 없음)`이면 로그인 화면을 직접 렌더링하지 않고 `/mypage/new_main/?login_required=Y&returl=...`로 리다이렉트
+  - returl은 쿼리 원문에서 재파싱해(레거시 `Auth.loginForm()` 비인코딩 대응) 쿼리 손실을 줄이고, 외부 도메인은 `/mypage/new_main/`으로 차단
+  - `mypage/new_main/index.jsp`에서 `login_required`, `returl`, `udid`를 세팅하고 로그(`login_modal_request_*`)를 남김
+  - `html/mypage/new_main_full.html`에서 `login_required_block`일 때 모달을 자동 오픈하고, 로그인 POST 시 `returl/udid`를 hidden으로 전달
+- DB: 없음(세션/리다이렉트 제어만 수행)
+- 출력:
+  - 신규 메인 페이지 내 로그인 모달(`public_html/html/mypage/new_main_full.html`)
+  - 로그인 처리 엔드포인트는 기존과 동일하게 `POST /member/login.jsp`
+- 확인(근거):
+  - 코드 경로 확인: `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/html/mypage/new_main_full.html`
+  - 시나리오 점검(정적): `권한 페이지 -> /member/login.jsp?returl=... -> /mypage/new_main/?login_required=Y&returl=... -> 모달 POST`
+- 최근 갱신: 2026-02-10
 
 ### FLOW-2001: 교수자 LMS(React) 진입/라우팅 및 UI 톤 적용
 - 사용자 동작(의도): 교수자가 `/tutor_lms/`로 접속하여 교수자 기능을 사용

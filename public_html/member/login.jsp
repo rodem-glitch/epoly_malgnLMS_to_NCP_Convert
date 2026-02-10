@@ -9,11 +9,43 @@ if(userId != 0) {
 
 //폼입력
 String returl = m.rs("returl");
+int udid = m.ri("udid");
+String accessToken = m.rs("access_token");
+String ek = m.rs("ek");
+
+// 왜: Auth.loginForm()이 returl을 인코딩하지 않고 붙이는 레거시가 있어, 쿼리스트링 원문에서 returl을 다시 읽어 원래 경로를 최대한 보존합니다.
+String rawQuery = request.getQueryString();
+if(rawQuery != null && "".equals(accessToken) && "".equals(ek)) {
+	int returlPos = rawQuery.indexOf("returl=");
+	if(returlPos > -1) {
+		String rawReturl = rawQuery.substring(returlPos + 7);
+		int udidPos = rawReturl.indexOf("&udid=");
+		if(udidPos > -1) rawReturl = rawReturl.substring(0, udidPos);
+		if(!"".equals(rawReturl)) returl = m.urldecode(rawReturl);
+	}
+}
 
 //SSO
 if(siteinfo.b("sso_yn") && !"".equals(siteinfo.s("sso_url"))) {
 	m.setSession("RETURL", returl);
 	m.redirect(siteinfo.s("sso_url") + (!"".equals(returl) ? "?returl=" + m.urlencode(returl) : ""));
+	return;
+}
+
+// 왜: 현재 서비스는 구 로그인 페이지 대신 신규 메인의 로그인 모달을 기준으로 동작하므로,
+//     GET으로 직접 로그인 페이지에 들어온 경우에는 신규 메인으로 보내 모달을 자동으로 열어줍니다.
+if(!m.isPost() && "".equals(accessToken) && "".equals(ek)) {
+	String modalReturl = !"".equals(returl) ? returl : "/mypage/new_main/";
+	if((modalReturl.startsWith("http://") || modalReturl.startsWith("https://")) && 0 > modalReturl.indexOf(siteinfo.s("domain"))) modalReturl = "/mypage/new_main/";
+
+	String modalUrl = "/mypage/new_main/?login_required=Y&returl=" + m.urlencode(modalReturl);
+	if(0 < udid) modalUrl += "&udid=" + udid;
+
+	m.log(
+		"login_modal_gate_" + siteId,
+		"path=/member/login.jsp method=GET returl=" + modalReturl + " udid=" + udid + " from=" + request.getRequestURI()
+	);
+	m.redirect(modalUrl);
 	return;
 }
 returl = !"".equals(returl) ? returl : "/mypage/index.jsp";
@@ -23,9 +55,6 @@ if((returl.startsWith("http://") || returl.startsWith("https://")) && 0 > returl
 //폼입력
 String id = m.rs("id");
 String passwd = m.rs("passwd");
-String accessToken = m.rs("access_token");
-String ek = m.rs("ek");
-int udid = m.ri("udid");
 
 //객체
 UserDao user = new UserDao();

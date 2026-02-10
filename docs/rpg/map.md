@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 저장소 지도 (`map.md`)
 
-최근 갱신: 2026-02-06
+최근 갱신: 2026-02-10
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 10:03
+최근 자동 갱신: 2026-02-10 11:49
 
 - JSP 총합(전체): 1226
 - JSP(public_html): 1225 (sysop: 715, api: 18)
@@ -52,6 +52,11 @@
 | 증명서(수료증/합격증) 발급 동의 | `public_html/mypage/certificate*.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | 동의서 이미지(`/common/images/consent/consent_cert_1.png` 또는 `/common/images/consent/consent_cert_2.png`) 필요(둘 다 없으면 차단), `ag=cert`, `mid=cuid`(선택), `returl` 필수 |
 | (로컬 테스트) SSO 동의 화면 확인 | `public_html/mypage/new_main/sso_consent_test.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | localhost에서만 접근(운영 노출 방지), `force=Y`로 재확인 |
 
+## 최근 작업(로그인 모달 게이트)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 비로그인 권한 진입 시 신규 메인 모달로 로그인 유도 | `public_html/member/login.jsp`(GET 게이트) → `public_html/mypage/new_main/index.jsp` | `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` | `public_html/html/mypage/new_main_full.html` | 구 로그인 페이지 직접 렌더 대신 `login_required=Y`로 모달 자동 오픈, `returl`/`udid` hidden 전달, `access_token`/`ek`(SSL 토큰 로그인)은 기존 분기 유지 |
+
 ## 최근 작업(교수자 UI 톤 맞춤)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스(React) | 산출물 | 비고 |
 |---|---|---|---|---|
@@ -63,3 +68,8 @@
 |---|---|---|---|---|
 | 산업별 통계: 전체 캠퍼스/전국 전체 선택 시 “행정구역(종사자) 인원”이 0으로 뜨는 문제 수정 | `/statistics` → `GET /statistics/api/industry/analysis` | `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/controller/StatisticsDashboardApiController.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/IndustryAnalysisService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/sgis/service/SgisCompanyCacheService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/sgis/client/SgisClient.java` | JSON(산업분포 분석) | 전국(`admCd=00`)은 SGIS 시도코드→로컬 시도코드→`adm_cd` non 리스트 순으로 합산. 시도/전국 코드의 null/0,0 캐시는 1회 재조회 |
 | 인구별 통계: 학번(MEMBER_KEY) 기반 연도별·캠퍼스별 인구 그래프/표 추가 | `/statistics` → `GET /statistics/api/population/member-key-campus` | `polytech-lms-api/src/main/resources/static/statistics/dashboard.html`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/controller/StatisticsDashboardApiController.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/service/MemberKeyPopulationService.java`, `polytech-lms-api/src/main/java/kr/polytech/lms/statistics/dashboard/persistence/MemberKeyPopulationJdbcRepository.java` | JSON(학번 기반 인구 시계열) + 인구 탭 하단 그래프/표 | `LM_POLY_MEMBER`(학사 원천 `COM.LMS_MEMBER_VIEW` 동기화본)의 `MEMBER_KEY/CAMPUS_CODE/CAMPUS_NAME` 집계. **캠퍼스 필터만 반영**하고 행정구역/연도 필터는 집계에서 제외. 2026-02-06 기준 화면/호출 임시 숨김(`memberKeyPopulationCard`, `enableMemberKeyPopulation=false`) |
+
+## 최근 작업(에이전트 운영 규칙)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
+|---|---|---|---|---|
+| 팀 에이전트 기본 모드 강제 | (문서 규칙) | `AGENTS.md` | 세션 공통 작업 절차 규칙 | 새 세션 첫 작업 지시에서도 Planner/Explorer/Builder/Reviewer/Reporter 및 병렬 탐색 기본 적용 근거를 문서화 |

@@ -61,6 +61,33 @@ KollusDao kollus = new KollusDao(siteId);
 //변수
 String today = m.time("yyyyMMdd");
 
+// 왜: 권한 없는 접근을 /mypage/new_main으로 보낼 때, 이 파라미터를 기준으로 로그인 모달을 자동 오픈합니다.
+boolean loginRequiredBlock = "Y".equals(m.rs("login_required")) && userId == 0;
+int loginUdid = m.ri("udid");
+String loginReturl = m.rs("returl");
+
+// 왜: Auth.loginForm()이 returl을 인코딩하지 않는 레거시가 있어, 쿼리 원문 기준으로 returl을 다시 읽어 쿼리 손실을 줄입니다.
+String rawQuery = request.getQueryString();
+if(rawQuery != null) {
+	int returlPos = rawQuery.indexOf("returl=");
+	if(returlPos > -1) {
+		String rawReturl = rawQuery.substring(returlPos + 7);
+		int udidPos = rawReturl.indexOf("&udid=");
+		if(udidPos > -1) rawReturl = rawReturl.substring(0, udidPos);
+		if(!"".equals(rawReturl)) loginReturl = m.urldecode(rawReturl);
+	}
+}
+
+if("".equals(loginReturl)) loginReturl = "/mypage/new_main/";
+if((loginReturl.startsWith("http://") || loginReturl.startsWith("https://")) && 0 > loginReturl.indexOf(siteinfo.s("domain"))) loginReturl = "/mypage/new_main/";
+
+if(loginRequiredBlock) {
+	m.log(
+		"login_modal_request_" + siteId,
+		"path=/mypage/new_main/index.jsp login_required=Y returl=" + loginReturl + " udid=" + loginUdid
+	);
+}
+
 // 사용자 정보 (로그인 상태에서만)
 DataSet uinfo = null;
 if(userId > 0) {
@@ -366,6 +393,10 @@ p.setBody("mypage.new_main_full");
 p.setVar("p_title", "미래형 직업교육 플랫폼");
 p.setVar("query", m.qs());
 p.setVar("form_script", f.getScript());
+p.setVar("login_required_block", loginRequiredBlock);
+p.setVar("login_returl", loginReturl);
+p.setVar("login_udid_block", 0 < loginUdid);
+p.setVar("login_udid", loginUdid);
 
 // 로그인 상태 및 사용자 정보
 p.setVar("login_block", userId > 0 && uinfo != null);

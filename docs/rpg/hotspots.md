@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-06
+최근 갱신: 2026-02-10
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 10:03
+최근 자동 갱신: 2026-02-10 11:49
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -34,6 +34,11 @@
     - SSO: `/common/images/consent/consent_sso_1.png` 또는 `/common/images/consent/consent_sso_2.png` (둘 다 없으면 차단)
     - 증명서: `/common/images/consent/consent_cert_1.png` 또는 `/common/images/consent/consent_cert_2.png` (둘 다 없으면 차단)
   - 이력: `TB_AGREEMENT_LOG`에 `type/module` 조합으로 버전 관리(`sso_20260120`, `cert_20260120`)
+- 로그인 게이트/모달(권한·세션):
+  - 구 로그인 페이지 렌더 대신 `public_html/member/login.jsp` GET에서 `/mypage/new_main/?login_required=Y&returl=...`로 우회합니다.
+  - 예외 분기(`access_token`, `ek`, SSO)는 기존 로그인 처리 경로를 유지해야 합니다. 이 분기를 건드리면 SSL 토큰 로그인/외부 SSO가 깨질 수 있습니다.
+  - `returl`은 레거시 비인코딩 케이스가 있어 쿼리 원문 재파싱을 같이 유지해야 하며, 외부 도메인 차단 검사도 함께 유지해야 합니다.
+  - 모달 POST 값(`returl`, `udid`)은 `public_html/html/mypage/new_main_full.html` hidden 필드와 `public_html/mypage/new_main/index.jsp` 변수 세팅이 한 쌍입니다.
 - React 배포 산출물: `public_html/tutor_lms/app` (빌드 누락/정적파일 캐시 이슈)
 - 교수자(React) CSP/외부 리소스:
   - `project/index.html`에 CSP 메타가 있어, 기본적으로 외부 CSS/폰트 로드가 막힙니다(보안상 장점).

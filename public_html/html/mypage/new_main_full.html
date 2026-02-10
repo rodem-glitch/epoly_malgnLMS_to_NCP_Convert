@@ -1261,7 +1261,10 @@
 				<div class="nm-login-modal__subtitle">미래형 직업교육 플랫폼에 오신 것을 환영합니다</div>
 			</div>
 			<form id="loginForm" method="post" action="/member/login.jsp" target="loginFrame" onsubmit="return submitLogin()">
-				<input type="hidden" name="returl" value="/mypage/new_main/">
+				<input type="hidden" name="returl" value="{{login_returl}}">
+				<!--@if(login_udid_block)-->
+				<input type="hidden" name="udid" value="{{login_udid}}">
+				<!--/if(login_udid_block)-->
 				<div class="nm-login-modal__body">
 					<div id="loginError" class="nm-login-modal__error"></div>
 					<div class="nm-login-modal__field">
@@ -1339,6 +1342,14 @@
 			closeLoginModal();
 		}
 	});
+
+	<!--@if(login_required_block)-->
+	// 왜: 권한 없는 진입에서 넘어온 경우, 화면 진입 즉시 로그인 모달을 열어 사용자가 바로 로그인할 수 있게 합니다.
+	document.addEventListener('DOMContentLoaded', function() {
+		openLoginModal();
+		showLoginError('로그인이 필요한 서비스입니다.');
+	});
+	<!--/if(login_required_block)-->
 
 	// 추천 프롬프트 설정
 	(function() {
