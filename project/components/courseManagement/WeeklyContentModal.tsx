@@ -52,6 +52,7 @@ interface WeeklyContentModalProps {
   isOpen: boolean;
   onClose: () => void;
   weekNumber: number;
+  courseName?: string;
   onAdd: (content: Omit<WeekContentItem, 'id' | 'createdAt'>) => void;
 }
 
@@ -93,7 +94,7 @@ const buildDefaultDocumentData = () => ({
   file: null as File | null,
 });
 
-export function WeeklyContentModal({ isOpen, onClose, weekNumber, onAdd }: WeeklyContentModalProps) {
+export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, onAdd }: WeeklyContentModalProps) {
   const [selectedType, setSelectedType] = useState<ContentType | null>(null);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
@@ -843,6 +844,8 @@ export function WeeklyContentModal({ isOpen, onClose, weekNumber, onAdd }: Weekl
         onSelect={handleVideoSelect}
         multiSelect={false}
         recommendContext={{
+          // 왜: 차시 입력이 비어 있어도 "현재 과목명"은 항상 추천 힌트로 보내야 과목별 추천이 갈립니다.
+          courseName: courseName || '',
           // 왜: 관리 화면에서도 차시 제목/설명을 기반으로 추천을 먼저 보여주면 콘텐츠 선택이 더 빨라집니다.
           lessonTitle: videoTitle,
           lessonDescription: videoDescription,

@@ -49,6 +49,10 @@ export const CurriculumEditor: React.FC<CurriculumEditorProps> = ({
   
   const [isContentModalOpen, setIsContentModalOpen] = React.useState(false);
   const [currentSectionId, setCurrentSectionId] = React.useState<number | null>(null);
+  const currentSectionName = React.useMemo(
+    () => curriculumData.find((s) => s.sectionId === currentSectionId)?.sectionName || '',
+    [curriculumData, currentSectionId]
+  );
 
   // 차시 데이터 로드
   const loadCurriculum = React.useCallback(async () => {
@@ -508,6 +512,12 @@ export const CurriculumEditor: React.FC<CurriculumEditorProps> = ({
         onSelect={() => {}}
         onMultiSelect={handleMultiContentSelect}
         multiSelect={true}
+        recommendContext={{
+          // 왜: 공통 차시편집에서도 과목명을 추천 힌트로 전달해야 과목별 추천이 달라집니다.
+          courseName: courseName || '',
+          // 왜: 현재 선택한 차시명을 차시 제목 힌트로 전달하면 같은 과목 내에서도 맥락이 달라집니다.
+          lessonTitle: currentSectionName,
+        }}
       />
     </div>
   );

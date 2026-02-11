@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 09:42
+최근 자동 갱신: 2026-02-11 10:22
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -301,4 +301,32 @@
   - API 호출 검증(로컬): 로그인 세션으로 `POST /tutor_lms/api/content_recommend.jsp(top_k=50)` 실행 시 `zero_total_time=0` 확인
   - API 호출 검증(키워드별): 빈값/NCS/메타버스/인터넷/영어/시험 키워드 모두 `rows=50, zero=0` 확인
   - 업서트 검증(로컬): `POST /tutor_lms/api/kollus_lesson_upsert.jsp(media_content_key=1nzZRwiX, total_time 미전달)` 호출 시 `LM_LESSON.total_time=11` 자동 보강 확인 후 테스트 데이터 상태복구
+- 최근 갱신: 2026-02-11
+
+### FLOW-4003: 교수자 LMS > 콘텐츠 라이브러리 추천 탭 자연어 검색 정렬(학생 검색형)
+- 사용자 동작(의도): 교수자가 강의명/차시명/차시 설명을 입력하면, 학생 자연어 검색처럼 제목이 맞는 영상이 먼저 추천되어야 함
+- 진입점:
+  - JSP 프록시: `public_html/tutor_lms/api/content_recommend.jsp` → Spring API `POST /tutor/content-recommend/lessons`
+  - 핵심 서비스: `polytech-lms-api/src/main/java/kr/polytech/lms/tutorcontentrecommend/service/TutorContentRecommendService.java`
+- 처리(핵심):
+  - 쿼리 구성은 `courseName`만 사용하고, `lessonTitle/lessonDescription/keywords/courseIntro/courseDetail`은 추천 질의에서 제외
+  - 차시명이 `1차시/2차시`처럼 일반값일 때 품질 저하가 커서, 교수자 추천은 과목명 중심으로 고정
+  - 1차 후보: `TB_RECO_CONTENT`에 대해 `title/keywords/summary LIKE` 키워드 검색(`RecoContentRepository.searchByKeyword`)
+  - 2차 후보: `VectorQueryService.similaritySearchWithQueryTaskType()`로 `RETRIEVAL_QUERY` 벡터 검색 수행
+  - 병합 정렬: 학생 검색과 동일하게 `제목 exact/contains/token` 우선으로 재정렬 후 벡터 점수로 tie-break
+  - 프론트 전달 경로: `CurriculumTab`(학사/비정규 모두) → `WeeklyContentModal`/`EditContentModal`/`CurriculumEditor` → `ContentLibraryModal.recommendContext.courseName`으로 과목명을 항상 전달
+  - 프록시 로그: `content_recommend.jsp`에 `request_context(course_name_len/lesson_title_len/context_fields)` 로그를 추가해 컨텍스트 누락 여부를 운영 로그에서 즉시 판별
+  - 결과 제한: 최종 응답은 요청 `topK`까지만 반환(기존 응답 포맷 유지)
+- DB:
+  - `polytech-lms-api` `TB_RECO_CONTENT` (`title`, `summary`, `keywords`, `lesson_id`)
+  - 벡터 메타 필터: `source == 'tb_reco_content'`
+- 출력:
+  - `content_recommend.jsp` 응답 `rst_data`는 기존과 동일(`lesson_id`, `title`, `summary`, `keywords`, `score`)
+  - 정렬 체감만 학생 자연어 검색형으로 변경
+- 확인(근거):
+  - 정적 경로 확인: `TutorContentRecommendService`에 `keywordSearchFromDatabase`, `rerankByTitleMatch`, `mergeAndDedupeResults` 추가
+  - 컴파일 확인: `cd polytech-lms-api && .\\gradlew.bat compileJava` 성공
+  - 동작 검증(변경 반영 인스턴스): `POST http://localhost:18081/tutor/content-recommend/lessons`에서 같은 과목명(`전기전자기초`) + 다른 차시명(`1차시/반도체 공정/영어 회화`) 호출 시 상위 결과가 동일
+  - API 검증(실호출): `POST http://localhost:8081/tutor/content-recommend/lessons`에 과목명(`전기전자기초/반도체 공정 실무/영어 커뮤니케이션/스마트팩토리 데이터분석`)별 호출 시 상위 결과 제목군이 서로 다름을 확인
+  - API 검증(빈 컨텍스트): `courseName/lessonTitle/lessonDescription/keywords` 모두 빈값이면 `NCS기반교육과정개발...`, `영어...`, `OTT...` 등 고정 패턴이 재현됨(입력 누락 시 동일 추천 원인)
 - 최근 갱신: 2026-02-11

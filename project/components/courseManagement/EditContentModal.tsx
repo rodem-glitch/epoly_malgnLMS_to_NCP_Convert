@@ -7,10 +7,11 @@ interface EditContentModalProps {
   isOpen: boolean;
   onClose: () => void;
   content: WeekContentItem | null;
+  courseName?: string;
   onSave: (content: WeekContentItem) => void;
 }
 
-export function EditContentModal({ isOpen, onClose, content, onSave }: EditContentModalProps) {
+export function EditContentModal({ isOpen, onClose, content, courseName, onSave }: EditContentModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('');
@@ -245,6 +246,8 @@ export function EditContentModal({ isOpen, onClose, content, onSave }: EditConte
         onSelect={handleVideoSelect}
         multiSelect={false}
         recommendContext={{
+          // 왜: 편집 모달에서도 과목명이 빠지면 과목 간 추천이 같아질 수 있어 기본 힌트로 고정 전달합니다.
+          courseName: courseName || '',
           // 왜: 편집 화면에서도 현재 입력된 제목/설명을 힌트로 써서 추천을 먼저 보여주면 탐색이 줄어듭니다.
           lessonTitle: title || selectedVideo?.title || '',
           lessonDescription: description,

@@ -147,6 +147,7 @@ export function CurriculumTab({ courseId, course }: CurriculumTabProps) {
     }
     return 15;
   })();
+  const recommendCourseName = (course?.subjectName || course?.haksaCourseName || '').trim();
 
   // 주차별 데이터 초기화 (차시 포함)
   const [weeks, setWeeks] = useState<WeekData[]>(() => createDefaultWeeks(weekCount));
@@ -810,6 +811,7 @@ export function CurriculumTab({ courseId, course }: CurriculumTabProps) {
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           weekNumber={selectedWeek}
+          courseName={recommendCourseName}
           onAdd={handleAddContent}
         />
         
@@ -822,6 +824,7 @@ export function CurriculumTab({ courseId, course }: CurriculumTabProps) {
             setEditingSessionId(null);
           }}
           content={editingContent}
+          courseName={recommendCourseName}
           onSave={handleEditContent}
         />
       </div>
@@ -831,6 +834,7 @@ export function CurriculumTab({ courseId, course }: CurriculumTabProps) {
   return (
     <CurriculumEditor
       courseId={courseId}
+      courseName={recommendCourseName}
       embedded={true}
     />
   );

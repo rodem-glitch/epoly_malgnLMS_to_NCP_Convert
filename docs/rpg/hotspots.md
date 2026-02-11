@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 09:42
+최근 자동 갱신: 2026-02-11 10:22
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -69,6 +69,12 @@
   - `TB_RECO_CONTENT.lesson_id`가 `LM_LESSON/TB_KOLLUS_MEDIA`에 없는 케이스가 많으므로, `TB_KOLLUS_TRANSCRIPT.duration_seconds`를 시간 보강의 기준 소스로 함께 유지해야 합니다.
   - `public_html/tutor_lms/api/kollus_lesson_upsert.jsp`는 기존 레슨 재사용 시 `total_time/complete_time/content_width/content_height`가 비어 있으면 최소 보정 업데이트가 필요합니다(과거 0분 데이터 고착 방지).
   - `kollus_lesson_upsert.jsp` 요청값 `total_time=0`이 들어올 수 있으므로, 업서트 내부에서 transcript 기반 보강을 빼면 다시 누락이 재발합니다.
+  - `polytech-lms-api` 교수자 추천(`TutorContentRecommendService`)은 2026-02-11부터 학생 검색형 하이브리드(키워드 DB + RETRIEVAL_QUERY 벡터 + 제목 매칭 재정렬)입니다. 세 단계 중 하나라도 빠지면 강의명/차시명 매칭 체감이 급격히 떨어질 수 있습니다.
+  - 추천 질의는 현재 `courseName`만 사용합니다. `lessonTitle/lessonDescription`은 전달돼도 검색 쿼리에서 무시됩니다(차시명 일반값 노이즈 방지).
+  - 추천 품질은 `recommendContext.courseName` 입력 품질에 직접 의존합니다. `courseName` 전달이 빠지면 기본 문장 검색으로 내려가 결과가 퍼질 수 있습니다.
+  - 특히 `project/components/courseManagement/CurriculumTab.tsx`의 비정규 경로(`CurriculumEditor`)에서 `courseName` 전달이 누락되면 과목이 달라도 추천이 유사하게 고정될 수 있습니다.
+  - `public_html/tutor_lms/api/content_recommend.jsp`의 `content_recommend request_context` 로그(`course_name_len`, `lesson_title_len`, `context_fields`)를 먼저 확인하면 입력 누락과 추천엔진 문제를 빠르게 분리할 수 있습니다.
+  - 제목 매칭 보정은 `TB_RECO_CONTENT.title/keywords/summary` LIKE 조회를 사용합니다. 대량 데이터에서 성능 이슈가 보이면 무작정 로직을 제거하지 말고 인덱스/쿼리 계획부터 확인해야 합니다.
 - 교수자(React) CSP/외부 리소스:
   - `project/index.html`에 CSP 메타가 있어, 기본적으로 외부 CSS/폰트 로드가 막힙니다(보안상 장점).
   - 학생 메인(`public_html/html/css/custom.css`)은 Pretendard를 CDN으로 불러오지만, 교수자 앱에서 같은 방식으로 적용하려면 CSP 완화 또는 폰트 파일 자체 호스팅이 필요합니다(보안/배포 영향).

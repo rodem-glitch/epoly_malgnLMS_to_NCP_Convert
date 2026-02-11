@@ -18,6 +18,16 @@ String lessonTitle = m.rs("lesson_title").trim();
 String lessonDescription = m.rs("lesson_description").trim();
 String keywords = m.rs("keywords").trim();
 
+// 왜: "추천 결과가 과목마다 동일" 이슈는 입력 컨텍스트가 비어 들어오는 경우가 많아,
+//     운영 로그에서 파라미터 유입 여부를 길이/유무로 즉시 확인할 수 있어야 합니다.
+int contextFieldCount = 0;
+if(!"".equals(courseName)) contextFieldCount++;
+if(!"".equals(courseIntro)) contextFieldCount++;
+if(!"".equals(courseDetail)) contextFieldCount++;
+if(!"".equals(lessonTitle)) contextFieldCount++;
+if(!"".equals(lessonDescription)) contextFieldCount++;
+if(!"".equals(keywords)) contextFieldCount++;
+
 int topK = m.ri("top_k");
 if(topK <= 0) topK = 50;
 if(topK > 50) topK = 50;
@@ -48,6 +58,17 @@ payload.put("keywords", keywords);
 payload.put("topK", topK);
 payload.put("similarityThreshold", similarityThreshold);
 
+m.log(
+	"content_recommend",
+	"request_context course_name_len=" + courseName.length()
+	+ ", lesson_title_len=" + lessonTitle.length()
+	+ ", lesson_desc_len=" + lessonDescription.length()
+	+ ", keyword_len=" + keywords.length()
+	+ ", context_fields=" + contextFieldCount
+	+ ", top_k=" + topK
+	+ ", threshold=" + similarityThreshold
+);
+
 String responseBody = "";
 int httpCode = 0;
 
@@ -77,6 +98,13 @@ try {
 		}
 	}
 } catch(Exception e) {
+	m.log(
+		"content_recommend",
+		"proxy_call_failed message=" + e.getMessage()
+		+ ", course_name_len=" + courseName.length()
+		+ ", lesson_title_len=" + lessonTitle.length()
+		+ ", keyword_len=" + keywords.length()
+	);
 	result.put("rst_code", "5001");
 	result.put("rst_message", "추천 서버 호출 중 오류가 발생했습니다.");
 	result.print();
@@ -84,6 +112,13 @@ try {
 }
 
 if(httpCode < 200 || httpCode >= 300) {
+	m.log(
+		"content_recommend",
+		"proxy_http_error code=" + httpCode
+		+ ", response_len=" + (responseBody == null ? 0 : responseBody.length())
+		+ ", course_name_len=" + courseName.length()
+		+ ", lesson_title_len=" + lessonTitle.length()
+	);
 	result.put("rst_code", "5002");
 	result.put("rst_message", "추천 서버 응답이 올바르지 않습니다. (" + httpCode + ")");
 	result.print();
@@ -265,6 +300,10 @@ while(recoRows.next()) {
 m.log(
 	"content_recommend",
 	"rows=" + list.size()
+	+ ", course_name_len=" + courseName.length()
+	+ ", lesson_title_len=" + lessonTitle.length()
+	+ ", keyword_len=" + keywords.length()
+	+ ", context_fields=" + contextFieldCount
 	+ ", skipped=" + skippedCount
 	+ ", meta_hit=" + metaHitCount
 	+ ", meta_miss=" + metaMissCount
