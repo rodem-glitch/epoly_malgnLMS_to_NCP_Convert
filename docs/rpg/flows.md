@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-10
+최근 갱신: 2026-02-11
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 18:15
+최근 자동 갱신: 2026-02-11 09:42
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -273,3 +273,32 @@
   - React에서 “제출물 보기” 버튼 클릭 시 API 호출 및 모달 렌더링 코드 확인(`CourseManagement.tsx`)
   - 로컬 빌드: `cd project && npm run build` 성공(산출물 `public_html/tutor_lms/app/assets/*` 갱신)
 - 최근 갱신: 2026-02-10
+
+### FLOW-4002: 교수자 LMS > 차시관리 > 추천 탭 동영상 추가 시 시간/인정시간 자동 세팅
+- 사용자 동작(의도): 교수자가 차시관리의 콘텐츠 라이브러리 `추천` 탭에서 동영상을 추가할 때, 목록 시간 표시와 인정시간 기본값이 자동으로 들어가야 함
+- 진입점:
+  - 추천 목록 API: `public_html/tutor_lms/api/content_recommend.jsp`
+  - 레슨 업서트 API: `public_html/tutor_lms/api/kollus_lesson_upsert.jsp`
+  - 프론트 매핑: `project/components/ContentLibraryModal.tsx` (`row.total_time` → `content.totalTime`)
+- 처리(핵심):
+  - 추천 응답의 `lessonId`는 데이터에 따라 `LM_LESSON.id`(숫자) 또는 콜러스 `media_content_key`(문자열)일 수 있음
+  - `content_recommend.jsp`에서 숫자 `lessonId`는 `LM_LESSON.id` 조회 후 `start_url(media key)`로 정규화하고, `total_time/content_width/content_height`를 보완
+  - 정규화 후 `TB_KOLLUS_MEDIA(media_content_key)`를 조회해 메타(시간/해상도/파일명)를 최종 보강
+  - 그래도 시간이 비는 항목은 `TB_KOLLUS_TRANSCRIPT.duration_seconds`(초)를 분 단위(`ceil(seconds/60)`)로 변환해 `total_time`을 채움
+  - `kollus_lesson_upsert.jsp`에서 기존 레슨 재사용 시에도 비어 있는 `total_time/complete_time/content_width/content_height`를 입력값으로 최소 보정
+  - `kollus_lesson_upsert.jsp`에서 요청 `total_time`이 0이어도 `TB_KOLLUS_TRANSCRIPT`로 1회 보강해 신규/기존 레슨의 인정시간 자동세팅을 보장
+  - 두 API 모두 디버깅 로그(`content_recommend`, `kollus_lesson_upsert`)를 남겨 누락 원인을 추적 가능하게 유지
+- DB:
+  - 추천 원본: `polytech-lms-api`의 `TB_RECO_CONTENT.lesson_id`
+  - 전사 시간 소스: `TB_KOLLUS_TRANSCRIPT` (`media_content_key`, `duration_seconds`)
+  - 레거시 레슨: `src/dao/LessonDao.java` → `LM_LESSON` (`id`, `start_url`, `lesson_type`, `total_time`, `complete_time`)
+  - 콜러스 메타: `src/dao/KollusMediaDao.java` → `TB_KOLLUS_MEDIA` (`media_content_key`, `total_time`, `content_width`, `content_height`)
+- 출력:
+  - 추천 탭 시간 컬럼: `ContentLibraryModal`에서 `content.totalTime`이 분 단위로 표시됨
+  - 차시 추가 직후 인정시간: 동영상 콘텐츠의 `completeTime` 기본값이 `totalTime`으로 자동 세팅됨
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/content_recommend.jsp`, `public_html/tutor_lms/api/kollus_lesson_upsert.jsp`
+  - API 호출 검증(로컬): 로그인 세션으로 `POST /tutor_lms/api/content_recommend.jsp(top_k=50)` 실행 시 `zero_total_time=0` 확인
+  - API 호출 검증(키워드별): 빈값/NCS/메타버스/인터넷/영어/시험 키워드 모두 `rows=50, zero=0` 확인
+  - 업서트 검증(로컬): `POST /tutor_lms/api/kollus_lesson_upsert.jsp(media_content_key=1nzZRwiX, total_time 미전달)` 호출 시 `LM_LESSON.total_time=11` 자동 보강 확인 후 테스트 데이터 상태복구
+- 최근 갱신: 2026-02-11

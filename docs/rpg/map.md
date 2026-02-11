@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 저장소 지도 (`map.md`)
 
-최근 갱신: 2026-02-10
+최근 갱신: 2026-02-11
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-10 18:15
+최근 자동 갱신: 2026-02-11 09:42
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -69,6 +69,11 @@
 | 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
 | 과제 > 피드백 관리: 학생 제출물(제목/내용/첨부) 모달 확인 추가 | `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `project/components/HomeworkSubmissionDetailModal.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | “제출물 보기” 버튼으로 제출 본문/첨부파일을 모달에서 확인(파일은 `CL_FILE(module='homework_{homework_id}', module_id=course_user_id)` 기반) |
+
+## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
+|---|---|---|---|---|
+| 차시관리 > 콘텐츠 라이브러리 추천 탭에서 동영상 시간/인정시간 자동세팅 복구 | `POST public_html/tutor_lms/api/content_recommend.jsp`, `POST public_html/tutor_lms/api/kollus_lesson_upsert.jsp` | `src/dao/LessonDao.java` / `LM_LESSON`, `src/dao/KollusMediaDao.java` / `TB_KOLLUS_MEDIA`, `TB_KOLLUS_TRANSCRIPT(duration_seconds)` | `project/components/ContentLibraryModal.tsx` | `lessonId`가 숫자(`LM_LESSON.id`)로 들어오는 추천 데이터는 `start_url(media key)`로 정규화하고, DB 메타가 비면 `TB_KOLLUS_TRANSCRIPT` 시간을 분 단위로 보강. 업서트 단계에서도 `total_time` 미전달 시 전사시간으로 1회 보강해 인정시간 기본값 누락을 방지 |
 
 ## 최근 작업(교수자 통계/산업별 통계)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
