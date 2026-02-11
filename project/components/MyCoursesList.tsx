@@ -162,6 +162,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedCourseTab, setSelectedCourseTab] = useState<CourseManagementTabId | null>(null);
   const [resolvingCourseId, setResolvingCourseId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -400,6 +401,18 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   }, [routeSubPath]);
 
   // ============================================================================
+  // Effect: 과목 선택/해제 시 스크롤을 맨 위로 리셋
+  // ============================================================================
+  useEffect(() => {
+    // 왜: 목록에서 스크롤을 내린 뒤 과목을 선택하면, 상세 화면이 스크롤 중간부터 보이는 문제를 방지합니다.
+    const el = containerRef.current;
+    if (!el) return;
+    // 가장 가까운 스크롤 가능한 부모(main)를 찾아 스크롤 리셋
+    const scrollParent = el.closest('main') ?? el.parentElement;
+    if (scrollParent) scrollParent.scrollTop = 0;
+  }, [selectedCourse]);
+
+  // ============================================================================
   // Effect 6: 직접 링크(direct=1) 처리
   // ============================================================================
   const getRouteParam = useCallback((keys: string[]) => {
@@ -591,17 +604,19 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   // ============================================================================
   if (selectedCourse) {
     return (
-      <CourseManagement
-        course={selectedCourse}
-        initialTab={selectedCourseTab ?? routeTargetTab ?? undefined}
-        initialQnaPostId={routeSubPath === 'manage' ? routeQnaPostId : undefined}
-        onTabChange={(tabId) => setSelectedCourseTab(tabId)}
-        onBack={() => {
-          setSelectedCourse(null);
-          setSelectedCourseTab(null);
-          pushRoute({ subPath: undefined, params: getUrlParams() });
-        }}
-      />
+      <div ref={containerRef}>
+        <CourseManagement
+          course={selectedCourse}
+          initialTab={selectedCourseTab ?? routeTargetTab ?? undefined}
+          initialQnaPostId={routeSubPath === 'manage' ? routeQnaPostId : undefined}
+          onTabChange={(tabId) => setSelectedCourseTab(tabId)}
+          onBack={() => {
+            setSelectedCourse(null);
+            setSelectedCourseTab(null);
+            pushRoute({ subPath: undefined, params: getUrlParams() });
+          }}
+        />
+      </div>
     );
   }
 
@@ -609,7 +624,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   // 렌더링: 목록 화면
   // ============================================================================
   return (
-    <div className="max-w-7xl mx-auto">
+    <div ref={containerRef} className="max-w-7xl mx-auto">
       <div className="mb-8">
         <h2 className="text-gray-900 mb-2">담당 과목</h2>
         <p className="text-gray-600">담당하고 있는 과목 목록을 확인하고 관리합니다.</p>
