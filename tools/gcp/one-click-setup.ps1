@@ -994,13 +994,14 @@ function Deploy-StackToVm {
     if (Test-IsWindowsPlatform) {
         Invoke-Checked -Command "gcloud" -Arguments @("config", "set", "ssh/putty_force_connect", "true")
     }
-    Invoke-Checked -Command "gcloud" -Arguments @("compute", "scp", "--recurse", "--strict-host-key-checking=no", $StackDir, $remotePath, "--zone", $Zone)
+    Invoke-Checked -Command "gcloud" -Arguments @("compute", "scp", "--quiet", "--recurse", "--strict-host-key-checking=no", $StackDir, $remotePath, "--zone", $Zone)
     Invoke-Checked -Command "gcloud" -Arguments @(
         "compute", "ssh", $targetHost,
+        "--quiet",
         "--strict-host-key-checking=no",
         "--zone", $Zone,
         "--command", "sudo bash $remoteBasePath/deploy-stack.sh $remoteBasePath"
-    ) -Interactive
+    )
 }
 
 function Ensure-FirebaseSite {
