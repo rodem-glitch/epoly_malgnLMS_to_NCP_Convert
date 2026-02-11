@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 18:02
+최근 자동 갱신: 2026-02-11 18:22
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -93,6 +93,7 @@
   - `tools/gcp/generated/`는 `.gitignore` 처리되어 있으므로, 스크립트 실행 전후에 `git status`로 민감파일이 추적되지 않는지 확인합니다.
   - `tools/gcp/templates/deploy-stack.sh.tpl`은 VM에서 Docker/Nginx/Certbot을 한 번에 설치하므로, 기존 운영 VM에 재실행하면 설정이 덮어써질 수 있습니다(신규 VM 기준 사용 권장).
   - GitHub Actions 배포에서 VM SSH 계정이 다르면 `gcloud compute scp/ssh` 단계가 즉시 실패합니다. 워크플로 시크릿 `GCP_VM_SSH_USER`를 실제 sudo 가능한 계정으로 맞춰야 합니다.
+  - Linux CI에서 `./gradlew` 실행권한 비트가 없으면 원클릭의 API 빌드 단계가 실패합니다. `Build-ApiJar`는 `bash ./gradlew` 경로를 유지해야 합니다.
   - VM Resin은 `src` 런타임 컴파일을 쓰지 않고 `public_html/WEB-INF/classes`를 사용합니다. VM용 `resin-web.xml.tpl`에 `source=/opt/polytech-lms/legacy/src`를 다시 넣으면 `CourseSectionDao` 컴파일 오류로 첫 화면 500이 재발할 수 있습니다.
   - Resin 첫 요청 시 `WEB-INF/work`에 JSP 컴파일 파일을 쓰므로, 배포 스크립트의 `prepare_legacy_permissions` 권한 보정 단계를 제거하면 `Permission denied`로 500이 재발할 수 있습니다.
   - 배포 번들을 `stack-타임스탬프`로 생성할 때는 원격 실행 경로도 같은 폴더(`~/stack-...`)를 써야 합니다. 고정 `~/stack`을 실행하면 이전 dump가 재사용될 수 있습니다.

@@ -372,8 +372,13 @@ function Build-ApiJar {
         } catch {
             $isWindowsPlatform = ($env:OS -eq "Windows_NT")
         }
-        $gradleCmd = if ($isWindowsPlatform -and (Test-Path ".\gradlew.bat")) { ".\gradlew.bat" } else { "./gradlew" }
-        $null = Invoke-Checked -Command $gradleCmd -Arguments @("bootJar", "-x", "test")
+        if ($isWindowsPlatform -and (Test-Path ".\gradlew.bat")) {
+            $null = Invoke-Checked -Command ".\gradlew.bat" -Arguments @("bootJar", "-x", "test")
+        } else {
+            # 왜: GitHub Actions(ubuntu)에서 gradlew 실행권한 비트가 없어도
+            # bash로 실행하면 권한 오류 없이 빌드가 가능합니다.
+            $null = Invoke-Checked -Command "bash" -Arguments @("./gradlew", "bootJar", "-x", "test")
+        }
     } finally {
         Pop-Location
     }
