@@ -231,10 +231,10 @@ export default function App() {
   }, [applyRoute]);
 
   return (
-    <div className="min-h-dvh bg-background text-foreground">
+    <div className="h-dvh flex flex-col bg-background text-foreground overflow-hidden">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-50">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+      <header className="bg-card border-b border-border shrink-0 z-50">
+        <div className="flex h-16 items-center justify-between px-6">
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="bg-blue-600 p-2 rounded-lg">
@@ -258,9 +258,9 @@ export default function App() {
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-1 gap-6 px-6 py-6">
+      <div className="flex w-full flex-1 gap-6 px-6 py-6 overflow-hidden">
         {/* Left Navigation Sidebar */}
-        <aside className="sticky top-24 h-[calc(100dvh-6rem)] w-64 shrink-0 overflow-y-auto rounded-xl border border-border bg-card p-3">
+        <aside className="h-full w-64 shrink-0 overflow-y-auto rounded-xl border border-border bg-card p-3">
           <nav className="flex flex-col gap-2 text-sm">
             <button
               onClick={() => applyMenu('dashboard')}
@@ -470,7 +470,7 @@ export default function App() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 overflow-y-auto">
           {/* Empty content area - 추후 추가될 컨텐츠 영역 */}
           {activeMenu === 'dashboard' ? (
             <Dashboard
