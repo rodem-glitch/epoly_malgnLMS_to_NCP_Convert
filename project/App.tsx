@@ -261,8 +261,8 @@ export default function App() {
       <div className="flex w-full flex-1 gap-6 px-6 py-6 overflow-hidden">
         {/* Left Navigation Sidebar */}
         <aside className="h-full w-64 shrink-0 overflow-y-auto rounded-xl border border-border bg-card p-3">
-          <nav className="flex flex-col gap-2 text-sm">
-            {/* 1. 대시보드 */}
+          <nav className="flex flex-col gap-1 text-sm">
+            {/* === 메인 === */}
             <button
               onClick={() => applyMenu('dashboard')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -274,8 +274,6 @@ export default function App() {
               <GraduationCap className="w-5 h-5" />
               <span>대시보드</span>
             </button>
-            
-            {/* 2. 과정탐색 */}
             <button
               onClick={() => applyMenu('explore')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -287,8 +285,6 @@ export default function App() {
               <Compass className="w-5 h-5" />
               <span>과정탐색</span>
             </button>
-            
-            {/* 3. 담당과목 */}
             <button
               onClick={() => applyMenu('courses')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -301,7 +297,10 @@ export default function App() {
               <span>담당과목</span>
             </button>
 
-            {/* 4. 과정개설 */}
+            {/* === 개설 === */}
+            <div className="mt-3 mb-1 border-t border-border pt-3">
+              <span className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">개설</span>
+            </div>
             <button
               onClick={() => applyMenu('create-course')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -313,8 +312,6 @@ export default function App() {
               <FolderPlus className="w-5 h-5" />
               <span>과정개설</span>
             </button>
-
-            {/* 5. 과목개설 */}
             <button
               onClick={() => applyMenu('subject-create')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -327,7 +324,10 @@ export default function App() {
               <span>과목개설</span>
             </button>
 
-            {/* 6. 시험관리 - 하위 메뉴 포함 */}
+            {/* === 학습 관리 === */}
+            <div className="mt-3 mb-1 border-t border-border pt-3">
+              <span className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">학습 관리</span>
+            </div>
             <div>
               <button
                 onClick={handleExamMenuClick}
@@ -347,8 +347,6 @@ export default function App() {
                   <ChevronRight className="w-4 h-4" />
                 )}
               </button>
-              
-              {/* 시험관리 하위 메뉴 */}
               {examMenuExpanded && (
                 <div className="ml-4 mt-1 flex flex-col gap-1">
                   <button
@@ -387,8 +385,6 @@ export default function App() {
                 </div>
               )}
             </div>
-
-            {/* 7. 과제 통합관리 */}
             <button
               onClick={() => applyMenu('assignment-manage')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -400,8 +396,6 @@ export default function App() {
               <ClipboardCheck className="w-5 h-5" />
               <span>과제 통합관리</span>
             </button>
-
-            {/* 8. Q&A 통합관리 */}
             <button
               onClick={() => applyMenu('qna-manage')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -414,7 +408,10 @@ export default function App() {
               <span>Q&A 통합관리</span>
             </button>
 
-            {/* 9. 콘텐츠 라이브러리 - 하위 메뉴 포함 */}
+            {/* === 리소스 === */}
+            <div className="mt-3 mb-1 border-t border-border pt-3">
+              <span className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">리소스</span>
+            </div>
             <div>
               <button
                 onClick={handleContentLibraryClick}
@@ -434,8 +431,6 @@ export default function App() {
                   <ChevronRight className="w-4 h-4" />
                 )}
               </button>
-              
-              {/* 하위 메뉴 */}
               {contentLibraryExpanded && (
                 <div className="ml-4 mt-1 flex flex-col gap-1">
                   <button
@@ -463,8 +458,6 @@ export default function App() {
                 </div>
               )}
             </div>
-
-            {/* 10. 통계 */}
             <button
               onClick={() => applyMenu('statistics')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
