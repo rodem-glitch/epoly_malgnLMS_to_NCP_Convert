@@ -186,19 +186,11 @@ export default function App() {
   }, [applyRoute]);
 
   const handleContentLibraryClick = () => {
-    if (!contentLibraryExpanded) {
-      applyMenu('content-all');
-    } else {
-      setContentLibraryExpanded(!contentLibraryExpanded);
-    }
+    setContentLibraryExpanded((prev) => !prev);
   };
 
   const handleExamMenuClick = () => {
-    if (!examMenuExpanded) {
-      applyMenu('exam-categories');
-    } else {
-      setExamMenuExpanded(!examMenuExpanded);
-    }
+    setExamMenuExpanded((prev) => !prev);
   };
 
   // 현재 화면 새로고침
