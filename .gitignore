@@ -49,6 +49,7 @@ tmp/
 # Node / Frontend
 node_modules/
 project/.vite/
+tools/gcp/generated/
 
 # 설정파일
 config.xml

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 11:02
+최근 자동 갱신: 2026-02-11 16:31
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -272,6 +272,30 @@
   - 프론트 코드 경로 확인: `dashboard.html`의 `refreshMemberKeyPopulation()`, `renderMemberKeyPopulationTable()`, `memberKeyPopulationChart` 추가
 - 최근 갱신: 2026-02-06
 
+### FLOW-4101: Firebase `web.app` 경유 로그인 세션 + 신규메인 추천영상 복구
+- 사용자 동작(의도): `https://epoly-kopo.web.app`로 접속해 로그인 후 신규메인 추천(프롬프트/영상)을 정상 사용
+- 진입점:
+  - Hosting rewrite: `tools/gcp/firebase-proxy-deploy/firebase.json`
+  - 프록시 함수: `tools/gcp/firebase-proxy-deploy/functions/index.js`
+  - 추천 영상 API 브리지: `public_html/mypage/new_main/reco_video_list.jsp`
+  - 운영 스택 템플릿: `tools/gcp/templates/docker-compose.yml.tpl`
+- 처리(핵심):
+  - Functions 프록시를 `fetch` 기반에서 저수준 HTTP 프록시로 변경해 쿠키 헤더 전달을 제어
+  - `MLMS*`, `JSESSIONID`를 `__session` 쿠키에 번들링/복원해 Firebase Hosting 경유 시에도 레거시 로그인 세션 유지
+  - `reco_video_list.jsp`는 `POLYTECH_LMS_API_BASE` 누락 시 즉시 로그를 남기고 빈 결과 반환(침묵 실패 방지)
+  - Resin 컨테이너에 `POLYTECH_LMS_API_BASE=http://api:8081` 주입해 JSP->Spring API 내부 호출 고정
+- DB:
+  - 추천 조회는 내부 Spring API(`/student/content-recommend/home`)가 MySQL(`TB_RECO_CONTENT` 등) + Qdrant를 사용
+  - JSP 쪽 직접 DB 업데이트 없음(프롬프트 저장 제외)
+- 출력:
+  - 로그인 후 `GET /mypage/new_main/reco_prompt.jsp` -> `{"ok":true,...}`
+  - `GET /mypage/new_main/reco_video_list.jsp` -> 추천 `items[]` 반환
+- 확인(근거):
+  - Functions 배포: `firebase deploy --only functions:vmproxy`
+  - 운영 반영 확인: `Set-Cookie: __session=...` 응답 확인, `Cookie: __session=...`로 `reco_prompt.jsp` 정상 응답 확인
+  - VM 반영 확인: `lms-resin` env에 `POLYTECH_LMS_API_BASE=http://api:8081` 존재, `reco_video_list.jsp`에서 추천 타이틀 4건 확인
+- 최근 갱신: 2026-02-11
+
 ### FLOW-4001: 교수자 LMS > 과제 > 피드백 관리(학생 제출물 모달 확인)
 - 사용자 동작(의도): 교수자가 “피드백 관리”에서 학생을 선택한 뒤, 학생이 제출한 과제 내용/첨부파일을 모달로 확인
 - 진입점:
@@ -351,4 +375,55 @@
   - 동작 검증(변경 반영 인스턴스): `POST http://localhost:18081/tutor/content-recommend/lessons`에서 같은 과목명(`전기전자기초`) + 다른 차시명(`1차시/반도체 공정/영어 회화`) 호출 시 상위 결과가 동일
   - API 검증(실호출): `POST http://localhost:8081/tutor/content-recommend/lessons`에 과목명(`전기전자기초/반도체 공정 실무/영어 커뮤니케이션/스마트팩토리 데이터분석`)별 호출 시 상위 결과 제목군이 서로 다름을 확인
   - API 검증(빈 컨텍스트): `courseName/lessonTitle/lessonDescription/keywords` 모두 빈값이면 `NCS기반교육과정개발...`, `영어...`, `OTT...` 등 고정 패턴이 재현됨(입력 누락 시 동일 추천 원인)
+- 최근 갱신: 2026-02-11
+
+### FLOW-5001: GCP Linux VM + Firebase Hosting 원클릭 자동 셋업
+- 사용자 동작(의도): 사용자가 스크립트 1회 실행으로 `www(Firebase 짧은 링크)`와 `VM(Resin JSP + Spring API + MySQL + Qdrant)`을 배포하고, 필요 시 기존 DB까지 자동 이관
+- 진입점:
+  - 윈도우 실행: `tools/gcp/start-one-click.bat`
+  - 메인 자동화: `tools/gcp/one-click-setup.ps1`
+- 처리(핵심):
+  - `gcloud`/`firebase` 로그인(브라우저 승인) 후 프로젝트 설정
+  - GCP API 활성화(Compute/Firebase Hosting/DNS/IAM)
+  - 고정 IP(`{vmName}-ip`) 확인/생성 + VM 생성(Ubuntu 22.04)
+  - `polytech-lms-api`를 `bootJar`로 빌드해 VM 배포 번들 생성
+  - 배포 번들은 실행마다 `tools/gcp/generated/stack-YYYYMMDD-HHmmss`로 고유 폴더를 생성하고, 원격 실행도 같은 폴더를 직접 지정해 이전 `~/stack` 잔여물 오배포를 방지
+  - VM에 Docker 스택(`MySQL + Qdrant + Spring API + Resin`)과 Nginx 리버스 프록시 배포
+  - Nginx 경로 분기:
+    - 기본 화면(`/`, `/mypage/*`, `/member/*`, `/tutor_lms/*`)은 Resin(8080)
+    - API 경로(`/statistics/*`, `/student/*`, `/tutor/*`, `/job/*`, `/actuator/*`)는 Spring API(8081)
+  - VM Resin은 `public_html` + `WEB-INF/classes`를 사용하고, `src` 런타임 컴파일은 제외(컴파일 오류/500 재발 방지)
+  - API 컨테이너는 `SPRING_DATASOURCE_*`, `SPRING_AI_VECTORSTORE_QDRANT_*` 환경변수로 운영값을 강제 주입해 JAR 내부 `application-local.yml` 오버라이드를 방지
+  - `-EnableDbMigration` 사용 시:
+    - `-SourceDbDumpPath`가 있으면 해당 dump를 사용
+    - 없으면 `mysqldump`로 소스 DB를 로컬에서 dump 생성
+    - import 전 dump를 자동 보정(`LM_COURSE`/`LM_COURSE_USER` 컬럼 수 보정, `DEFINER=` 제거)
+    - 소스 계정 `PROCESS` 권한이 없는 환경을 위해 `mysqldump --no-tablespaces` 적용
+    - MySQL 함수 생성 오류(1418) 방지를 위해 import 직전 `log_bin_trust_function_creators=1`을 root 계정으로 설정
+    - 배포 번들 `migration/source.sql`로 전송 후, VM 배포 단계에서 자동 import(`DB_IMPORT_ON_DEPLOY=true`)
+  - 초기에는 Firebase Hosting을 `302 리다이렉트`로 배포하되, 주소 유지가 필요하면 `tools/gcp/firebase-proxy-deploy`(Hosting rewrite + Functions vmproxy)로 전환
+  - 실행 결과를 `tools/gcp/generated/setup-summary.txt`에 저장(도메인 A레코드 값/민감정보 포함)
+- DB:
+  - MySQL 컨테이너(`mysql:8.4`) + Qdrant 컨테이너(`qdrant/qdrant:v1.15.3`)
+  - Spring API는 `.env`로 `DB_URL/DB_USERNAME/DB_PASSWORD/QDRANT_*` 값을 주입받아 실행
+- 출력:
+  - 배포 스크립트/템플릿: `tools/gcp/templates/*.tpl`
+  - 실행 산출물(민감정보): `tools/gcp/generated/*`
+- 확인(근거):
+  - 실실행: `powershell -File tools/gcp/one-click-setup.ps1 -ProjectId gen-lang-client-0343478566 -FirebaseSite epoly-kopo -WwwDomain epoly-kopo.web.app -SkipProjectBootstrap`
+  - 배포 로그 확인: `Container lms-resin Started`, `Container lms-api Started`, `Deploy complete! Hosting URL: https://epoly-kopo.web.app` 확인
+  - 원격 상태 확인: `docker ps`에서 `lms-resin/lms-api/lms-mysql/lms-qdrant` 모두 `Up` 확인
+  - 전량 이관 검증(소스 192.168.0.55 vs 타깃 VM):
+    - MySQL row count 일치: `tb_user=1064`, `lm_course=165`, `tb_reco_content=3000`, `tb_kollus_transcript=3000`
+    - Qdrant point count 일치: `video_summary_vectors_gemini=3014`, `video_summary_vectors=131`
+  - URL 유지 모드 검증:
+    - `firebase deploy --only functions,hosting` (`tools/gcp/firebase-proxy-deploy`) 후 `curl -I https://epoly-kopo.web.app/` -> `301 Location: /mypage/new_main/index.jsp`
+    - `curl -I https://epoly-kopo.web.app/mypage/index.jsp` -> `302 Location: https://epoly-kopo.web.app/mypage/new_main/?login_required=Y...` (IP로 변경되지 않음)
+    - `POST https://epoly-kopo.web.app/tutor/content-recommend/lessons` -> `200` + 추천 JSON 응답 확인
+    - `GET https://epoly-kopo.web.app/actuator/health` -> `200`, `{\"status\":\"UP\"}`
+  - 장애 복구 확인:
+    - 초기에 Resin이 `WEB-INF/work` 쓰기권한 부족으로 500 발생
+    - `deploy-stack.sh.tpl`에 `WEB-INF/work` 권한 보정 추가 후 정상화 확인
+    - `resin-web.xml.tpl`에서 VM `src` 소스 컴파일 제거 후 `CourseSectionDao` 컴파일 오류 재발 방지
+    - MySQL을 `--lower_case_table_names=1`로 재기동해 Linux 대소문자 충돌(`TB_RECO_CONTENT` 미인식) 재발 방지
 - 최근 갱신: 2026-02-11

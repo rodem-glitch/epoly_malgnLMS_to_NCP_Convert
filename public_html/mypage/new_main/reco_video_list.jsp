@@ -27,7 +27,13 @@ DataSet recoVideoList = new DataSet();
 
 try {
 	String apiBase = System.getenv("POLYTECH_LMS_API_BASE");
-	if(apiBase == null || "".equals(apiBase.trim())) apiBase = "http://localhost:8081";
+	if(apiBase == null || "".equals(apiBase.trim())) {
+		// 왜: 컨테이너 환경에서 localhost를 기본값으로 쓰면 API 컨테이너가 아닌 자기 자신을 바라봐
+		// 추천 목록이 조용히 빈 배열이 되는 문제가 발생합니다. 설정 누락은 즉시 로그로 드러냅니다.
+		malgnsoft.util.Malgn.errorLog("학생 홈 추천 API 설정 누락(POLYTECH_LMS_API_BASE). site_id=" + siteId + ", user_id=" + userId);
+		out.print("{\"ok\":true,\"items\":[]}");
+		return;
+	}
 	apiBase = apiBase.replaceAll("/+$", "");
 
 	String url = apiBase + "/student/content-recommend/home";
@@ -120,6 +126,18 @@ try {
 			}
 			recoVideoList.put("thumbnail", thumbnail);
 		}
+	} else {
+		String responsePreview = responseBody == null ? "" : responseBody;
+		if(responsePreview.length() > 400) responsePreview = responsePreview.substring(0, 400);
+		responsePreview = m.replace(responsePreview, "\r", " ");
+		responsePreview = m.replace(responsePreview, "\n", " ");
+		malgnsoft.util.Malgn.errorLog(
+			"학생 홈 추천 API 응답 실패(site_id=" + siteId
+			+ ", user_id=" + userId
+			+ ", code=" + httpCode
+			+ ", url=" + url
+			+ ", body=" + responsePreview + ")"
+		);
 	}
 } catch(Exception e) {
 	malgnsoft.util.Malgn.errorLog("학생 홈 추천 동영상(JSON) 조회 실패(site_id=" + siteId + ", user_id=" + userId + "): " + e.getMessage(), e);

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 11:02
+최근 자동 갱신: 2026-02-11 16:31
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -79,6 +79,26 @@
   - `project/index.html`에 CSP 메타가 있어, 기본적으로 외부 CSS/폰트 로드가 막힙니다(보안상 장점).
   - 학생 메인(`public_html/html/css/custom.css`)은 Pretendard를 CDN으로 불러오지만, 교수자 앱에서 같은 방식으로 적용하려면 CSP 완화 또는 폰트 파일 자체 호스팅이 필요합니다(보안/배포 영향).
 - Spring Boot 설정/시크릿: `polytech-lms-api/src/main/resources/application.yml` (키/토큰/DB정보 노출 금지)
+- GCP/Firebase 원클릭 스크립트(신규) 주의:
+  - 실행 진입점은 `tools/gcp/start-one-click.bat` / `tools/gcp/one-click-setup.ps1`입니다.
+  - 기본 원클릭은 Firebase를 `epoly-kopo.web.app -> VM` 302 리다이렉트로 배포합니다. 이 모드에서는 주소창이 VM 주소로 바뀝니다.
+  - 주소 유지가 필요하면 `tools/gcp/firebase-proxy-deploy`(Hosting rewrite + Functions `vmproxy`)를 사용해야 합니다.
+  - 프록시 모드에서 로그인 리다이렉트 `Location` 헤더가 IP로 내려오면 프론트 주소가 다시 깨지므로, 함수에서 `Location: http://34.64.207.10/...`을 `https://epoly-kopo.web.app/...`로 치환하는 로직을 유지해야 합니다.
+  - Firebase Hosting 경유에서는 일반 쿠키가 안정적으로 전달되지 않을 수 있어, 레거시 로그인 쿠키(`MLMS*`, `JSESSIONID`)를 `__session` 번들로 브리지하는 로직(`tools/gcp/firebase-proxy-deploy/functions/index.js`)을 유지해야 합니다.
+  - `tools/gcp/firebase-proxy-deploy/functions/index.js`에서 프록시 구현을 `fetch`로 되돌리면 쿠키 전달이 다시 누락될 수 있습니다. 저수준 HTTP 프록시 + `__session` 복원 경로를 기본으로 유지합니다.
+  - 신규메인 추천 JSP(`public_html/mypage/new_main/reco_video_list.jsp`)는 `POLYTECH_LMS_API_BASE` 미설정 시 침묵 실패(빈 목록)로 보이기 쉽습니다. 운영 `lms-resin`에 `POLYTECH_LMS_API_BASE=http://api:8081` 주입 여부를 먼저 확인해야 합니다.
+  - 실제 실행 시 민감정보(DB 비밀번호, Qdrant API 키)가 `tools/gcp/generated/setup-summary.txt`와 `tools/gcp/generated/stack/.env`에 기록됩니다.
+  - `tools/gcp/generated/`는 `.gitignore` 처리되어 있으므로, 스크립트 실행 전후에 `git status`로 민감파일이 추적되지 않는지 확인합니다.
+  - `tools/gcp/templates/deploy-stack.sh.tpl`은 VM에서 Docker/Nginx/Certbot을 한 번에 설치하므로, 기존 운영 VM에 재실행하면 설정이 덮어써질 수 있습니다(신규 VM 기준 사용 권장).
+  - VM Resin은 `src` 런타임 컴파일을 쓰지 않고 `public_html/WEB-INF/classes`를 사용합니다. VM용 `resin-web.xml.tpl`에 `source=/opt/polytech-lms/legacy/src`를 다시 넣으면 `CourseSectionDao` 컴파일 오류로 첫 화면 500이 재발할 수 있습니다.
+  - Resin 첫 요청 시 `WEB-INF/work`에 JSP 컴파일 파일을 쓰므로, 배포 스크립트의 `prepare_legacy_permissions` 권한 보정 단계를 제거하면 `Permission denied`로 500이 재발할 수 있습니다.
+  - 배포 번들을 `stack-타임스탬프`로 생성할 때는 원격 실행 경로도 같은 폴더(`~/stack-...`)를 써야 합니다. 고정 `~/stack`을 실행하면 이전 dump가 재사용될 수 있습니다.
+  - 레거시 dump는 `LM_COURSE`/`LM_COURSE_USER` 컬럼 수 mismatch와 `DEFINER` 구문으로 import 실패가 날 수 있어, 보정 로직(`Normalize-DbDumpIfNeeded`)을 우회하지 않아야 합니다.
+  - MySQL 함수 생성 정책 오류(1418)는 `lms` 계정으로는 해결되지 않습니다. `log_bin_trust_function_creators`는 반드시 root 계정으로 설정해야 합니다.
+  - SSL 자동 발급은 `API_DOMAIN` DNS가 VM 공인 IP와 일치할 때만 시도됩니다. DNS 전파 전에는 HTTP만 동작할 수 있습니다.
+  - DB 이관(`-EnableDbMigration`)을 켜면 배포 시점에 `migration/source.sql`이 대상 MySQL로 import 됩니다. 대상 DB가 비어있지 않으면 데이터 충돌/중복 위험이 있으니 사전 백업이 필수입니다.
+  - 소스 DB 자동 dump 방식(`mysqldump`)은 로컬 PC에서 실행되므로, 소스 DB 네트워크 접근 권한과 클라이언트 설치 여부를 먼저 확인해야 합니다.
+  - API 로그에 `Qdrant client version 1.13.0 vs server 1.15.3` 경고가 출력될 수 있습니다. 기능은 동작해도 장기적으로 버전 정합(클라이언트/서버)을 맞추는 것이 안전합니다.
 - Spring Boot 통계(SGIS) 전국 코드 주의:
   - 산업별 통계에서 전국 전체(`admCd=00`)는 응답 시점에 따라 값이 비는 경우가 있어, 시도 코드 합산 경로를 유지해야 합니다.
   - 시도코드 체계(SGIS/로컬) 불일치 가능성이 있어, 합계가 0이면 대체 코드 체계로 재합산하는 방어가 필요합니다.

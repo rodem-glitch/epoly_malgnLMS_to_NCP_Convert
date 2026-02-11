@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 왜: 이 스크립트는 "클릭 최소화" 목표라서, VM 초기 패키지 설치와 앱 배포를 한 번에 처리합니다.
+STACK_SOURCE="${1:-$HOME/polytech-lms-stack}"
+STACK_TARGET="/opt/polytech-lms"
+
+log() {
+  echo "[deploy-stack] $*"
+}
+
+require_root() {
+  if [[ "${EUID}" -ne 0 ]]; then
+    log "루트 권한이 필요합니다. sudo로 다시 실행해 주세요."
+    exit 1
+  fi
+}
+
+install_docker() {
+  if command -v docker >/dev/null 2>&1; then
+    log "Docker는 이미 설치되어 있습니다."
+    return
+  fi
+
+  log "Docker를 설치합니다."
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  chmod a+r /etc/apt/keyrings/docker.gpg
+
+  . /etc/os-release
+  local codename="${VERSION_CODENAME:-jammy}"
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${codename} stable" \
+    > /etc/apt/sources.list.d/docker.list
+
+  apt-get update -y
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  systemctl enable docker
+  systemctl start docker
+}
+
+install_base_packages() {
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update -y
+  apt-get install -y ca-certificates curl gnupg lsb-release jq rsync nginx certbot python3-certbot-nginx
+}
+
+configure_nginx() {
+  log "Nginx 리버스 프록시 설정을 적용합니다."
+  install -m 0644 "${STACK_TARGET}/nginx/lms-api.conf" /etc/nginx/sites-available/lms-api.conf
+  ln -sfn /etc/nginx/sites-available/lms-api.conf /etc/nginx/sites-enabled/lms-api.conf
+  rm -f /etc/nginx/sites-enabled/default
+  nginx -t
+  systemctl enable nginx
+  systemctl restart nginx
+}
+
+load_env() {
+  if [[ ! -f "${STACK_TARGET}/.env" ]]; then
+    log ".env 파일이 없습니다: ${STACK_TARGET}/.env"
+    exit 1
+  fi
+
+  set -a
+  # shellcheck disable=SC1091
+  source "${STACK_TARGET}/.env"
+  set +a
+}
+
+start_stack() {
+  log "Docker 스택을 시작합니다."
+  cd "${STACK_TARGET}"
+  docker compose pull
+  docker compose up -d
+}
+
+start_stack_for_import() {
+  log "DB import 선행을 위해 mysql/qdrant만 먼저 시작합니다."
+  cd "${STACK_TARGET}"
+  docker compose pull mysql qdrant
+  docker compose up -d mysql qdrant
+}
+
+reset_mysql_volume_if_import() {
+  if [[ "${DB_IMPORT_ON_DEPLOY:-false}" != "true" ]]; then
+    return
+  fi
+
+  # 왜: DB 이관 모드에서는 기존 MySQL 볼륨의 초기 비밀번호와 새 .env 비밀번호가 어긋날 수 있어,
+  # import 전에 MySQL 볼륨을 초기화해 비밀번호/스키마를 일관되게 맞춥니다.
+  log "DB import 모드이므로 기존 MySQL 볼륨을 초기화합니다."
+  cd "${STACK_TARGET}"
+  docker compose down --remove-orphans || true
+  docker volume rm -f polytech-lms_mysql_data >/dev/null 2>&1 || true
+}
+
+import_db_if_requested() {
+  local import_flag="${DB_IMPORT_ON_DEPLOY:-false}"
+  local dump_file="${STACK_TARGET}/migration/source.sql"
+
+  if [[ "${import_flag}" != "true" ]]; then
+    log "DB_IMPORT_ON_DEPLOY=false 이므로 DB import를 건너뜁니다."
+    return
+  fi
+
+  if [[ ! -f "${dump_file}" ]]; then
+    log "DB_IMPORT_ON_DEPLOY=true 인데 dump 파일이 없습니다: ${dump_file}"
+    exit 1
+  fi
+
+  log "MySQL 준비 상태를 확인합니다."
+  local ready=0
+  for i in $(seq 1 60); do
+    if docker exec lms-mysql sh -lc 'mysqladmin -h127.0.0.1 -P3306 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" ping --silent' >/dev/null 2>&1; then
+      ready=1
+      break
+    fi
+    sleep 2
+  done
+  if [[ "${ready}" != "1" ]]; then
+    log "MySQL 준비 대기 시간 초과로 import를 중단합니다."
+    exit 1
+  fi
+
+  # 왜: 레거시 dump에 함수(FUNCTION) 생성 구문이 있고, MySQL 8 기본 정책에서는
+  # DETERMINISTIC/READS SQL DATA 미지정 함수가 차단되어 import가 실패할 수 있습니다.
+  # import 전에 신뢰 플래그를 켜서 이관 실패를 방지합니다.
+  log "MySQL 함수 생성 신뢰 옵션(log_bin_trust_function_creators)을 활성화합니다."
+  docker exec lms-mysql sh -lc 'mysql -h127.0.0.1 -P3306 -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SET GLOBAL log_bin_trust_function_creators = 1;"'
+
+  log "DB dump import를 시작합니다."
+  cd "${STACK_TARGET}"
+  docker cp "${dump_file}" lms-mysql:/tmp/source.sql
+  docker exec lms-mysql sh -lc 'mysql -h127.0.0.1 -P3306 -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < /tmp/source.sql'
+  docker exec lms-mysql rm -f /tmp/source.sql
+  log "DB dump import가 완료되었습니다."
+}
+
+try_issue_certificate() {
+  local api_domain="${API_DOMAIN:-}"
+  local le_email="${LETSENCRYPT_EMAIL:-}"
+
+  if [[ -z "${api_domain}" || "${api_domain}" == "api.example.com" ]]; then
+    log "API 도메인이 예시값이라 SSL 발급을 건너뜁니다."
+    return
+  fi
+
+  if [[ -z "${le_email}" ]]; then
+    log "LETSENCRYPT_EMAIL이 비어 있어 SSL 발급을 건너뜁니다."
+    return
+  fi
+
+  local public_ip resolved_ip
+  public_ip="$(curl -4s https://ifconfig.me || true)"
+  resolved_ip="$(getent ahostsv4 "${api_domain}" | awk '{print $1; exit}' || true)"
+
+  if [[ -z "${public_ip}" || -z "${resolved_ip}" || "${public_ip}" != "${resolved_ip}" ]]; then
+    log "DNS가 아직 VM IP와 일치하지 않아 SSL 발급을 건너뜁니다."
+    log "현재 VM IP: ${public_ip:-미확인}, 도메인 IP: ${resolved_ip:-미확인}"
+    return
+  fi
+
+  log "Let's Encrypt 인증서를 발급합니다."
+  certbot --nginx --agree-tos --non-interactive --redirect -m "${le_email}" -d "${api_domain}"
+}
+
+sync_stack_files() {
+  if [[ ! -d "${STACK_SOURCE}" ]]; then
+    log "스택 소스 폴더가 없습니다: ${STACK_SOURCE}"
+    exit 1
+  fi
+
+  mkdir -p "${STACK_TARGET}"
+  rsync -av --delete "${STACK_SOURCE}/" "${STACK_TARGET}/"
+}
+
+prepare_legacy_permissions() {
+  local webinf_dir="${STACK_TARGET}/legacy/public_html/WEB-INF"
+  local work_dir="${webinf_dir}/work"
+
+  if [[ ! -d "${webinf_dir}" ]]; then
+    return
+  fi
+
+  # 왜: Resin 컨테이너 기본 계정(resin)이 JSP를 처음 컴파일할 때 WEB-INF/work에 파일을 생성합니다.
+  # 이 디렉터리에 쓰기 권한이 없으면 첫 요청부터 500이 발생하므로 배포 시 권한을 선제 보정합니다.
+  mkdir -p "${work_dir}"
+  chmod -R a+rwX "${work_dir}"
+}
+
+main() {
+  require_root
+  install_base_packages
+  install_docker
+  sync_stack_files
+  prepare_legacy_permissions
+  load_env
+  reset_mysql_volume_if_import
+  if [[ "${DB_IMPORT_ON_DEPLOY:-false}" == "true" ]]; then
+    start_stack_for_import
+    import_db_if_requested
+    start_stack
+  else
+    start_stack
+    import_db_if_requested
+  fi
+  configure_nginx
+  try_issue_certificate
+  log "배포가 완료되었습니다."
+}
+
+main "$@"
