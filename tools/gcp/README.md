@@ -103,13 +103,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/gcp/one-click-setup.ps
 - 워크플로우 파일: `.github/workflows/deploy-lms-gcp.yml`
 - 트리거: `main` 브랜치 push 또는 수동 실행
 - 동작:
-  - `project` 빌드
-  - 원클릭 스크립트 실행으로 VM(Resin+API) 배포
-  - Firebase `epoly-kopo` 사이트 배포(짧은 링크)
+  - 원클릭 스크립트 실행으로 VM(Resin+API+MySQL+Qdrant) 배포
+  - Firebase `vmproxy` 함수 + Hosting 동시 배포
+  - 배포 후 `epoly-kopo.web.app` 스모크 테스트 수행
 
 필수 GitHub Secrets:
 - `GCP_SA_KEY` : GCP 서비스계정 JSON
 - `GCP_PROJECT_ID` : 프로젝트 ID
+- `GCP_VM_SSH_USER` : VM SSH 사용자(미설정 시 기본값 `newkl`)
 - `FIREBASE_TOKEN` : `firebase login:ci` 토큰
 - `LMS_DB_PASSWORD` : DB 사용자 비밀번호
 - `LMS_DB_ROOT_PASSWORD` : DB root 비밀번호

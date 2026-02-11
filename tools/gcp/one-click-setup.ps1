@@ -5,6 +5,7 @@ param(
     [string]$Region = "asia-northeast3",
     [string]$Zone = "asia-northeast3-a",
     [string]$VmName = "polytech-lms-vm",
+    [string]$VmSshUser = "",
     [string]$MachineType = "e2-standard-4",
     [string]$ApiDomain = "api.example.com",
     [string]$WwwDomain = "www.example.com",
@@ -66,6 +67,14 @@ function Write-Step {
 function Write-Info {
     param([string]$Message)
     Write-Host "  - $Message"
+}
+
+function Test-IsWindowsPlatform {
+    try {
+        return [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)
+    } catch {
+        return ($env:OS -eq "Windows_NT")
+    }
 }
 
 function Resolve-CliCommand {
@@ -966,7 +975,8 @@ function Prepare-StackBundle {
 function Deploy-StackToVm {
     param(
         [string]$StackDir,
-        [string]$VmInstanceName
+        [string]$VmInstanceName,
+        [string]$SshUser = ""
     )
 
     Write-Step "VM으로 백엔드 스택 배포"
@@ -974,11 +984,14 @@ function Deploy-StackToVm {
     # 업로드한 최신 폴더를 정확히 지정하지 않으면 이전 ~/stack을 잘못 실행할 수 있습니다.
     $stackDirName = Split-Path -Path $StackDir -Leaf
     $remoteBasePath = "~/$stackDirName"
-    $remotePath = "$VmInstanceName`:"
-    Invoke-Checked -Command "gcloud" -Arguments @("config", "set", "ssh/putty_force_connect", "true")
+    $targetHost = if ([string]::IsNullOrWhiteSpace($SshUser)) { $VmInstanceName } else { "$SshUser@$VmInstanceName" }
+    $remotePath = "$targetHost`:"
+    if (Test-IsWindowsPlatform) {
+        Invoke-Checked -Command "gcloud" -Arguments @("config", "set", "ssh/putty_force_connect", "true")
+    }
     Invoke-Checked -Command "gcloud" -Arguments @("compute", "scp", "--recurse", "--strict-host-key-checking=no", $StackDir, $remotePath, "--zone", $Zone)
     Invoke-Checked -Command "gcloud" -Arguments @(
-        "compute", "ssh", $VmInstanceName,
+        "compute", "ssh", $targetHost,
         "--strict-host-key-checking=no",
         "--zone", $Zone,
         "--command", "sudo bash $remoteBasePath/deploy-stack.sh $remoteBasePath"
@@ -1168,7 +1181,7 @@ function Main {
         $dbDumpPath = Resolve-DbMigrationDumpPath
         $dbDumpPath = Normalize-DbDumpIfNeeded -DumpPath $dbDumpPath
         $stackDir = Prepare-StackBundle -ApiJarPath $jarPath -DbDumpPath $dbDumpPath
-        Deploy-StackToVm -StackDir $stackDir -VmInstanceName $VmName
+        Deploy-StackToVm -StackDir $stackDir -VmInstanceName $VmName -SshUser $VmSshUser
         if ($script:EnableDbMigration) {
             if ($script:DryRun) { $script:DbMigrationStatus = "DryRun(배포 시 import 예정)" }
             else { $script:DbMigrationStatus = "완료(배포 단계에서 import 실행)" }

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 17:40
+최근 자동 갱신: 2026-02-11 18:02
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -101,5 +101,5 @@
 ## 최근 작업(GCP/Firebase 원클릭 자동화)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
 |---|---|---|---|---|
-| GCP Linux VM + Firebase Hosting + DB/Qdrant 전량 이관 운영 검증 | 실행: `tools/gcp/start-one-click.bat` → `tools/gcp/one-click-setup.ps1` + `tools/gcp/firebase-proxy-deploy` | `tools/gcp/one-click-setup.ps1`, `tools/gcp/templates/docker-compose.yml.tpl`, `tools/gcp/templates/deploy-stack.sh.tpl`, `tools/gcp/templates/nginx-api.conf.tpl`, `tools/gcp/templates/resin-web.xml.tpl`, `tools/gcp/firebase-proxy-deploy/*`, `tools/gcp/README.md`, `.github/workflows/deploy-lms-gcp.yml` | `tools/gcp/generated/*`(실행 시 생성) | 확인 근거: 소스/타깃 MySQL row count 일치(`tb_user=1064`, `lm_course=165`, `tb_reco_content=3000`, `tb_kollus_transcript=3000`), Qdrant point count 일치(`video_summary_vectors_gemini=3014`, `video_summary_vectors=131`), `curl -I https://epoly-kopo.web.app/mypage/new_main/index.jsp` 200, 추천 API(`POST /tutor/content-recommend/lessons`) 200 확인 |
+| GCP Linux VM + Firebase Hosting + DB/Qdrant 전량 이관 운영 검증 | 실행: `tools/gcp/start-one-click.bat` → `tools/gcp/one-click-setup.ps1` + `tools/gcp/firebase-proxy-deploy` | `tools/gcp/one-click-setup.ps1`, `tools/gcp/templates/docker-compose.yml.tpl`, `tools/gcp/templates/deploy-stack.sh.tpl`, `tools/gcp/templates/nginx-api.conf.tpl`, `tools/gcp/templates/resin-web.xml.tpl`, `tools/gcp/firebase-proxy-deploy/*`, `tools/gcp/README.md`, `.github/workflows/deploy-lms-gcp.yml` | `tools/gcp/generated/*`(실행 시 생성) | 확인 근거: 소스/타깃 MySQL row count 일치(`tb_user=1064`, `lm_course=165`, `tb_reco_content=3000`, `tb_kollus_transcript=3000`), Qdrant point count 일치(`video_summary_vectors_gemini=3014`, `video_summary_vectors=131`), `curl -I https://epoly-kopo.web.app/mypage/new_main/index.jsp` 200, 추천 API(`POST /tutor/content-recommend/lessons`) 200 확인, CI 경로는 `one-click -SkipFirebaseDeploy` 후 `vmproxy` 별도 배포로 검증 |
 | Firebase `web.app` 로그인 세션/추천영상 복구 | Hosting rewrite + Functions 프록시 + 신규메인 추천 JSP | `tools/gcp/firebase-proxy-deploy/functions/index.js`, `tools/gcp/firebase-proxy-deploy/firebase.json`, `public_html/mypage/new_main/reco_video_list.jsp`, `tools/gcp/templates/docker-compose.yml.tpl` | 운영 반영: `vmproxy` 재배포 + `lms-resin` 재생성 | 확인 근거: `Cookie: __session=...`로 `GET /mypage/new_main/reco_prompt.jsp`가 `{\"ok\":true}` 응답, `GET /mypage/new_main/reco_video_list.jsp` 추천 타이틀 4건 반환, `lms-resin` env에 `POLYTECH_LMS_API_BASE=http://api:8081` 확인 |

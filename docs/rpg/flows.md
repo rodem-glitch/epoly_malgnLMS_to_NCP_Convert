@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 17:40
+최근 자동 갱신: 2026-02-11 18:02
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -421,6 +421,10 @@
     - MySQL 함수 생성 오류(1418) 방지를 위해 import 직전 `log_bin_trust_function_creators=1`을 root 계정으로 설정
     - 배포 번들 `migration/source.sql`로 전송 후, VM 배포 단계에서 자동 import(`DB_IMPORT_ON_DEPLOY=true`)
   - 초기에는 Firebase Hosting을 `302 리다이렉트`로 배포하되, 주소 유지가 필요하면 `tools/gcp/firebase-proxy-deploy`(Hosting rewrite + Functions vmproxy)로 전환
+  - GitHub Actions(`.github/workflows/deploy-lms-gcp.yml`)는
+    - VM 배포: `one-click-setup.ps1 -SkipProjectBootstrap -SkipFirebaseDeploy -VmSshUser`
+    - Firebase 배포: `tools/gcp/firebase-proxy-deploy`의 `functions:vmproxy,hosting` 별도 배포
+    순서로 실행해 Hosting 덮어쓰기 충돌을 방지
   - 실행 결과를 `tools/gcp/generated/setup-summary.txt`에 저장(도메인 A레코드 값/민감정보 포함)
 - DB:
   - MySQL 컨테이너(`mysql:8.4`) + Qdrant 컨테이너(`qdrant/qdrant:v1.15.3`)
