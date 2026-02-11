@@ -82,7 +82,8 @@
 							<div class="search_result">
 								<table>
 									<!--@loop(courses)-->
-									<tr>
+									<!--@if(courses.is_reco_video)--><tr class="reco-video-row"><!--/if(courses.is_reco_video)-->
+									<!--@nif(courses.is_reco_video)--><tr><!--/nif(courses.is_reco_video)-->
 										<td class="course_image">
 											<!--@if(courses.is_reco_video)-->
 											<a href="javascript:OpenWindowr('{{courses.play_url}}', 'RECO_VIEWER', 1000, 700);">
@@ -100,7 +101,6 @@
 												<em>
 													<!--@if(courses.is_reco_video)-->
 													<a href="javascript:OpenWindowr('{{courses.play_url}}', 'RECO_VIEWER', 1000, 700);">
-														<!--@if(courses.category_nm)--><span class="label gray">{{courses.category_nm}}</span><!--/if(courses.category_nm)-->
 														<span class="label">{{courses.onoff_type_conv}}</span>
 														{{courses.course_nm_conv}}
 													</a>
@@ -118,9 +118,19 @@
 													</span>
 												</em><br>
 												<!--@if(courses.subtitle_conv)-->
+												<!--@if(courses.is_reco_video)-->
+												<p class="reco-summary">{{courses.subtitle_conv}}</p>
+												<!--/if(courses.is_reco_video)-->
+												<!--@nif(courses.is_reco_video)-->
 												<p>{{courses.subtitle_conv}}</p>
+												<!--/nif(courses.is_reco_video)-->
 												<!--/if(courses.subtitle_conv)-->
 												<!--@if(courses.is_reco_video)-->
+												<!--@if(courses.keywords_conv)-->
+												<div class="reco-keyword-row">
+													<div class="reco-keyword-chips js-reco-keywords">{{courses.keywords_conv}}</div>
+												</div>
+												<!--/if(courses.keywords_conv)-->
 												<!--@if(courses.duration_conv)--><p>재생시간 : {{courses.duration_conv}}</p><!--/if(courses.duration_conv)-->
 												<!--/if(courses.is_reco_video)-->
 												<!--@nif(courses.is_reco_video)-->
@@ -243,7 +253,31 @@
 								$(this).addClass(progresses[v]);
 							});
 						}
-						addEvent("onload", function() { setLabel(); } );
+						// 왜: 추천 영상 키워드를 한 줄 텍스트로 두면 가독성이 떨어져서, 쉼표 기준으로 칩 형태로 나눠 읽기 쉽게 보여줍니다.
+						function renderRecoKeywordChips() {
+							var targets = document.querySelectorAll(".js-reco-keywords");
+							for(var i = 0; i < targets.length; i++) {
+								var node = targets[i];
+								var raw = (node.textContent || "").trim();
+								if(!raw) continue;
+
+								var parts = raw.split(",");
+								node.innerHTML = "";
+								for(var j = 0; j < parts.length; j++) {
+									var token = parts[j].replace(/\s+/g, " ").trim();
+									if(!token) continue;
+
+									var chip = document.createElement("span");
+									chip.className = "reco-keyword-chip";
+									chip.appendChild(document.createTextNode(token));
+									node.appendChild(chip);
+								}
+							}
+						}
+						addEvent("onload", function() {
+							setLabel();
+							renderRecoKeywordChips();
+						});
 						</script>
 					</div>
 				</div>

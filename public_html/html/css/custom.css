@@ -579,6 +579,14 @@ background-color:#00a6e2 !important; background-size:contain !important;backgrou
 .search_section .search_result td.course_info {padding:15px 0;}
 .search_section .search_result td.course_info .info_t em {display:inline-block;width:100%;margin-bottom:10px;}
 .search_section .search_result td.course_info .info_t em a {font-weight:500; color:#000;font-size:17px;}
+/* 왜: 추천 영상은 요약/키워드 양이 많아 기본 목록 스타일로는 가독성이 떨어져서, 카드형으로 구분해 빠르게 읽도록 정리합니다. */
+.search_section .search_result tr.reco-video-row td.course_info .info_t {background:#f8fbff; border:1px solid #dbe8ff; border-radius:12px; padding:12px 14px;}
+.search_section .search_result tr.reco-video-row td.course_info .info_t em {margin-bottom:8px;}
+.search_section .search_result tr.reco-video-row td.course_info .info_t em a {line-height:1.35;}
+.search_section .search_result tr.reco-video-row .reco-summary {margin:0 0 10px; color:#1f2a37; line-height:1.6; font-size:15px; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; word-break:keep-all;}
+.search_section .search_result tr.reco-video-row .reco-keyword-row {margin:0 0 8px;}
+.search_section .search_result tr.reco-video-row .reco-keyword-chips {display:flex; flex-wrap:wrap; gap:6px; line-height:1.35;}
+.search_section .search_result tr.reco-video-row .reco-keyword-chip {display:inline-flex; align-items:center; padding:4px 10px; border:1px solid #cddcf6; background:#eef4ff; color:#204a87; border-radius:999px; font-size:12px; font-weight:500;}
 
 .search_form_wrap3 { margin:0 0px 20px 0px; padding:0px 0px;background:#fff; } 
 .search_form_wrap3 .search_form {position:relative;border:1px #dedede solid;border-radius:4px;}
@@ -1481,6 +1489,10 @@ li:hover #sub_menu {display: block;}
 
 	.search_form_wrap2 { padding:20px 0px; } 
 	.search_section {margin-top:20px;}
+	.search_section .search_result tr.reco-video-row td.course_info .info_t {padding:10px 11px;}
+	.search_section .search_result tr.reco-video-row .reco-summary {font-size:14px; -webkit-line-clamp:3;}
+	.search_section .search_result tr.reco-video-row .reco-keyword-row {display:block; margin:0 0 6px;}
+	.search_section .search_result tr.reco-video-row .reco-keyword-chip {font-size:11px; padding:4px 8px;}
 	.search_no {border:1px solid #d9d9d9; border-width:1px 0; padding:30px 0; height:auto;}
 	.search_no .search_no_image { display:none;}	.search_no .search_no_text {float:none;}
 	

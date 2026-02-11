@@ -58,6 +58,8 @@ String today = m.time("yyyyMMdd");
 DataSet recoLessonsAll = new DataSet();
 DataSet recoLessonsPreview = new DataSet();
 int recoLessonTotal = 0;
+int recoSummaryCount = 0;
+int recoKeywordCount = 0;
 try {
 	if(!"".equals(vectorQuery)) {
 		String apiBase = System.getenv("POLYTECH_LMS_API_BASE");
@@ -138,6 +140,14 @@ try {
 				recoLessonsAll.put("course_nm", recoRows.s("title"));
 				recoLessonsAll.put("course_nm_conv", m.cutString(recoRows.s("title"), 48));
 				recoLessonsAll.put("category_nm", recoRows.s("categoryNm"));
+				// 왜: 자연어 검색 추천 영상도 일반 강의와 같은 위치에 "요약"을 보여줘야 사용자가 내용을 빠르게 파악할 수 있습니다.
+				String summaryConv = m.nl2br(m.stripTags(recoRows.s("summary")));
+				recoLessonsAll.put("subtitle_conv", summaryConv);
+				if(!"".equals(summaryConv)) recoSummaryCount++;
+				// 왜: 카테고리 대신 요약 아래에 키워드를 노출하기 위해 API keywords를 별도 가공해 내려줍니다.
+				String keywordsConv = m.stripTags(recoRows.s("keywords"));
+				recoLessonsAll.put("keywords_conv", keywordsConv);
+				if(!"".equals(keywordsConv)) recoKeywordCount++;
 				recoLessonsAll.put("onoff_type_conv", "온라인");
 				recoLessonsAll.put("recomm_yn", true);
 
@@ -173,6 +183,16 @@ try {
 				if(recoLessonsPreview.size() >= 5) break;
 				recoLessonsPreview.addRow(recoLessonsAll.getRow());
 			}
+			// 왜: 검색 미리보기에서 요약이 실제로 내려갔는지 운영 로그로 즉시 확인할 수 있어야 장애 원인 추적이 빠릅니다.
+			m.log(
+				"search_vector",
+				"mode=preview site_id=" + siteId
+				+ ", user_id=" + userId
+				+ ", qlen=" + vectorQuery.length()
+				+ ", reco_total=" + recoLessonTotal
+				+ ", summary_total=" + recoSummaryCount
+				+ ", keyword_total=" + recoKeywordCount
+			);
 		}
 	}
 } catch(Exception e) {

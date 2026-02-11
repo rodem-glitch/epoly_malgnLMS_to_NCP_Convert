@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 10:22
+최근 자동 갱신: 2026-02-11 11:02
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -165,6 +165,28 @@
   - 링크/경로 확인: `public_html/html/mypage/new_main_manual.html`의 `/mypage/new_main/*_manual.html` 링크
   - 정적 검증: `*_manual.html`에서 참조하는 `src` 이미지 파일이 `public_html/mypage/new_main/`에 모두 존재함(Test-Path로 확인)
 - 최근 갱신: 2026-02-10
+
+### FLOW-1007: 학생 자연어 검색 결과/더보기 추천영상 요약·키워드 노출
+- 사용자 동작(의도): 학생이 통합검색에서 자연어 검색 후, 강의 영역 카드와 `더보기` 화면에서 각 추천 영상의 요약/키워드를 확인
+- 진입점:
+  - 통합검색 미리보기: `public_html/main/search.jsp`
+  - 강의 더보기(벡터 모드): `public_html/main/search_detail.jsp` (`subject=course&mode=vector`)
+- 처리(핵심):
+  - 두 JSP 모두 `POST /student/content-recommend/search` 응답의 `summary`를 읽어 `subtitle_conv`로 가공(`m.stripTags` + `m.nl2br`)해 템플릿으로 전달
+  - 같은 응답의 `keywords`를 `keywords_conv`로 내려 요약 아래 줄에 출력
+  - 키워드 라벨(`키워드`)은 제거하고, 키워드 칩만 노출해 모바일 잘림 이슈를 방지
+  - 추천영상(`is_reco_video`) 전용 타이틀 영역에서 회색 카테고리 라벨(`category_nm`)은 노출하지 않음
+  - 운영 추적을 위해 `search_vector` 로그에 `mode(preview/detail)`, `qlen`, `reco_total`, `summary_total`, `keyword_total`을 남겨 검색/더보기 불일치 여부를 즉시 확인 가능하게 유지
+- DB:
+  - 직접 조회 없음(JSP 기준)
+  - 요약 원천은 추천 API의 `StudentVideoRecommendResponse.summary` (`polytech-lms-api` 기준 `TB_RECO_CONTENT.summary`)
+- 출력:
+  - 통합검색 강의 목록: `public_html/html/main/search.html`에서 추천영상 행(`tr.reco-video-row`)에 `{{courses.subtitle_conv}}`를 요약 영역(`.reco-summary`)으로, `{{courses.keywords_conv}}`를 키워드 칩(`.reco-keyword-chip`)으로 렌더링
+  - 강의 더보기 목록: `public_html/html/main/search_detail.html`도 동일하게 추천영상 행(`tr.reco-video-row`)에서 `{{list.subtitle_conv}}`, `{{list.keywords_conv}}`를 요약/키워드 칩 UI로 렌더링
+- 확인(근거):
+  - 코드 반영 확인: `public_html/main/search.jsp`, `public_html/main/search_detail.jsp`에서 `recoRows.s("summary")/recoRows.s("keywords")` → `subtitle_conv/keywords_conv` 매핑 및 `search_vector` 로그 필드 확장 확인
+  - 출력 경로 확인: `public_html/html/main/search.html`, `public_html/html/main/search_detail.html`에서 추천영상 타이틀 카테고리 라벨 제거 + `course_block` 행의 `reco-video-row` 클래스 적용 + 요약/키워드 칩 슬롯 확인
+- 최근 갱신: 2026-02-11
 
 ### FLOW-2001: 교수자 LMS(React) 진입/라우팅 및 UI 톤 적용
 - 사용자 동작(의도): 교수자가 `/tutor_lms/`로 접속하여 교수자 기능을 사용

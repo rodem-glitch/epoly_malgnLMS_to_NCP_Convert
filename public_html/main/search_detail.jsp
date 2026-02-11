@@ -59,6 +59,8 @@ if("course".equals(searchType) && "vector".equals(mode)) {
 	// ===== 벡터(추천) 검색 - 학생 검색 추천(동영상/강의) 전체 =====
 	// 주의: JSP에는 기본 내장객체로 JspWriter `out`이 이미 있어서, 변수명 충돌을 피해야 합니다.
 	DataSet vectorList = new DataSet();
+	int vectorSummaryCount = 0;
+	int vectorKeywordCount = 0;
 	try {
 		String vectorQuery = m.rs("s_keyword").trim();
 		vectorQuery = vectorQuery.replaceAll("[^가-힣a-zA-Z0-9\\s]", " ");
@@ -142,6 +144,14 @@ if("course".equals(searchType) && "vector".equals(mode)) {
 					vectorList.put("course_nm", recoRows.s("title"));
 					vectorList.put("course_nm_conv", m.cutString(recoRows.s("title"), 48));
 					vectorList.put("category_nm", recoRows.s("categoryNm"));
+					// 왜: 강의 더보기에서도 검색 미리보기와 같은 요약 정보를 보여야 사용자 기대와 화면이 일치합니다.
+					String summaryConv = m.nl2br(m.stripTags(recoRows.s("summary")));
+					vectorList.put("subtitle_conv", summaryConv);
+					if(!"".equals(summaryConv)) vectorSummaryCount++;
+					// 왜: 더보기에서도 카테고리 대신 키워드를 보여줘야 검색 목록과 정보 구성이 동일합니다.
+					String keywordsConv = m.stripTags(recoRows.s("keywords"));
+					vectorList.put("keywords_conv", keywordsConv);
+					if(!"".equals(keywordsConv)) vectorKeywordCount++;
 					vectorList.put("onoff_type_conv", "온라인");
 					vectorList.put("recomm_yn", true);
 
@@ -170,6 +180,16 @@ if("course".equals(searchType) && "vector".equals(mode)) {
 					}
 					vectorList.put("course_file_url", thumbnail);
 				}
+				// 왜: 더보기 화면에서 summary 노출 건수를 남겨 두면, 검색-더보기 불일치 이슈를 운영에서 빠르게 확인할 수 있습니다.
+				m.log(
+					"search_vector",
+					"mode=detail site_id=" + siteId
+					+ ", user_id=" + userId
+					+ ", qlen=" + vectorQuery.length()
+					+ ", reco_total=" + vectorList.size()
+					+ ", summary_total=" + vectorSummaryCount
+					+ ", keyword_total=" + vectorKeywordCount
+				);
 			}
 		}
 	} catch(Exception e) {

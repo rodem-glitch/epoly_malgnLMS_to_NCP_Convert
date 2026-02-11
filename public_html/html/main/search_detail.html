@@ -36,7 +36,8 @@
 									</tr>
 									<!--/if(post_block)-->
 									<!--@if(course_block)-->
-									<tr>
+									<!--@if(list.is_reco_video)--><tr class="reco-video-row"><!--/if(list.is_reco_video)-->
+									<!--@nif(list.is_reco_video)--><tr><!--/nif(list.is_reco_video)-->
 										<td class="course_image">
 											<!--@if(list.is_reco_video)-->
 											<a href="javascript:OpenWindowr('{{list.play_url}}', 'RECO_VIEWER', 1000, 700);">
@@ -54,7 +55,6 @@
 												<em>
 													<!--@if(list.is_reco_video)-->
 													<a href="javascript:OpenWindowr('{{list.play_url}}', 'RECO_VIEWER', 1000, 700);">
-														<!--@if(list.category_nm)--><span class="label gray">{{list.category_nm}}</span><!--/if(list.category_nm)-->
 														<span class="label">{{list.onoff_type_conv}}</span>
 														{{list.course_nm_conv}}
 													</a>
@@ -72,9 +72,19 @@
 													</span>
 												</em><br>
 												<!--@if(list.subtitle_conv)-->
+												<!--@if(list.is_reco_video)-->
+												<p class="reco-summary">{{list.subtitle_conv}}</p>
+												<!--/if(list.is_reco_video)-->
+												<!--@nif(list.is_reco_video)-->
 												<p>{{list.subtitle_conv}}</p>
+												<!--/nif(list.is_reco_video)-->
 												<!--/if(list.subtitle_conv)-->
 												<!--@if(list.is_reco_video)-->
+												<!--@if(list.keywords_conv)-->
+												<div class="reco-keyword-row">
+													<div class="reco-keyword-chips js-reco-keywords">{{list.keywords_conv}}</div>
+												</div>
+												<!--/if(list.keywords_conv)-->
 												<!--@if(list.duration_conv)--><p>재생시간 : {{list.duration_conv}}</p><!--/if(list.duration_conv)-->
 												<!--/if(list.is_reco_video)-->
 												<!--@nif(list.is_reco_video)-->
@@ -153,7 +163,31 @@
 								$(this).addClass(progresses[v]);
 							});
 						}
-						addEvent("onload", function() { setLabel(); } );
+						// 왜: 더보기 화면에서도 키워드를 칩 형태로 맞춰야 검색 목록과 시각 흐름이 동일합니다.
+						function renderRecoKeywordChips() {
+							var targets = document.querySelectorAll(".js-reco-keywords");
+							for(var i = 0; i < targets.length; i++) {
+								var node = targets[i];
+								var raw = (node.textContent || "").trim();
+								if(!raw) continue;
+
+								var parts = raw.split(",");
+								node.innerHTML = "";
+								for(var j = 0; j < parts.length; j++) {
+									var token = parts[j].replace(/\s+/g, " ").trim();
+									if(!token) continue;
+
+									var chip = document.createElement("span");
+									chip.className = "reco-keyword-chip";
+									chip.appendChild(document.createTextNode(token));
+									node.appendChild(chip);
+								}
+							}
+						}
+						addEvent("onload", function() {
+							setLabel();
+							renderRecoKeywordChips();
+						});
 						</script>
 					</div>
 				</div>
