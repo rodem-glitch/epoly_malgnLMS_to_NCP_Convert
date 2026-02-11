@@ -851,82 +851,6 @@
 			margin-bottom: 16px;
 			display: none;
 		}
-		.nm-login-modal__quick {
-			margin-bottom: 16px;
-			padding: 14px;
-			border-radius: 12px;
-			border: 1px dashed #c7d2fe;
-			background: #eef2ff;
-		}
-		.nm-login-modal__quick-title {
-			font-size: 13px;
-			font-weight: 700;
-			color: #4338ca;
-			margin-bottom: 10px;
-		}
-		.nm-login-modal__quick-row {
-			display: flex;
-			align-items: center;
-			gap: 8px;
-			flex-wrap: wrap;
-		}
-		.nm-login-modal__quick-role {
-			display: flex;
-			gap: 6px;
-			align-items: center;
-			margin-bottom: 10px;
-			flex-wrap: wrap;
-		}
-		.nm-login-modal__quick-role label {
-			display: inline-flex;
-			align-items: center;
-			gap: 6px;
-			font-size: 12px;
-			color: #3730a3;
-			background: #fff;
-			border: 1px solid #c7d2fe;
-			border-radius: 999px;
-			padding: 6px 10px;
-			cursor: pointer;
-			user-select: none;
-		}
-		.nm-login-modal__quick-role input {
-			margin: 0;
-		}
-		.nm-login-modal__quick-prefix {
-			padding: 10px 12px;
-			border-radius: 8px;
-			background: #fff;
-			border: 1px solid #c7d2fe;
-			font-size: 14px;
-			color: #1f2937;
-			min-width: 120px;
-			text-align: center;
-		}
-		.nm-login-modal__quick-input {
-			width: 72px;
-			padding: 10px 12px;
-			border-radius: 8px;
-			border: 1px solid #c7d2fe;
-			font-size: 14px;
-			text-align: center;
-			background: #fff;
-		}
-		.nm-login-modal__quick-btn {
-			padding: 10px 12px;
-			border: none;
-			border-radius: 8px;
-			background: #4f46e5;
-			color: #fff;
-			font-size: 13px;
-			font-weight: 700;
-			cursor: pointer;
-		}
-		.nm-login-modal__quick-help {
-			margin-top: 8px;
-			font-size: 12px;
-			color: #6366f1;
-		}
 
 		/* ========== 푸터 ========== */
 		.nm-footer {
@@ -1351,34 +1275,12 @@
 					<div id="loginError" class="nm-login-modal__error"></div>
 					<div class="nm-login-modal__field">
 						<label class="nm-login-modal__label" for="login_id">아이디</label>
-						<input type="text" id="login_id" name="id" class="nm-login-modal__input" placeholder="아이디를 입력하세요" required>
+						<input type="text" id="login_id" name="id" class="nm-login-modal__input" placeholder="아이디를 입력하세요" value="{{login_id_preset}}" required>
 					</div>
 					<div class="nm-login-modal__field">
 						<label class="nm-login-modal__label" for="login_passwd">비밀번호</label>
-						<input type="password" id="login_passwd" name="passwd" class="nm-login-modal__input" placeholder="비밀번호를 입력하세요" required>
+						<input type="password" id="login_passwd" name="passwd" class="nm-login-modal__input" placeholder="비밀번호를 입력하세요" value="{{login_passwd_preset}}" required>
 					</div>
-					<!--@if(quick_login_block)-->
-					<div class="nm-login-modal__quick">
-						<div class="nm-login-modal__quick-title">테스트 빠른 로그인</div>
-						<div class="nm-login-modal__quick-role" role="group" aria-label="테스트 계정 유형">
-							<!--@if(quick_login_tutor_id_prefix)-->
-							<label><input type="radio" name="quick_login_role" value="tutor" checked> 교수</label>
-							<!--/if(quick_login_tutor_id_prefix)-->
-							<!--@if(quick_login_student_id_prefix)-->
-							<label><input type="radio" name="quick_login_role" value="student"> 학생</label>
-							<!--/if(quick_login_student_id_prefix)-->
-						</div>
-						<div class="nm-login-modal__quick-row">
-							<span class="nm-login-modal__quick-prefix" id="quick_login_prefix_preview"></span>
-							<input type="text" id="quick_login_suffix" class="nm-login-modal__quick-input" value="{{quick_login_id_suffix}}" maxlength="2" inputmode="numeric" pattern="[0-9]*" aria-label="테스트 계정 번호">
-							<button type="button" class="nm-login-modal__quick-btn" onclick="submitQuickLogin()">빠른 로그인</button>
-						</div>
-						<div class="nm-login-modal__quick-help">아이디 뒤 숫자만 바꿔도 됩니다. (예: 01, 02)</div>
-						<input type="hidden" id="quick_login_tutor_id_prefix" value="{{quick_login_tutor_id_prefix}}">
-						<input type="hidden" id="quick_login_student_id_prefix" value="{{quick_login_student_id_prefix}}">
-						<input type="hidden" id="quick_login_passwd" value="{{quick_login_passwd}}">
-					</div>
-					<!--/if(quick_login_block)-->
 					<button type="submit" class="nm-login-modal__submit">로그인</button>
 				</div>
 			</form>
@@ -1392,9 +1294,16 @@
 	<iframe name="loginFrame" id="loginFrame" style="display:none;"></iframe>
 	
 	<script>
+	// 왜: 학생/교수자 메뉴 진입 경로에 맞는 테스트 계정을 서버에서 미리 정해 전달합니다.
+	function applyDefaultLoginPreset() {
+		document.getElementById('login_id').value = '{{login_id_preset}}';
+		document.getElementById('login_passwd').value = '{{login_passwd_preset}}';
+	}
+
 	// 로그인 모달 열기
 	function openLoginModal() {
 		document.getElementById('loginModal').classList.add('active');
+		applyDefaultLoginPreset();
 		document.getElementById('login_id').focus();
 		document.body.style.overflow = 'hidden';
 	}
@@ -1406,6 +1315,7 @@
 		document.body.style.overflow = '';
 		// 폼 초기화
 		document.getElementById('loginForm').reset();
+		applyDefaultLoginPreset();
 		document.getElementById('loginError').style.display = 'none';
 	}
 	
@@ -1427,51 +1337,6 @@
 		return true;
 	}
 
-	// 왜: 테스트 계정은 아이디 뒤 번호만 자주 바뀌므로 빠르게 조합해 즉시 로그인할 수 있게 합니다.
-	function submitQuickLogin() {
-		var tutorPrefixEl = document.getElementById('quick_login_tutor_id_prefix');
-		var studentPrefixEl = document.getElementById('quick_login_student_id_prefix');
-		var passwdEl = document.getElementById('quick_login_passwd');
-		var suffixEl = document.getElementById('quick_login_suffix');
-
-		if (!passwdEl || !suffixEl) {
-			showLoginError('테스트 빠른 로그인 설정을 찾을 수 없습니다.');
-			return false;
-		}
-
-		var role = 'tutor';
-		var roleEls = document.getElementsByName('quick_login_role');
-		if (roleEls && roleEls.length) {
-			for (var i = 0; i < roleEls.length; i++) {
-				if (roleEls[i].checked) { role = roleEls[i].value; break; }
-			}
-		}
-		var prefix = '';
-		if (role === 'student') prefix = studentPrefixEl ? (studentPrefixEl.value || '') : '';
-		else prefix = tutorPrefixEl ? (tutorPrefixEl.value || '') : '';
-
-		// 왜: 설정 파일에 한 쪽 prefix만 넣는 경우가 있어 빈 값은 즉시 에러 처리합니다.
-		if (!prefix) {
-			showLoginError('선택한 계정 유형의 prefix가 비어 있습니다.');
-			return false;
-		}
-
-		var suffix = suffixEl.value.trim();
-		if (!/^[0-9]{1,2}$/.test(suffix)) {
-			showLoginError('계정 번호는 숫자 1~2자리로 입력해주세요.');
-			suffixEl.focus();
-			return false;
-		}
-		if (suffix.length === 1) suffix = '0' + suffix;
-
-		document.getElementById('login_id').value = prefix + suffix;
-		document.getElementById('login_passwd').value = passwdEl.value;
-
-		if (!submitLogin()) return false;
-		document.getElementById('loginForm').submit();
-		return false;
-	}
-	
 	// 로그인 에러 표시
 	function showLoginError(message) {
 		var errorDiv = document.getElementById('loginError');
@@ -1492,42 +1357,7 @@
 		}
 	});
 
-	document.addEventListener('DOMContentLoaded', function() {
-		var suffixEl = document.getElementById('quick_login_suffix');
-		var previewEl = document.getElementById('quick_login_prefix_preview');
-		var tutorPrefixEl = document.getElementById('quick_login_tutor_id_prefix');
-		var studentPrefixEl = document.getElementById('quick_login_student_id_prefix');
-		if (!suffixEl || !previewEl) return;
-
-		function getSelectedRole() {
-			var roleEls = document.getElementsByName('quick_login_role');
-			if (!roleEls || !roleEls.length) return 'tutor';
-			for (var i = 0; i < roleEls.length; i++) if (roleEls[i].checked) return roleEls[i].value;
-			return 'tutor';
-		}
-		function refreshPrefixPreview() {
-			var role = getSelectedRole();
-			var prefix = (role === 'student')
-				? (studentPrefixEl ? (studentPrefixEl.value || '') : '')
-				: (tutorPrefixEl ? (tutorPrefixEl.value || '') : '');
-			previewEl.textContent = prefix || '(prefix 없음)';
-		}
-
-		refreshPrefixPreview();
-		var roleEls = document.getElementsByName('quick_login_role');
-		if (roleEls && roleEls.length) {
-			for (var i = 0; i < roleEls.length; i++) {
-				roleEls[i].addEventListener('change', refreshPrefixPreview);
-			}
-		}
-
-		suffixEl.addEventListener('keydown', function(e) {
-			if (e.key === 'Enter') {
-				e.preventDefault();
-				submitQuickLogin();
-			}
-		});
-	});
+	document.addEventListener('DOMContentLoaded', applyDefaultLoginPreset);
 
 	<!--@if(login_required_block)-->
 	// 왜: 권한 없는 진입에서 넘어온 경우, 화면 진입 즉시 로그인 모달을 열어 사용자가 바로 로그인할 수 있게 합니다.

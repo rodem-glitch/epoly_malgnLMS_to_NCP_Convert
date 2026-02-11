@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 16:31
+최근 자동 갱신: 2026-02-11 17:40
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -57,6 +57,7 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
 | 비로그인 권한 진입 시 신규 메인 모달로 로그인 유도 | `public_html/mypage/init.jsp`(0차 게이트), `public_html/member/login.jsp`(GET 게이트) → `public_html/mypage/new_main/index.jsp` | `public_html/mypage/init.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` | `public_html/html/mypage/new_main_full.html` | 구 로그인 페이지 직접 렌더 대신 `login_required=Y`로 모달 자동 오픈, `returl`/`udid` hidden 전달, `access_token`/`ek`(SSL 토큰 로그인)은 기존 분기 유지 |
+| 공통 로그인 기본값 분기(학생/교수자) | `/member/login.jsp` → `/mypage/new_main/?login_required=Y...` | `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` | `public_html/html/member/login.html`, `public_html/_html_v5/member/login.html`, `public_html/html/mypage/new_main_full.html`, `public_html/html/layout/layout_new_main.html` | `returl`에 `/tutor_lms/` 포함 시 교수자(`haksa_pf26_01`) 기본값 주입, 그 외(이러닝/채용 하위 포함)는 학생(`haksa_st26_01`) 기본값 주입. 비밀번호 `Growai!2026` 공통 |
 
 ## 최근 작업(매뉴얼)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 정적 파일(HTML/이미지) | 비고 |

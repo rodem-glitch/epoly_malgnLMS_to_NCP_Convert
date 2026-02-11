@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 16:31
+최근 자동 갱신: 2026-02-11 17:40
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -294,6 +294,25 @@
   - Functions 배포: `firebase deploy --only functions:vmproxy`
   - 운영 반영 확인: `Set-Cookie: __session=...` 응답 확인, `Cookie: __session=...`로 `reco_prompt.jsp` 정상 응답 확인
   - VM 반영 확인: `lms-resin` env에 `POLYTECH_LMS_API_BASE=http://api:8081` 존재, `reco_video_list.jsp`에서 추천 타이틀 4건 확인
+- 최근 갱신: 2026-02-11
+
+### FLOW-4102: 신규메인/공통 레이아웃 로그인 모달 기본값 통일
+- 사용자 동작(의도): 이러닝/채용 등 하위 메뉴 로그인 모달에서도 아이디/비밀번호 기본값이 동일하게 보이도록 통일
+- 진입점:
+  - 학생 신규메인: `public_html/html/mypage/new_main_full.html`
+  - 공통 레이아웃: `public_html/html/layout/layout_new_main.html`
+  - 교수자 진입 게이트: `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` (`returl=/tutor_lms/...` 분기)
+- 처리(핵심):
+  - 학생 모달 기본값: `id=haksa_st26_01`, `passwd=Growai!2026`
+  - 공통 레이아웃 모달도 학생 기본값(`haksa_st26_01`)으로 고정하고, `openLoginModal()/closeLoginModal()`에서 기본값 재적용(`applyDefaultLoginPreset`)으로 재오픈 시 값 유지
+  - 교수자(`tutor_lms`)는 `returl` 분기에서 기본 아이디를 `haksa_pf26_01`로 서버 주입
+- 출력:
+  - 신규메인/공통 레이아웃 로그인 모달에서 기본 계정 자동 입력
+  - 사용자는 아이디 끝 숫자만 수정해 바로 로그인 가능
+- 확인(근거):
+  - `public_html/html/mypage/new_main_full.html`에 `haksa_st26_01`, `Growai!2026`, `applyDefaultLoginPreset` 반영 확인
+  - `public_html/html/layout/layout_new_main.html`에 `haksa_st26_01`, `Growai!2026`, `applyDefaultLoginPreset` 반영 확인
+  - `public_html/member/login.jsp` / `public_html/mypage/new_main/index.jsp`에서 `returl`에 `/tutor_lms/` 포함 시 `haksa_pf26_01` 주입 확인
 - 최근 갱신: 2026-02-11
 
 ### FLOW-4001: 교수자 LMS > 과제 > 피드백 관리(학생 제출물 모달 확인)

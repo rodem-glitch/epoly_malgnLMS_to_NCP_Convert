@@ -52,6 +52,12 @@ returl = !"".equals(returl) ? returl : "/mypage/index.jsp";
 if((returl.startsWith("http://") || returl.startsWith("https://")) && 0 > returl.indexOf(siteinfo.s("domain"))) returl = "/mypage/index.jsp";
 //if(!"".equals(mSession.s("b2b_domain"))) returl = "/mypage/course_list.jsp";
 
+// 왜: 로그인 화면을 여는 진입 경로에 따라 학생/교수자 테스트 계정 기본값을 다르게 채워
+//     메뉴별로 로그인 모양이 달라지는 혼선을 줄입니다.
+String loginIdPreset = "haksa_st26_01";
+String loginPasswdPreset = "Growai!2026";
+if(-1 < returl.indexOf("/tutor_lms/")) loginIdPreset = "haksa_pf26_01";
+
 //폼입력
 String id = m.rs("id");
 String passwd = m.rs("passwd");
@@ -303,6 +309,8 @@ p.setVar("auth_block", siteinfo.b("auth_login_yn"));
 p.setVar("oauth_block", 0 < olist.size());
 p.setVar("close_block", siteinfo.b("close_yn") || isB2B);
 p.setVar("domain", request.getServerName());
+p.setVar("login_id_preset", loginIdPreset);
+p.setVar("login_passwd_preset", loginPasswdPreset);
 
 p.setVar("is_b2b", isB2B);
 p.setVar("b2binfo", B2Binfo);

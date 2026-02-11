@@ -581,11 +581,11 @@
 					<div id="loginError" class="nm-login-modal__error"></div>
 					<div class="nm-login-modal__field">
 						<label class="nm-login-modal__label" for="login_id">아이디</label>
-						<input type="text" id="login_id" name="id" class="nm-login-modal__input" placeholder="아이디를 입력하세요" required>
+						<input type="text" id="login_id" name="id" class="nm-login-modal__input" placeholder="아이디를 입력하세요" value="haksa_st26_01" required>
 					</div>
 					<div class="nm-login-modal__field">
 						<label class="nm-login-modal__label" for="login_passwd">비밀번호</label>
-						<input type="password" id="login_passwd" name="passwd" class="nm-login-modal__input" placeholder="비밀번호를 입력하세요" required>
+						<input type="password" id="login_passwd" name="passwd" class="nm-login-modal__input" placeholder="비밀번호를 입력하세요" value="Growai!2026" required>
 					</div>
 					<button type="submit" class="nm-login-modal__submit">로그인</button>
 				</div>
@@ -600,7 +600,14 @@
 	<iframe name="loginFrame" id="loginFrame" style="display:none;"></iframe>
 
 	<script>
+	function applyDefaultLoginPreset() {
+		// 왜: 이 레이아웃(이러닝/채용 하위 포함)에서 여는 로그인 모달은 학생 기본값을 공통으로 유지해야
+		// 메뉴마다 입력값이 비어 보이는 혼선을 줄일 수 있습니다.
+		document.getElementById('login_id').value = 'haksa_st26_01';
+		document.getElementById('login_passwd').value = 'Growai!2026';
+	}
 	function openLoginModal() {
+		applyDefaultLoginPreset();
 		document.getElementById('loginModal').classList.add('active');
 		document.getElementById('login_id').focus();
 		document.body.style.overflow = 'hidden';
@@ -610,6 +617,7 @@
 		document.getElementById('loginModal').classList.remove('active');
 		document.body.style.overflow = '';
 		document.getElementById('loginForm').reset();
+		applyDefaultLoginPreset();
 		document.getElementById('loginError').style.display = 'none';
 	}
 	function submitLogin() {

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 16:31
+최근 자동 갱신: 2026-02-11 17:40
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -60,8 +60,10 @@
   - 예외 분기(`access_token`, `ek`, SSO)는 기존 로그인 처리 경로를 유지해야 합니다. 이 분기를 건드리면 SSL 토큰 로그인/외부 SSO가 깨질 수 있습니다.
   - `returl`은 레거시 비인코딩 케이스가 있어 쿼리 원문 재파싱을 같이 유지해야 하며, 외부 도메인 차단 검사도 함께 유지해야 합니다.
   - 모달 POST 값(`returl`, `udid`)은 `public_html/html/mypage/new_main_full.html` hidden 필드와 `public_html/mypage/new_main/index.jsp` 변수 세팅이 한 쌍입니다.
-  - 테스트 빠른 로그인은 `public_html/WEB-INF/tmp/dev-login.properties`(배포 제외 경로)에서만 읽고, 비밀번호를 JSP/JS 소스에 직접 하드코딩하지 않습니다.
-  - 빠른 로그인 로그(`quick_login_config_*`)에는 `id_prefix/suffix`만 남기고 비밀번호는 절대 기록하지 않습니다.
+  - 현재 로그인 UX는 “빠른 로그인 카드”가 아니라 입력칸 기본값 방식입니다. 하위 메뉴 공통 모달(`layout_new_main`)까지 동일하게 맞추지 않으면 메뉴별 동작이 달라 보일 수 있습니다.
+  - 2026-02-11 임시 운영 변경으로 신규메인/공통 레이아웃 로그인 모달 기본값이 하드코딩(`haksa_st26_01`, `Growai!2026`)되어 있습니다.
+  - 교수자 기본값(`haksa_pf26_01`)은 화면 하드코딩이 아니라 `returl` 분기(`member/login.jsp`, `mypage/new_main/index.jsp`)에서 주입됩니다.
+  - 운영 전환 시에는 하드코딩 제거(또는 서버 설정값 외부화)를 우선 점검해야 하며, 템플릿 위치는 `public_html/html/mypage/new_main_full.html`, `public_html/html/layout/layout_new_main.html`입니다.
 - React 배포 산출물: `public_html/tutor_lms/app` (빌드 누락/정적파일 캐시 이슈)
 - 교수자 차시관리 추천 동영상(시간/인정시간) 주의:
   - `public_html/tutor_lms/api/content_recommend.jsp`의 `lessonId`는 데이터셋에 따라 `LM_LESSON.id`(숫자) 또는 콜러스 `media_content_key`(문자열)일 수 있습니다.

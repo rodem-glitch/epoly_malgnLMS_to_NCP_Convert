@@ -19,8 +19,8 @@
 									<input type="hidden" name="domain" value="{{domain}}">
 									<input type="hidden" name="returl" value="{{returl}}">
 									<div class="log_in">
-										<div class="ip_id"><label for="id"><img src="/common/images/default/tx_id.jpg" alt="ID" /></label><input type="text" name="id" id="id" placeholder="아이디를 입력하세요" /></div>
-										<div class="ip_pass"><label for="passwd"><img src="/common/images/default/tx_pass.jpg" alt="password" /></label><input type="password" name="passwd" id="passwd" placeholder="비밀번호를 입력하세요" /></div>
+										<div class="ip_id"><label for="id"><img src="/common/images/default/tx_id.jpg" alt="ID" /></label><input type="text" name="id" id="id" placeholder="아이디를 입력하세요" value="{{login_id_preset}}" /></div>
+										<div class="ip_pass"><label for="passwd"><img src="/common/images/default/tx_pass.jpg" alt="password" /></label><input type="password" name="passwd" id="passwd" placeholder="비밀번호를 입력하세요" value="{{login_passwd_preset}}" /></div>
 									</div>
 									<p class="ip_submit"><input type="submit" class="button login red" value="LOGIN" /></p>
 									</form>
@@ -75,6 +75,12 @@
 					if(!validate(f)) return false;
 					return true;
 				}
+				addEvent("onload", function() {
+					var f = document.forms['form1'];
+					if(!f) return;
+					f['id'].value = "{{login_id_preset}}";
+					f['passwd'].value = "{{login_passwd_preset}}";
+				});
 				</script>
 <!--/nif(close_block)-->
 <!--@if(close_block)-->
@@ -95,8 +101,8 @@
 					<input type="hidden" name="domain" value="{{domain}}">
 					<input type="hidden" name="returl" value="{{returl}}">
 					<div class="log_in">
-						<div class="ip_id"><input type="text" name="id" id="id" placeholder="아이디" /></div>
-						<div class="ip_pass"><input type="password" name="passwd" id="passwd" placeholder="비밀번호" /></div>
+						<div class="ip_id"><input type="text" name="id" id="id" placeholder="아이디" value="{{login_id_preset}}" /></div>
+						<div class="ip_pass"><input type="password" name="passwd" id="passwd" placeholder="비밀번호" value="{{login_passwd_preset}}" /></div>
 					</div>
 					
 					<div class="save_label"><input type="checkbox" name="save_id" id="save_id" /> 아이디 저장</div>
@@ -122,11 +128,12 @@
 		return true;
 	}
 	addEvent("onload", function() {
-		if(GetCookie("SAVEID")) {
-			var f = document.forms['form1'];
-			f['id'].value = GetCookie("SAVEID");
-			f['save_id'].checked = true;
-		}
+		var f = document.forms['form1'];
+		if(!f) return;
+		// 왜: 테스트 계정으로 즉시 로그인해야 하는 운영 요청이라 저장 쿠키보다 기본 프리셋을 우선합니다.
+		f['id'].value = "{{login_id_preset}}";
+		f['passwd'].value = "{{login_passwd_preset}}";
+		f['save_id'].checked = false;
 	});
 	</script>
 	<div class="footer_login">
