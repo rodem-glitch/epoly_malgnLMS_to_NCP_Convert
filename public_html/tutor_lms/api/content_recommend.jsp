@@ -103,13 +103,26 @@ try {
 // 왜: 콜러스 외부 영상은 LMS DB에 없으므로, API 응답(TB_RECO_CONTENT 데이터)을 직접 사용합니다.
 DataSet list = new DataSet();
 KollusMediaDao kollusMedia = new KollusMediaDao();
+LessonDao lesson = new LessonDao();
+DataObject transcript = new DataObject("TB_KOLLUS_TRANSCRIPT");
 int metaHitCount = 0;
 int metaMissCount = 0;
+int lessonIdResolveCount = 0;
+int lessonStartUrlHitCount = 0;
+int missingTimeCount = 0;
+int skippedCount = 0;
+int transcriptTimeHitCount = 0;
+int transcriptTimeMissCount = 0;
 
 while(recoRows.next()) {
-	String mediaKey = recoRows.s("lessonId").trim(); // 추천 API 원본 키
+	String rawLessonId = recoRows.s("lessonId").trim(); // 추천 API 원본 키(벡터 메타)
+	String mediaKey = rawLessonId;
 	if("".equals(mediaKey)) mediaKey = recoRows.s("media_content_key").trim();
-	if("".equals(mediaKey)) continue;
+	if("".equals(mediaKey)) mediaKey = recoRows.s("upload_file_key").trim();
+	if("".equals(mediaKey)) {
+		skippedCount++;
+		continue;
+	}
 
 	String title = recoRows.s("title");
 	String categoryNm = recoRows.s("categoryNm");
@@ -128,6 +141,42 @@ while(recoRows.next()) {
 	int contentHeight = recoRows.i("content_height");
 	if(contentHeight <= 0) contentHeight = m.parseInt(recoRows.s("contentHeight"));
 
+	// 왜: 추천 원본 lessonId가 LM_LESSON.id(숫자)일 수 있어, 콜러스 media key(start_url)로 먼저 정규화해야
+	//     추천 탭에서도 "동영상 시간/인정시간 자동 세팅"이 전체 탭과 동일하게 동작합니다.
+	int lessonPk = m.parseInt(rawLessonId);
+	if(lessonPk > 0 && String.valueOf(lessonPk).equals(rawLessonId)) {
+		DataSet linfo = lesson.find("site_id = " + siteId + " AND id = " + lessonPk + " AND status = 1");
+		if(linfo.next()) {
+			if("".equals(title)) title = linfo.s("lesson_nm");
+			if(totalTime <= 0) totalTime = linfo.i("total_time");
+			if(contentWidth <= 0) contentWidth = linfo.i("content_width");
+			if(contentHeight <= 0) contentHeight = linfo.i("content_height");
+
+			if("05".equals(linfo.s("lesson_type"))) {
+				String lessonMediaKey = linfo.s("start_url").trim();
+				if(!"".equals(lessonMediaKey) && !lessonMediaKey.equals(mediaKey)) {
+					mediaKey = lessonMediaKey;
+					lessonIdResolveCount++;
+				}
+			}
+		}
+	}
+
+	// 왜: lessonId가 이미 media key인 경우에도 LM_LESSON에 저장된 시간/해상도 값이 더 정확할 수 있어 보완합니다.
+	if(totalTime <= 0 || contentWidth <= 0 || contentHeight <= 0 || "".equals(title)) {
+		DataSet linfoByStartUrl = lesson.find(
+			"site_id = " + siteId + " AND start_url = ? AND lesson_type = '05' AND status = 1",
+			new Object[] { mediaKey }
+		);
+		if(linfoByStartUrl.next()) {
+			if("".equals(title)) title = linfoByStartUrl.s("lesson_nm");
+			if(totalTime <= 0) totalTime = linfoByStartUrl.i("total_time");
+			if(contentWidth <= 0) contentWidth = linfoByStartUrl.i("content_width");
+			if(contentHeight <= 0) contentHeight = linfoByStartUrl.i("content_height");
+			lessonStartUrlHitCount++;
+		}
+	}
+
 	DataSet minfo = kollusMedia.find("site_id = " + siteId + " AND media_content_key = ?", new Object[] { mediaKey });
 	if(minfo.next()) {
 		metaHitCount++;
@@ -143,16 +192,59 @@ while(recoRows.next()) {
 		metaMissCount++;
 	}
 
-	String duration = "-";
+	// 왜: 추천 콘텐츠의 lesson_id는 TB_RECO_CONTENT 기준 키라서 LM_LESSON/TB_KOLLUS_MEDIA에 없을 수 있습니다.
+	//     이 경우에도 TB_KOLLUS_TRANSCRIPT.duration_seconds는 존재하므로, 추천 탭 시간 표시와 차시 인정시간 기본값을 안정적으로 채울 수 있습니다.
+	if(totalTime <= 0) {
+		boolean transcriptFound = false;
+		String transcriptKey = !"".equals(mediaKey) ? mediaKey : rawLessonId;
+		DataSet tinfo = null;
+
+		if(!"".equals(transcriptKey)) {
+			tinfo = transcript.find(
+				"site_id = " + siteId + " AND media_content_key = ?",
+				new Object[] { transcriptKey }
+			);
+			if(tinfo.next()) transcriptFound = true;
+		}
+
+		if(!transcriptFound && !"".equals(rawLessonId) && !rawLessonId.equals(transcriptKey)) {
+			tinfo = transcript.find(
+				"site_id = " + siteId + " AND media_content_key = ?",
+				new Object[] { rawLessonId }
+			);
+			if(tinfo.next()) {
+				transcriptFound = true;
+				transcriptKey = rawLessonId;
+			}
+		}
+
+		if(transcriptFound) {
+			int durationSeconds = tinfo.i("duration_seconds");
+			if(durationSeconds > 0) {
+				totalTime = (int)Math.ceil(durationSeconds / 60.0d);
+				transcriptTimeHitCount++;
+			} else {
+				transcriptTimeMissCount++;
+			}
+			if("".equals(title)) title = tinfo.s("title");
+			if("".equals(mediaKey)) mediaKey = transcriptKey;
+		} else {
+			transcriptTimeMissCount++;
+		}
+	}
+
+	if(totalTime <= 0) missingTimeCount++;
+
+	String duration = recoRows.s("duration");
+	if("".equals(duration)) duration = "-";
 	if(totalTime > 0) {
-		int mm = totalTime / 60;
-		int ss = totalTime % 60;
-		duration = (mm < 10 ? "0" : "") + mm + ":" + (ss < 10 ? "0" : "") + ss;
+		duration = totalTime + "분";
 	}
 
 	list.addRow();
 	list.put("id", mediaKey);                              // 프론트 선택키 (콜러스 키값)
 	list.put("lesson_id", mediaKey);                       // 추천 원본 키(문자열)
+	list.put("raw_lesson_id", rawLessonId);                // 추천 응답의 원본 lessonId(디버깅용)
 	list.put("media_content_key", mediaKey);               // 콜러스 재생용 키값
 	list.put("title", title);
 	list.put("category_nm", categoryNm);
@@ -170,7 +262,18 @@ while(recoRows.next()) {
 }
 
 // 왜: 추천 응답에 메타가 비는 경우를 운영에서 빠르게 추적하기 위해 요약 로그를 남깁니다.
-m.log("content_recommend", "rows=" + list.size() + ", meta_hit=" + metaHitCount + ", meta_miss=" + metaMissCount);
+m.log(
+	"content_recommend",
+	"rows=" + list.size()
+	+ ", skipped=" + skippedCount
+	+ ", meta_hit=" + metaHitCount
+	+ ", meta_miss=" + metaMissCount
+	+ ", lesson_id_resolve=" + lessonIdResolveCount
+	+ ", lesson_start_url_hit=" + lessonStartUrlHitCount
+	+ ", transcript_time_hit=" + transcriptTimeHitCount
+	+ ", transcript_time_miss=" + transcriptTimeMissCount
+	+ ", missing_time=" + missingTimeCount
+);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "성공");
