@@ -697,9 +697,9 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
             )}
             <button
               onClick={handleHaksaDownloadCsv}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-white text-gray-700 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-700 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
             >
-              <Download className="w-3 h-3" />
+              <Download className="w-3.5 h-3.5" />
               <span>엑셀(CSV)</span>
             </button>
           </div>
@@ -809,9 +809,9 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
 
           <button
             onClick={handleDownloadCsv}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-white text-gray-700 text-xs border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-700 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
-            <Download className="w-3 h-3" />
+            <Download className="w-3.5 h-3.5" />
             <span>엑셀(CSV)</span>
           </button>
         </div>
