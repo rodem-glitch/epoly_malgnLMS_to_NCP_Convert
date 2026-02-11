@@ -228,7 +228,7 @@ export default function App() {
       <header className="bg-card border-b border-border shrink-0 z-50">
         <div className="flex h-16 items-center justify-between px-6">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => applyMenu('dashboard')}>
             <div className="bg-blue-600 p-2 rounded-lg">
               <GraduationCap className="w-7 h-7 text-white" />
             </div>
