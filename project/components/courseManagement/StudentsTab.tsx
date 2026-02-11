@@ -666,9 +666,9 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="text-sm text-gray-600">총 {haksaCount}명</div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -680,7 +680,7 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
             </div>
             <button
               onClick={() => refreshHaksa(keyword)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
             >
               검색
             </button>
@@ -688,19 +688,19 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
               <button
                 onClick={() => openPrivacyModal('view')}
                 disabled={haksaCount === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:bg-amber-300 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 disabled:bg-amber-300 transition-colors whitespace-nowrap"
               >
                 <span>가려진 정보 보기</span>
               </button>
             ) : (
-              <span className="text-sm text-emerald-600">개인정보 표시중</span>
+              <span className="text-sm text-emerald-600 whitespace-nowrap">개인정보 표시중</span>
             )}
             <button
               onClick={handleHaksaDownloadCsv}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-700 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
             >
-              <Download className="w-4 h-4" />
-              <span>엑셀 다운로드(CSV)</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>엑셀(CSV)</span>
             </button>
           </div>
         </div>
@@ -767,10 +767,10 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
           <div>개인정보 보호를 위해 이름/이메일이 가려져 있습니다. 확인이 필요하면 “가려진 정보 보기”를 눌러 주세요.</div>
         </div>
       )}
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
         <div className="text-sm text-gray-600">총 {totalCount}명</div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -782,16 +782,16 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
           </div>
           <button
             onClick={() => refresh(keyword)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
             검색
           </button>
 
           <button
             onClick={openAddModal}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>수강생 추가</span>
           </button>
 
@@ -799,20 +799,20 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
             <button
               onClick={() => openPrivacyModal('view')}
               disabled={totalCount === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:bg-amber-300 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 disabled:bg-amber-300 transition-colors whitespace-nowrap"
             >
               <span>가려진 정보 보기</span>
             </button>
           ) : (
-            <span className="text-sm text-emerald-600">개인정보 표시중</span>
+            <span className="text-sm text-emerald-600 whitespace-nowrap">개인정보 표시중</span>
           )}
 
           <button
             onClick={handleDownloadCsv}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-700 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
-            <Download className="w-4 h-4" />
-            <span>엑셀 다운로드(CSV)</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>엑셀(CSV)</span>
           </button>
         </div>
       </div>

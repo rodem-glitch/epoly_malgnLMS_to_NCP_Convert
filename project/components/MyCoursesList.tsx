@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Users, Settings } from 'lucide-react';
+import { Search, Users, Settings, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { CourseManagement, type CourseManagementTabId } from './CourseManagement';
 import { tutorLmsApi } from '../api/tutorLmsApi';
 import {
@@ -162,6 +162,25 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedCourseTab, setSelectedCourseTab] = useState<CourseManagementTabId | null>(null);
   const [resolvingCourseId, setResolvingCourseId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = useCallback((column: string) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  }, [sortColumn]);
+
+  const SortIcon = useCallback(({ column }: { column: string }) => {
+    if (sortColumn !== column) return <ArrowUpDown className="inline w-3.5 h-3.5 ml-1 text-gray-400" />;
+    return sortDirection === 'asc'
+      ? <ArrowUp className="inline w-3.5 h-3.5 ml-1 text-blue-600" />
+      : <ArrowDown className="inline w-3.5 h-3.5 ml-1 text-blue-600" />;
+  }, [sortColumn, sortDirection]);
 
   // URL 동기화용 ref
   const routeRef = useRef<{ subPath?: string; params: Record<string, string> }>({
@@ -382,6 +401,18 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   }, [routeSubPath]);
 
   // ============================================================================
+  // Effect: 과목 선택/해제 시 스크롤을 맨 위로 리셋
+  // ============================================================================
+  useEffect(() => {
+    // 왜: 목록에서 스크롤을 내린 뒤 과목을 선택하면, 상세 화면이 스크롤 중간부터 보이는 문제를 방지합니다.
+    const el = containerRef.current;
+    if (!el) return;
+    // 가장 가까운 스크롤 가능한 부모(main)를 찾아 스크롤 리셋
+    const scrollParent = el.closest('main') ?? el.parentElement;
+    if (scrollParent) scrollParent.scrollTop = 0;
+  }, [selectedCourse]);
+
+  // ============================================================================
   // Effect 6: 직접 링크(direct=1) 처리
   // ============================================================================
   const getRouteParam = useCallback((keys: string[]) => {
@@ -518,6 +549,33 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
     });
   }, [filters, courses]);
 
+  // 클라이언트 정렬
+  const sortedCourses = useMemo(() => {
+    if (!sortColumn) return filteredCourses;
+    return [...filteredCourses].sort((a, b) => {
+      let aVal = '';
+      let bVal = '';
+      switch (sortColumn) {
+        case 'courseId': aVal = a.courseId; bVal = b.courseId; break;
+        case 'courseType':
+          aVal = a.sourceType === 'haksa' ? (a.haksaCategory || '') : a.courseType;
+          bVal = b.sourceType === 'haksa' ? (b.haksaCategory || '') : b.courseType;
+          break;
+        case 'subjectName': aVal = a.subjectName; bVal = b.subjectName; break;
+        case 'programName':
+          aVal = a.sourceType === 'haksa' ? (a.haksaDeptName || '') : a.programName;
+          bVal = b.sourceType === 'haksa' ? (b.haksaDeptName || '') : b.programName;
+          break;
+        case 'period': aVal = a.period; bVal = b.period; break;
+        case 'students': return sortDirection === 'asc' ? a.students - b.students : b.students - a.students;
+        case 'status': aVal = a.status; bVal = b.status; break;
+        default: return 0;
+      }
+      const cmp = aVal.localeCompare(bVal, 'ko');
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+  }, [filteredCourses, sortColumn, sortDirection]);
+
   // 과정 유형 옵션 (동적 생성)
   const courseTypeOptions = useMemo(() => {
     const types = Array.from(new Set(courses.map((c) => c.courseType).filter((t) => t && t !== '미지정'))).sort((a, b) =>
@@ -546,17 +604,19 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   // ============================================================================
   if (selectedCourse) {
     return (
-      <CourseManagement
-        course={selectedCourse}
-        initialTab={selectedCourseTab ?? routeTargetTab ?? undefined}
-        initialQnaPostId={routeSubPath === 'manage' ? routeQnaPostId : undefined}
-        onTabChange={(tabId) => setSelectedCourseTab(tabId)}
-        onBack={() => {
-          setSelectedCourse(null);
-          setSelectedCourseTab(null);
-          pushRoute({ subPath: undefined, params: getUrlParams() });
-        }}
-      />
+      <div ref={containerRef}>
+        <CourseManagement
+          course={selectedCourse}
+          initialTab={selectedCourseTab ?? routeTargetTab ?? undefined}
+          initialQnaPostId={routeSubPath === 'manage' ? routeQnaPostId : undefined}
+          onTabChange={(tabId) => setSelectedCourseTab(tabId)}
+          onBack={() => {
+            setSelectedCourse(null);
+            setSelectedCourseTab(null);
+            pushRoute({ subPath: undefined, params: getUrlParams() });
+          }}
+        />
+      </div>
     );
   }
 
@@ -564,7 +624,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
   // 렌더링: 목록 화면
   // ============================================================================
   return (
-    <div className="max-w-7xl mx-auto">
+    <div ref={containerRef} className="max-w-7xl mx-auto">
       <div className="mb-8">
         <h2 className="text-gray-900 mb-2">담당 과목</h2>
         <p className="text-gray-600">담당하고 있는 과목 목록을 확인하고 관리합니다.</p>
@@ -597,13 +657,13 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
       {/* 필터 영역 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         {filters.tab === 'haksa' ? (
-          <div className="grid grid-cols-6 gap-4 mb-4">
+          <div className="grid grid-cols-4 gap-4">
             <div>
               <label className="block text-sm text-gray-700 mb-2">년도</label>
               <select
                 value={filters.year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {yearOptions.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -615,7 +675,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
               <select
                 value={filters.haksaCategory}
                 onChange={(e) => setHaksaCategory(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {CATEGORY_OPTIONS.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -627,7 +687,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
               <select
                 value={filters.haksaGrad}
                 onChange={(e) => setHaksaGrad(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {GRAD_OPTIONS.map((g) => (
                   <option key={g} value={g}>{g}</option>
@@ -639,46 +699,22 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
               <select
                 value={filters.haksaCurriculum}
                 onChange={(e) => setHaksaCurriculum(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {CURRICULUM_OPTIONS.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm text-gray-700 mb-2">정렬</label>
-              <select
-                value={filters.sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="desc">강좌코드 내림차순</option>
-                <option value="asc">강좌코드 오름차순</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-700 mb-2">검색</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="과목명, 과정명, 과정ID 검색"
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm text-gray-700 mb-2">년도</label>
               <select
                 value={filters.year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {yearOptions.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -690,7 +726,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
               <select
                 value={filters.courseType}
                 onChange={(e) => setCourseType(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {courseTypeOptions.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -702,7 +738,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
               <select
                 value={filters.status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="전체">전체</option>
                 <option value="대기">대기</option>
@@ -711,41 +747,39 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
                 <option value="종료">종료</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm text-gray-700 mb-2">검색</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="과목명, 과정명, 과정ID 검색"
-                  className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </div>
           </div>
         )}
+        {/* 검색 (별도 줄) */}
+        <div className="mt-4 relative max-w-md">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="과목명, 과정명, 과정ID 검색"
+            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        </div>
       </div>
 
       {/* 과목 목록 테이블 */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[900px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">No</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">요청</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">과정ID</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">유형</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">과목명</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">
-                  {filters.tab === 'haksa' ? '학과/전공' : '소속 과정명'}
+                <th className="px-4 py-3 text-left text-sm text-gray-700 whitespace-nowrap">No</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700 whitespace-nowrap">요청</th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700 whitespace-nowrap w-20 cursor-pointer select-none hover:text-blue-600" onClick={() => handleSort('courseId')}>과정ID<SortIcon column="courseId" /></th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700 whitespace-nowrap cursor-pointer select-none hover:text-blue-600" onClick={() => handleSort('courseType')}>유형<SortIcon column="courseType" /></th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700 whitespace-nowrap cursor-pointer select-none hover:text-blue-600" onClick={() => handleSort('subjectName')}>과목명<SortIcon column="subjectName" /></th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700 whitespace-nowrap cursor-pointer select-none hover:text-blue-600" onClick={() => handleSort('programName')}>
+                  {filters.tab === 'haksa' ? '학과/전공' : '소속 과정명'}<SortIcon column="programName" />
                 </th>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">기간</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">수강생</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">상태</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">관리</th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700 whitespace-nowrap cursor-pointer select-none hover:text-blue-600" onClick={() => handleSort('period')}>기간<SortIcon column="period" /></th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700 whitespace-nowrap cursor-pointer select-none hover:text-blue-600" onClick={() => handleSort('students')}>수강생<SortIcon column="students" /></th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700 whitespace-nowrap cursor-pointer select-none hover:text-blue-600" onClick={() => handleSort('status')}>상태<SortIcon column="status" /></th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700 whitespace-nowrap">관리</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -761,19 +795,19 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
                     <p>불러오는 중...</p>
                   </td>
                 </tr>
-              ) : filteredCourses.length > 0 ? (
-                filteredCourses.map((course, index) => (
+              ) : sortedCourses.length > 0 ? (
+                sortedCourses.map((course, index) => (
                   <tr key={course.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4 text-sm text-gray-900">{(filters.page - 1) * filters.pageSize + index + 1}</td>
-                    <td className="px-4 py-4 text-center">
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{(filters.page - 1) * filters.pageSize + index + 1}</td>
+                    <td className="px-4 py-4 text-center whitespace-nowrap">
                       <span className={`inline-flex px-2 py-0.5 text-xs rounded-full ${
                         course.sourceType === 'prism' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
                       }`}>
                         {course.sourceType === 'prism' ? 'LMS' : '학사'}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">{course.courseId}</td>
-                    <td className="px-4 py-4 text-sm text-gray-600">
+                    <td className="px-4 py-4 text-sm text-gray-900 whitespace-nowrap">{course.courseId}</td>
+                    <td className="px-4 py-4 text-sm text-gray-600 whitespace-nowrap">
                       {course.sourceType === 'haksa' && course.haksaCategory 
                         ? course.haksaCategory 
                         : course.courseType}
@@ -784,19 +818,19 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
                         ? course.haksaDeptName
                         : course.programName}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">{course.period}</td>
-                    <td className="px-4 py-4 text-center">
+                    <td className="px-4 py-4 text-sm text-gray-600 whitespace-nowrap">{course.period}</td>
+                    <td className="px-4 py-4 text-center whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1 text-sm text-gray-900">
                         <Users className="w-4 h-4 text-gray-500" />
                         <span>{course.students}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-center">
+                    <td className="px-4 py-4 text-center whitespace-nowrap">
                       <span className={`inline-flex px-3 py-1 text-xs rounded-full ${getStatusColor(course.status)}`}>
                         {course.status}
                       </span>
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-center">
                         <button
                           className="flex items-center gap-1 px-4 py-1.5 text-xs text-blue-700 bg-blue-50 rounded hover:bg-blue-100 transition-colors disabled:opacity-60"
@@ -829,7 +863,7 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
           <span>총</span>
           <span className="text-blue-600">{totalCount}</span>
           <span>개의 과목</span>
-          <span className="text-gray-400">/ 현재 {filteredCourses.length}개 표시</span>
+          <span className="text-gray-400">/ 현재 {sortedCourses.length}개 표시</span>
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="page-size" className="text-gray-600">페이지당</label>
