@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:50
+최근 자동 갱신: 2026-02-12 14:57
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -418,6 +418,7 @@
     - 기본 화면(`/`, `/mypage/*`, `/member/*`, `/tutor_lms/*`)은 Resin(8080)
     - API 경로(`/statistics/*`, `/student/*`, `/tutor/*`, `/job/*`, `/actuator/*`)는 Spring API(8081)
   - VM Resin은 `public_html` + `WEB-INF/classes`를 기본으로 사용하고, 필요한 클래스가 없으면 `legacy/src`를 기준으로 런타임 컴파일
+  - 런타임 컴파일 대상 `src/dao/CourseSectionDao.java`의 `item("section_id", ...)`는 `Integer/int` 혼합 삼항식이면 오버로드 충돌로 컴파일 실패할 수 있어 `int`로 먼저 확정
   - API 컨테이너는 `SPRING_DATASOURCE_*`, `SPRING_AI_VECTORSTORE_QDRANT_*` 환경변수로 운영값을 강제 주입해 JAR 내부 `application-local.yml` 오버라이드를 방지
   - 통계 기능 엑셀 원본(`통계/`)을 배포 번들에 포함하고 API 컨테이너 `/data/statistics`로 마운트
   - API에 `STATISTICS_MAJOR_INDUSTRY_FILE`, `STATISTICS_EMPLOYMENT_FILE`, `STATISTICS_ADMISSION_FILE`, `STATISTICS_STUDENT_POPULATION_FILE`을 절대경로(`/data/statistics/*.xlsx`)로 주입

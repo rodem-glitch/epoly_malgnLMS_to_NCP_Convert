@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:50
+최근 자동 갱신: 2026-02-12 14:57
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -123,6 +123,7 @@
   - VM Resin은 `public_html/WEB-INF/classes`를 우선 사용하되, 누락 클래스는 `source=/opt/polytech-lms/legacy/src` 경로로 런타임 컴파일합니다. CI 배포 시 `src` 볼륨 마운트가 빠지면 `package dao does not exist`로 첫 화면 500이 재발합니다.
   - Resin 첫 요청 시 `WEB-INF/work`에 JSP 컴파일 파일을 쓰므로, 배포 스크립트의 `prepare_legacy_permissions` 권한 보정 단계를 제거하면 `Permission denied`로 500이 재발할 수 있습니다.
   - `/tutor_lms/`에서 `Cannot create directory: /var/resin/webapps/ROOT/WEB-INF/classes`가 뜨면 `prepare_legacy_permissions`에 `WEB-INF/classes` 생성/권한 보정이 빠진 상태일 가능성이 큽니다.
+  - 운영 500 본문에 `CourseSectionDao.java:36 reference to item is ambiguous`가 보이면 `item("section_id", 조건식)` 형태의 `Integer/int` 혼합 오버로드 충돌입니다. `int`로 먼저 변환해 전달해야 Resin 런타임 컴파일이 통과합니다.
   - 배포 번들을 `stack-타임스탬프`로 생성할 때는 원격 실행 경로도 같은 폴더(`~/stack-...`)를 써야 합니다. 고정 `~/stack`을 실행하면 이전 dump가 재사용될 수 있습니다.
   - 레거시 dump는 `LM_COURSE`/`LM_COURSE_USER` 컬럼 수 mismatch와 `DEFINER` 구문으로 import 실패가 날 수 있어, 보정 로직(`Normalize-DbDumpIfNeeded`)을 우회하지 않아야 합니다.
   - MySQL 함수 생성 정책 오류(1418)는 `lms` 계정으로는 해결되지 않습니다. `log_bin_trust_function_creators`는 반드시 root 계정으로 설정해야 합니다.

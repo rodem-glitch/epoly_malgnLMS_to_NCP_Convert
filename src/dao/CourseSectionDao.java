@@ -33,7 +33,10 @@ public class CourseSectionDao extends DataObject {
 
 		DataSet cllist = courseLesson.find("course_id = " + newCourseId + " AND status != -1");
 		while(cllist.next()) {
-			courseLesson.item("section_id", sectionMap.containsKey(cllist.i("section_id")) ? sectionMap.get(cllist.i("section_id")) : 0);
+			// 왜: 삼항 연산식에서 Integer/int가 섞이면 item(String, Object)와 item(String, int) 오버로드가 충돌할 수 있어
+			// 섹션 ID를 int로 먼저 확정해 런타임 JSP 컴파일 실패(ambiguous reference)를 막습니다.
+			int mappedSectionId = sectionMap.containsKey(cllist.i("section_id")) ? sectionMap.get(cllist.i("section_id")).intValue() : 0;
+			courseLesson.item("section_id", mappedSectionId);
 			if(!courseLesson.update("course_id = " + newCourseId + " AND lesson_id = " + cllist.i("lesson_id"))) return false;
 		}
 

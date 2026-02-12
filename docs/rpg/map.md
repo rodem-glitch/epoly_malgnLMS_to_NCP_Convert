@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:50
+최근 자동 갱신: 2026-02-12 14:57
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -114,3 +114,4 @@
 | GitHub Actions 원격 배포 속도 최적화 | `Deploy LMS to GCP + Firebase` 워크플로의 VM 원격 배포 구간 | `tools/gcp/templates/deploy-stack.sh.tpl` | 설치 완료 VM에서 apt 재설치/이미지 pull 기본 생략(필요 시 `DEPLOY_FORCE_PULL=true`) | 확인 근거: run(#28)에서 6분 타임아웃 발생 로그 확인 후 `install_base_packages`/`start_stack`/`start_stack_for_import`를 속도 우선 경로로 보강 |
 | GitHub Actions VM 업로드 시간 단축 | `Deploy LMS to GCP + Firebase` 워크플로의 VM 원격 배포 구간 | `tools/gcp/one-click-setup.ps1` | 배포 번들을 tar.gz 단일 파일로 전송 후 원격 압축해제(`scp --recurse` 제거) | 확인 근거: run(#29)에서 VM 배포 직후 6분 타임아웃 재발 확인 후 대량 파일 재귀 전송 병목을 해소하도록 업로드 방식을 변경 |
 | 운영 장애 즉시 복구(web.app placeholder + Resin classes 권한) | `https://epoly-kopo.web.app/`, `https://epoly-kopo.web.app/tutor_lms/` | `tools/gcp/firebase-proxy-deploy/public/vmproxy-placeholder.txt`, `tools/gcp/templates/deploy-stack.sh.tpl` | 루트는 vmproxy rewrite 경유로 복원, Resin `WEB-INF/classes` 쓰기권한 보정으로 500 복구 | 확인 근거: 운영에서 root가 `vmproxy hosting placeholder`, `/tutor_lms/`가 `Cannot create directory: /var/resin/webapps/ROOT/WEB-INF/classes` 오류를 반환한 이력 기준으로 즉시 보정 |
+| 운영 500 즉시 복구(Resin 런타임 컴파일 에러) | `https://epoly-kopo.web.app/`, `https://epoly-kopo.web.app/tutor_lms/` | `src/dao/CourseSectionDao.java` | `item(String,Object/int)` 오버로드 충돌 제거로 Resin 컴파일 에러 해소 | 확인 근거: 운영 500 응답에 `CourseSectionDao.java:36 reference to item is ambiguous`가 포함되어 있어 `section_id` 값을 int로 명시 변환 |
