@@ -54,9 +54,9 @@ if((returl.startsWith("http://") || returl.startsWith("https://")) && 0 > returl
 
 // 왜: 로그인 화면을 여는 진입 경로에 따라 학생/교수자 테스트 계정 기본값을 다르게 채워
 //     메뉴별로 로그인 모양이 달라지는 혼선을 줄입니다.
-String loginIdPreset = "haksa_st26_01";
+String loginIdPreset = "kopo_st01";
 String loginPasswdPreset = "Growai!2026";
-if(-1 < returl.indexOf("/tutor_lms/")) loginIdPreset = "haksa_pf26_01";
+if(-1 < returl.indexOf("/tutor_lms/")) loginIdPreset = "kopo_pr01";
 
 //폼입력
 String id = m.rs("id");

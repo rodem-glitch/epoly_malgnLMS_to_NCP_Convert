@@ -83,9 +83,9 @@ if((loginReturl.startsWith("http://") || loginReturl.startsWith("https://")) && 
 
 // 왜: 학생/교수자가 서로 다른 메뉴에서 로그인 모달을 열어도 같은 방식으로 기본값이 보이도록
 //     returl 기준으로 테스트 계정 프리셋을 서버에서 통일합니다.
-String loginIdPreset = "haksa_st26_01";
+String loginIdPreset = "kopo_st01";
 String loginPasswdPreset = "Growai!2026";
-if(-1 < loginReturl.indexOf("/tutor_lms/")) loginIdPreset = "haksa_pf26_01";
+if(-1 < loginReturl.indexOf("/tutor_lms/")) loginIdPreset = "kopo_pr01";
 
 if(loginRequiredBlock) {
 	m.log(

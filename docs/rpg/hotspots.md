@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:57
+최근 자동 갱신: 2026-02-12 17:14
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -31,6 +31,10 @@
   - 교수자 과제 제출 첨부는 `TB_FILE`이 아니라 `CL_FILE`에 저장되는 흐름이 있습니다(과제 모듈).
   - 다운로드 링크는 `/classroom/download_cl.jsp?id=...&ek=...`를 사용하며, `ek`는 보통 `m.encrypt(id)` 또는 `m.encrypt(id + yyyyMMdd)` 패턴입니다.
   - 관련 코드: `public_html/tutor_lms/api/homework_user_submission.jsp`, `public_html/tutor_lms/api/homework_submit_cancel.jsp`, `public_html/classroom/download_cl.jsp`
+- 학사(정규) 커리큘럼 차시 수강기간 vs 과제 `보기`(주의):
+  - 차시 수강기간은 동영상/시험은 기존대로 차단하지만, 과제는 차시 기간 밖이어도 `보기` 이동을 허용합니다(사용성 이슈로 예외).
+  - 서버에서도 동일 예외가 적용되므로, “차시 기간 밖 과제 차단”이 필요해지면 이 정책부터 재검토해야 합니다.
+  - 관련 코드: `public_html/html/classroom/index.html`, `public_html/classroom/haksa_module.jsp`
 - Resin 실행 conf 경로:
   - IntelliJ 실행 기준은 `.idea/runConfigurations/Resin.xml`의 `SCRIPT_OPTIONS`입니다.
   - 현재 기준값은 `console --conf C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml`입니다.
@@ -61,8 +65,8 @@
   - `returl`은 레거시 비인코딩 케이스가 있어 쿼리 원문 재파싱을 같이 유지해야 하며, 외부 도메인 차단 검사도 함께 유지해야 합니다.
   - 모달 POST 값(`returl`, `udid`)은 `public_html/html/mypage/new_main_full.html` hidden 필드와 `public_html/mypage/new_main/index.jsp` 변수 세팅이 한 쌍입니다.
   - 현재 로그인 UX는 “빠른 로그인 카드”가 아니라 입력칸 기본값 방식입니다. 하위 메뉴 공통 모달(`layout_new_main`)까지 동일하게 맞추지 않으면 메뉴별 동작이 달라 보일 수 있습니다.
-  - 2026-02-11 임시 운영 변경으로 신규메인/공통 레이아웃 로그인 모달 기본값이 하드코딩(`haksa_st26_01`, `Growai!2026`)되어 있습니다.
-  - 교수자 기본값(`haksa_pf26_01`)은 화면 하드코딩이 아니라 `returl` 분기(`member/login.jsp`, `mypage/new_main/index.jsp`)에서 주입됩니다.
+  - 2026-02-12 기준: 신규메인/공통 레이아웃 로그인 모달 기본값은 화면 하드코딩이 아니라 서버 프리셋으로 주입됩니다.
+  - 학생 기본값: `kopo_st01` / 비밀번호 `Growai!2026`, 교수자(`tutor_lms` 등) 기본값: `kopo_pr01`(`returl` 분기: `member/login.jsp`, `mypage/new_main/index.jsp`)
   - 운영 전환 시에는 하드코딩 제거(또는 서버 설정값 외부화)를 우선 점검해야 하며, 템플릿 위치는 `public_html/html/mypage/new_main_full.html`, `public_html/html/layout/layout_new_main.html`입니다.
 - React 배포 산출물: `public_html/tutor_lms/app` (빌드 누락/정적파일 캐시 이슈)
 - 교수자 차시관리 추천 동영상(시간/인정시간) 주의:

@@ -576,16 +576,16 @@
 				<div class="nm-login-modal__subtitle">미래형 직업교육 플랫폼에 오신 것을 환영합니다</div>
 			</div>
 			<form id="loginForm" method="post" action="/member/login.jsp" target="loginFrame" onsubmit="return submitLogin()">
-				<input type="hidden" name="returl" value="/mypage/new_main/">
+				<input type="hidden" name="returl" value="{{login_returl}}">
 				<div class="nm-login-modal__body">
 					<div id="loginError" class="nm-login-modal__error"></div>
 					<div class="nm-login-modal__field">
 						<label class="nm-login-modal__label" for="login_id">아이디</label>
-						<input type="text" id="login_id" name="id" class="nm-login-modal__input" placeholder="아이디를 입력하세요" value="haksa_st26_01" required>
+						<input type="text" id="login_id" name="id" class="nm-login-modal__input" placeholder="아이디를 입력하세요" value="{{login_id_preset}}" required>
 					</div>
 					<div class="nm-login-modal__field">
 						<label class="nm-login-modal__label" for="login_passwd">비밀번호</label>
-						<input type="password" id="login_passwd" name="passwd" class="nm-login-modal__input" placeholder="비밀번호를 입력하세요" value="Growai!2026" required>
+						<input type="password" id="login_passwd" name="passwd" class="nm-login-modal__input" placeholder="비밀번호를 입력하세요" value="{{login_passwd_preset}}" required>
 					</div>
 					<button type="submit" class="nm-login-modal__submit">로그인</button>
 				</div>
@@ -601,10 +601,10 @@
 
 	<script>
 	function applyDefaultLoginPreset() {
-		// 왜: 이 레이아웃(이러닝/채용 하위 포함)에서 여는 로그인 모달은 학생 기본값을 공통으로 유지해야
-		// 메뉴마다 입력값이 비어 보이는 혼선을 줄일 수 있습니다.
-		document.getElementById('login_id').value = 'haksa_st26_01';
-		document.getElementById('login_passwd').value = 'Growai!2026';
+		// 왜: 레이아웃/메뉴가 달라도 로그인 모달 기본값이 일관되게 보이도록,
+		//     서버에서 내려준 프리셋(학생/교수자)을 다시 적용합니다.
+		document.getElementById('login_id').value = '{{login_id_preset}}';
+		document.getElementById('login_passwd').value = '{{login_passwd_preset}}';
 	}
 	function openLoginModal() {
 		applyDefaultLoginPreset();
@@ -627,7 +627,8 @@
 			showLoginError('아이디와 비밀번호를 입력해주세요.');
 			return false;
 		}
-		setTimeout(function() { location.reload(); }, 500);
+		// 왜: 로그인 후 이동은 /member/login.jsp 응답 스크립트(parent.location.replace(returl))에 맡겨야
+		//     returl 이동을 setTimeout(location.reload)로 덮어쓰는 회귀를 막을 수 있습니다.
 		return true;
 	}
 	function showLoginError(message) {

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:57
+최근 자동 갱신: 2026-02-12 17:14
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -53,11 +53,16 @@
 | 증명서(수료증/합격증) 발급 동의 | `public_html/mypage/certificate*.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | 동의서 이미지(`/common/images/consent/consent_cert_1.png` 또는 `/common/images/consent/consent_cert_2.png`) 필요(둘 다 없으면 차단), `ag=cert`, `mid=cuid`(선택), `returl` 필수 |
 | (로컬 테스트) SSO 동의 화면 확인 | `public_html/mypage/new_main/sso_consent_test.jsp` → `public_html/member/privacy_agree.jsp` | `src/dao/AgreementLogDao.java` / `TB_AGREEMENT_LOG` | `public_html/html/member/privacy_agree.html` | localhost에서만 접근(운영 노출 방지), `force=Y`로 재확인 |
 
+## 최근 작업(강의실 학사 커리큘럼)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 학사 커리큘럼 과제 `보기` 바로가기(차시 기간 예외) | `public_html/classroom/index.jsp`(렌더) → `public_html/classroom/haksa_module.jsp`(리다이렉트) → `public_html/classroom/homework_view.jsp` | `src/dao/PolyCourseSettingDao.java` (커리큘럼 JSON) | `public_html/html/classroom/index.html` | 과제는 차시 수강기간 밖이어도 `보기` 이동 허용(시험/동영상은 기존 차단 유지) |
+
 ## 최근 작업(로그인 모달 게이트)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
 | 비로그인 권한 진입 시 신규 메인 모달로 로그인 유도 | `public_html/mypage/init.jsp`(0차 게이트), `public_html/member/login.jsp`(GET 게이트) → `public_html/mypage/new_main/index.jsp` | `public_html/mypage/init.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` | `public_html/html/mypage/new_main_full.html` | 구 로그인 페이지 직접 렌더 대신 `login_required=Y`로 모달 자동 오픈, `returl`/`udid` hidden 전달, `access_token`/`ek`(SSL 토큰 로그인)은 기존 분기 유지 |
-| 공통 로그인 기본값 분기(학생/교수자) | `/member/login.jsp` → `/mypage/new_main/?login_required=Y...` | `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` | `public_html/html/member/login.html`, `public_html/_html_v5/member/login.html`, `public_html/html/mypage/new_main_full.html`, `public_html/html/layout/layout_new_main.html` | `returl`에 `/tutor_lms/` 포함 시 교수자(`haksa_pf26_01`) 기본값 주입, 그 외(이러닝/채용 하위 포함)는 학생(`haksa_st26_01`) 기본값 주입. 비밀번호 `Growai!2026` 공통 |
+| 공통 로그인 기본값 분기(학생/교수자) | `/member/login.jsp` → `/mypage/new_main/?login_required=Y...` | `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/init.jsp` | `public_html/html/member/login.html`, `public_html/_html_v5/member/login.html`, `public_html/html/mypage/new_main_full.html`, `public_html/html/layout/layout_new_main.html` | `returl`(또는 현재 경로)에 `/tutor_lms/` 포함 시 교수자(`kopo_pr01`) 기본값 주입, 그 외는 학생(`kopo_st01`) 기본값 주입. 비밀번호 `Growai!2026` 공통 |
 
 ## 최근 작업(매뉴얼)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 정적 파일(HTML/이미지) | 비고 |

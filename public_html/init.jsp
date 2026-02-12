@@ -155,5 +155,19 @@ p.setVar("SYS_TODAY", sysToday);
 p.setVar("SYS_NOW", sysNow);
 p.setVar("SYS_VIEWER_VERSION", sysViewerVersion);
 
+// 왜: 로그인 모달(공통 레이아웃 포함)에서 "로그인 후 돌아갈 경로"와 "기본 아이디"를 한 번에 통일합니다.
+// - 기본 returl: 현재 페이지(상대경로 + 쿼리스트링)
+// - 기본 아이디: 학생/교수자 메뉴가 섞여도 혼선이 없게 URL 경로 기준으로 분기
+String _loginReturlDefaultQs = m.qs("");
+String _loginReturlDefault = request.getRequestURI() + ("".equals(_loginReturlDefaultQs) ? "" : "?" + _loginReturlDefaultQs);
+p.setVar("login_returl", _loginReturlDefault);
+
+String _loginIdPresetDefault = "kopo_st01";
+String _loginPasswdPresetDefault = "Growai!2026";
+String _loginPresetPath = request.getRequestURI();
+if(_loginPresetPath != null && -1 < _loginPresetPath.indexOf("/tutor_lms/")) _loginIdPresetDefault = "kopo_pr01";
+p.setVar("login_id_preset", _loginIdPresetDefault);
+p.setVar("login_passwd_preset", _loginPasswdPresetDefault);
+
 MenuDao Menu = new MenuDao(p, siteId, "default");
 %>

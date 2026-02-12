@@ -18,7 +18,10 @@ private String buildDateTime(String date, String time, boolean isStart) {
 %><%
 
 //왜 필요한가:
-//- 학사 차시 수강기간을 지나면 시험/과제도 잠겨야 하므로 서버에서 한 번 더 막습니다.
+//- 학사 커리큘럼 화면에서 "보기"로 바로 진입할 때, 서버에서도 차시 수강기간을 한 번 더 확인합니다.
+//- 단, 과제는 과제 자체(과제 열람/제출 기간, 권한)로 제어되는 경우가 많아
+//  차시 수강기간 때문에 "보기"가 막히면 사용성이 크게 떨어집니다.
+//  그래서 시험은 차시 기간 밖이면 차단하되, 과제는 차시 기간 밖이어도 "보기"는 허용합니다.
 
 String type = m.rs("type");
 int moduleId = m.ri("module_id");
@@ -127,8 +130,20 @@ String endDateTime = buildDateTime(targetSession.optString("endDate", ""), targe
 // 왜: classroom/init.jsp에서도 now 변수를 선언하므로, include 충돌을 피하려고 이름을 분리합니다.
 String nowDt = m.time("yyyyMMddHHmmss");
 
-if(!"".equals(startDateTime) && !"".equals(endDateTime)) {
-	if(nowDt.compareTo(startDateTime) < 0 || nowDt.compareTo(endDateTime) > 0) {
+boolean hasPeriod = !"".equals(startDateTime) && !"".equals(endDateTime);
+boolean inPeriod = true;
+if(hasPeriod) inPeriod = !(nowDt.compareTo(startDateTime) < 0 || nowDt.compareTo(endDateTime) > 0);
+
+if(hasPeriod && !inPeriod) {
+	// 왜: 과제는 차시 수강기간과 별도로 과제 자체 기간/권한으로 관리되는 경우가 있어,
+	//     차시 기간 체크로 "보기"가 막히지 않게 예외로 둡니다(시험은 기존대로 차단).
+	if("assignment".equals(type)) {
+		m.log("haksa_module", "[bypass] out_of_period type=assignment module_id=" + moduleId
+			+ ", session_id=" + sessionId
+			+ ", now=" + nowDt
+			+ ", start=" + startDateTime
+			+ ", end=" + endDateTime);
+	} else {
 		m.jsErrClose("차시 수강기간이 아닙니다.");
 		return;
 	}

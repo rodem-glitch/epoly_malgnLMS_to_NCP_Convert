@@ -616,7 +616,10 @@
 										else if(itemType === 'assignment' || itemType === 'homework') { typeLabel = '과제'; typeClass = 'type-assignment'; }
 
 										var $li = $('<li class="haksa_content_item">');
-										if(!openBlock) $li.addClass('haksa_content_locked');
+										// 왜: 과제는 차시 수강기간과 별도로 과제 자체 기간/권한으로 관리되는 경우가 있어,
+										//     차시 기간 밖이어도 "보기"는 가능하게 둡니다(동영상/시험은 기존대로 잠금).
+										var isAssignmentItem = (itemType === 'assignment' || itemType === 'homework');
+										if(!openBlock && !isAssignmentItem) $li.addClass('haksa_content_locked');
 										$li.append($('<span class="haksa_type">').addClass(typeClass).text(typeLabel));
 										$li.append($('<span class="haksa_content_title">').text(item.title || '-'));
 										if(itemType === 'video') {
@@ -659,7 +662,9 @@
 												$view.css('cursor', 'pointer');
 												$view.on('click', function(e) {
 													e.preventDefault();
-													if(!openBlock) {
+													// 왜: 과제는 차시 수강기간 밖이라도 바로가기로 진입을 허용합니다.
+													//     (시험/학습자료 등은 기존처럼 기간 밖이면 차단)
+													if(!openBlock && !isAssignmentItem) {
 														alert('차시 수강기간이 아닙니다.');
 														return;
 													}

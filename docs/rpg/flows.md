@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:57
+최근 자동 갱신: 2026-02-12 17:14
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -96,7 +96,7 @@
 - 확인(근거):
   - 코드 경로 확인: `public_html/mypage/init.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/html/mypage/new_main_full.html`
   - 시나리오 점검: `권한 페이지(/mypage/*) -> /mypage/new_main/?login_required=Y&returl=... -> 모달 POST`
-  - 로컬 검증: `/mypage/new_main/index.jsp` 응답 HTML에 `테스트 빠른 로그인` 영역 노출, `POST /member/login.jsp(id=haksa_pf26_01)` 응답이 `/tutor_lms/index.jsp` 복귀 스크립트 반환
+  - 로컬 검증: `/mypage/new_main/index.jsp` 응답 HTML에 `테스트 빠른 로그인` 영역 노출, `POST /member/login.jsp(id=kopo_pr01)` 응답이 `/tutor_lms/index.jsp` 복귀 스크립트 반환
 - 최근 갱신: 2026-02-10
 
 ### FLOW-1004: 신규 메인 헤더 `나의강의실` 클릭 시 로그인 모달 분기
@@ -188,6 +188,24 @@
   - 출력 경로 확인: `public_html/html/main/search.html`, `public_html/html/main/search_detail.html`에서 추천영상 타이틀 카테고리 라벨 제거 + `course_block` 행의 `reco-video-row` 클래스 적용 + 요약/키워드 칩 슬롯 확인
 - 최근 갱신: 2026-02-11
 
+### FLOW-1008: 강의실(학사 커리큘럼) 과제 `보기`는 차시 수강기간과 무관하게 이동
+- 사용자 동작(의도): 강의실의 학사(정규) 커리큘럼에서 과제 항목 `보기`를 눌러 과제 글로 바로 이동
+- 진입점:
+  - 목록 렌더/클릭 처리(템플릿 JS): `public_html/html/classroom/index.html`
+  - 서버 게이트(리다이렉트): `public_html/classroom/haksa_module.jsp` (`type=assignment`, `module_id`, `session_id`)
+- 처리(핵심):
+  - 차시 수강기간(`session.startDate~endDate`)이 현재 시간 밖이어도 과제는 `보기` 클릭 시 이동을 차단하지 않음
+  - 시험(`type=exam`)과 동영상은 기존대로 차시 수강기간 밖이면 차단(동영상은 `haksa_video.jsp`, 시험은 `haksa_module.jsp`)
+  - 서버에서도 동일 규칙을 한 번 더 적용: 시험은 차단 유지, 과제는 차단 대신 로그(`haksa_module [bypass] out_of_period ...`)만 남김
+- DB:
+  - 차시 기간 원천: `PolyCourseSettingDao`의 `curriculum_json` (DB 테이블/컬럼은 DAO 설정 기준)
+  - 과제 화면 자체의 열람/제출 기간/권한은 `homework_view.jsp` 내부 로직(별도)에서 최종 제어됨
+- 출력:
+  - 과제 보기: `public_html/classroom/homework_view.jsp?id={module_id}`로 리다이렉트
+- 확인(근거):
+  - 기간 차단 제거/예외 처리 코드 확인: `public_html/html/classroom/index.html`, `public_html/classroom/haksa_module.jsp`
+- 최근 갱신: 2026-02-12
+
 ### FLOW-2001: 교수자 LMS(React) 진입/라우팅 및 UI 톤 적용
 - 사용자 동작(의도): 교수자가 `/tutor_lms/`로 접속하여 교수자 기능을 사용
 - 진입점: `public_html/tutor_lms/index.jsp`
@@ -201,6 +219,8 @@
   - 진입 파일: `public_html/tutor_lms/app/index.html`
   - 라우팅: 해시 라우팅(`#/<menuId>...`)을 `project/App.tsx`가 파싱하여 메뉴별 화면을 조건 렌더링
   - 메뉴 ID: `dashboard`, `explore`, `courses`, `assignment-manage`, `qna-manage`, `create-course`, `content-all`, `content-favorites`, `exam-categories`, `exam-questions`, `exam-management`, `subject-create`, `statistics`
+  - 개발 모드(로컬): `npm run dev`/`npm run preview`로 Vite 서버를 띄운 경우에도 API(`/tutor_lms/api/*`)는 Resin(8080)으로 가야 합니다.
+  - 설정: `project/vite.config.ts`의 `server.proxy`/`preview.proxy`에서 `/tutor_lms/api -> http://localhost:8080`
 - UI(학생 메인 톤):
   - 토큰/팔레트: `project/styles/globals.css` (배경 #f9fafb, 포인트 #2b58e6, 보더 #e5e7eb)
   - 레이아웃: `project/App.tsx` (헤더/사이드바/콘텐츠 컨테이너를 카드 기반으로 정리)
@@ -307,17 +327,19 @@
   - 공통 레이아웃: `public_html/html/layout/layout_new_main.html`
   - 교수자 진입 게이트: `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp` (`returl=/tutor_lms/...` 분기)
 - 처리(핵심):
-  - 학생 모달 기본값: `id=haksa_st26_01`, `passwd=Growai!2026`
-  - 공통 레이아웃 모달도 학생 기본값(`haksa_st26_01`)으로 고정하고, `openLoginModal()/closeLoginModal()`에서 기본값 재적용(`applyDefaultLoginPreset`)으로 재오픈 시 값 유지
-  - 교수자(`tutor_lms`)는 `returl` 분기에서 기본 아이디를 `haksa_pf26_01`로 서버 주입
+  - 학생 모달 기본값: `id=kopo_st01`, `passwd=Growai!2026`
+  - 공통 레이아웃 로그인 모달(`layout_new_main`)은 화면 하드코딩이 아니라 서버 변수(`login_returl`, `login_id_preset`, `login_passwd_preset`)를 사용
+  - `openLoginModal()/closeLoginModal()`에서 `applyDefaultLoginPreset()`로 서버 프리셋을 재적용해, 재오픈 시에도 값이 일관되게 유지
+  - 교수자(`tutor_lms` 등)는 `returl` 분기에서 기본 아이디를 `kopo_pr01`로 서버 주입
 - 출력:
   - 신규메인/공통 레이아웃 로그인 모달에서 기본 계정 자동 입력
   - 사용자는 아이디 끝 숫자만 수정해 바로 로그인 가능
 - 확인(근거):
-  - `public_html/html/mypage/new_main_full.html`에 `haksa_st26_01`, `Growai!2026`, `applyDefaultLoginPreset` 반영 확인
-  - `public_html/html/layout/layout_new_main.html`에 `haksa_st26_01`, `Growai!2026`, `applyDefaultLoginPreset` 반영 확인
-  - `public_html/member/login.jsp` / `public_html/mypage/new_main/index.jsp`에서 `returl`에 `/tutor_lms/` 포함 시 `haksa_pf26_01` 주입 확인
-- 최근 갱신: 2026-02-11
+  - `public_html/init.jsp`에서 `login_returl`, `login_id_preset`, `login_passwd_preset` 기본값 주입 확인
+  - `public_html/html/mypage/new_main_full.html`이 `{{login_id_preset}}`, `{{login_passwd_preset}}` 기반으로 입력값을 세팅(`applyDefaultLoginPreset`)하는지 확인
+  - `public_html/html/layout/layout_new_main.html`이 `{{login_returl}}`, `{{login_id_preset}}`, `{{login_passwd_preset}}` 기반으로 입력값을 세팅(`applyDefaultLoginPreset`)하는지 확인
+  - `public_html/member/login.jsp` / `public_html/mypage/new_main/index.jsp`에서 `returl`에 `/tutor_lms/` 포함 시 `kopo_pr01` 주입 확인
+- 최근 갱신: 2026-02-12
 
 ### FLOW-4001: 교수자 LMS > 과제 > 피드백 관리(학생 제출물 모달 확인)
 - 사용자 동작(의도): 교수자가 “피드백 관리”에서 학생을 선택한 뒤, 학생이 제출한 과제 내용/첨부파일을 모달로 확인

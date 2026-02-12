@@ -37,8 +37,39 @@ function buildQuery(params: Record<string, string | number | undefined | null>) 
   return qs ? `?${qs}` : '';
 }
 
+function isHtmlLike(text: string) {
+  const t = text.trimStart().toLowerCase();
+  if (!t) return false;
+  return (
+    t.startsWith('<!doctype html') ||
+    t.startsWith('<html') ||
+    t.startsWith('<head') ||
+    t.startsWith('<body') ||
+    t.startsWith('<script') ||
+    t.startsWith('<div') ||
+    t.startsWith('<span')
+  );
+}
+
+function buildPreview(text: string, maxLen = 180) {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (!compact) return '';
+  if (compact.length <= maxLen) return compact;
+  return `${compact.slice(0, maxLen)}…`;
+}
+
 async function requestJson<T>(url: string, options?: RequestInit): Promise<TutorLmsApiResponse<T>> {
-  const response = await fetch(url, options);
+  // 왜: 교수자 LMS API는 세션 기반이므로 쿠키가 항상 전달되어야 합니다.
+  //     또한 프록시/리라이트 환경에서 "HTML"이 내려오는 문제를 빠르게 진단하려면,
+  //     JSON을 기대한다는 헤더(Accept)를 기본으로 보내는 편이 안전합니다.
+  const headers = new Headers(options?.headers || {});
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json');
+
+  const response = await fetch(url, {
+    credentials: options?.credentials ?? 'include',
+    ...options,
+    headers,
+  });
   const contentType = response.headers.get('content-type') || '';
   const rawText = await response.text();
 
@@ -57,9 +88,41 @@ async function requestJson<T>(url: string, options?: RequestInit): Promise<Tutor
   }
 
   if (!parsed || typeof parsed.rst_code !== 'string') {
-    const hint = response.ok
-      ? '서버 응답이 JSON이 아닙니다. 로그인 상태/권한 또는 API 경로를 확인해 주세요.'
-      : `서버 응답 오류(${response.status}). 로그인 상태/권한 또는 API 경로를 확인해 주세요.`;
+    const lowerType = contentType.toLowerCase();
+    const preview = buildPreview(trimmed);
+    const htmlLike = lowerType.includes('text/html') || isHtmlLike(trimmed) || trimmed.startsWith('<');
+
+    // 왜: 운영에서 “어느 API가 어떤 응답을 돌려줬는지”를 콘솔만 보고도 추적 가능해야 합니다.
+    // 주의: 응답 본문 전체(개인정보 포함 가능)는 남기지 않고, 앞부분만 짧게 남깁니다.
+    // eslint-disable-next-line no-console
+    console.error('[tutorLmsApi] API 응답 파싱 실패', {
+      requestUrl: url,
+      responseUrl: response.url,
+      redirected: response.redirected,
+      status: response.status,
+      ok: response.ok,
+      contentType,
+      preview,
+    });
+
+    const hint = (() => {
+      if (htmlLike) {
+        return response.ok
+          ? 'API 응답이 HTML로 내려왔습니다. 로그인 상태/권한 또는 API 경로(프록시/리라이트 포함)를 확인해 주세요.'
+          : `API 응답이 HTML로 내려왔습니다(HTTP ${response.status}). 로그인 상태/권한 또는 API 경로(프록시/리라이트 포함)를 확인해 주세요.`;
+      }
+
+      if (looksJson) {
+        // 왜: JSON은 맞는데 rst_code가 없으면(예: 다른 서버 응답) 화면에서 처리가 불가능합니다.
+        return response.ok
+          ? '서버 응답 JSON 형식이 예상과 다릅니다(rst_code 없음). 로그인 상태/권한 또는 API 경로를 확인해 주세요.'
+          : `서버 응답 오류(${response.status}). 로그인 상태/권한 또는 API 경로를 확인해 주세요.`;
+      }
+
+      return response.ok
+        ? '서버 응답이 JSON이 아닙니다. 로그인 상태/권한 또는 API 경로를 확인해 주세요.'
+        : `서버 응답 오류(${response.status}). 로그인 상태/권한 또는 API 경로를 확인해 주세요.`;
+    })();
     throw new Error(hint);
   }
 
