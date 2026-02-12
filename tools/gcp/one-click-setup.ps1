@@ -1050,6 +1050,33 @@ function Deploy-StackToVm {
         $targetHosts.Add("$SshUser@$VmInstanceName")
     }
     try {
+        # 왜: 운영 VM SSH 계정이 newkl/ubuntu가 아닌 커스텀 계정일 수 있어,
+        # 인스턴스 메타데이터의 ssh-keys에 등록된 실제 사용자 후보를 먼저 수집합니다.
+        $instanceJson = Invoke-Checked -Command "gcloud" -Arguments @(
+            "compute", "instances", "describe", $VmInstanceName,
+            "--zone", $Zone,
+            "--format=json"
+        )
+        $instanceObject = $instanceJson | ConvertFrom-Json
+        if ($instanceObject -and $instanceObject.metadata -and $instanceObject.metadata.items) {
+            foreach ($item in $instanceObject.metadata.items) {
+                if ($item.key -ne "ssh-keys") { continue }
+                $keyLines = ([string]$item.value) -split "`n"
+                foreach ($keyLine in $keyLines) {
+                    if ([string]::IsNullOrWhiteSpace($keyLine)) { continue }
+                    $delimiterIndex = $keyLine.IndexOf(":")
+                    if ($delimiterIndex -le 0) { continue }
+                    $candidateUser = $keyLine.Substring(0, $delimiterIndex).Trim()
+                    if (-not [string]::IsNullOrWhiteSpace($candidateUser)) {
+                        $targetHosts.Add("$candidateUser@$VmInstanceName")
+                    }
+                }
+            }
+        }
+    } catch {
+        Write-Info "VM 메타데이터 ssh-keys 사용자 조회에 실패해 기본 SSH 후보만 사용합니다."
+    }
+    try {
         $activeAccount = (Invoke-Checked -Command "gcloud" -Arguments @("config", "get-value", "account")).Trim()
         if (-not [string]::IsNullOrWhiteSpace($activeAccount)) {
             $activeUser = $activeAccount.Split("@")[0]
@@ -1062,6 +1089,7 @@ function Deploy-StackToVm {
     }
     $targetHosts.Add("newkl@$VmInstanceName")
     $targetHosts.Add("ubuntu@$VmInstanceName")
+    $targetHosts.Add("root@$VmInstanceName")
     $targetHosts.Add($VmInstanceName)
 
     $uniqueHosts = New-Object System.Collections.Generic.List[string]
@@ -1077,6 +1105,7 @@ function Deploy-StackToVm {
         $remotePath = "$targetHost`:"
         Write-Info "VM SSH 대상 확인: $targetHost"
         try {
+            $remoteCommand = 'if [ "$(id -u)" -eq 0 ]; then bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; elif sudo -n true >/dev/null 2>&1; then sudo -n bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; else echo ''sudo_nopasswd_required''; exit 1; fi'.Replace("__REMOTE_PATH__", $remoteBasePath)
             Invoke-Checked -Command "gcloud" -Arguments @(
                 "compute", "scp",
                 "--quiet",
@@ -1094,8 +1123,8 @@ function Deploy-StackToVm {
                 "--ssh-flag=-T",
                 "--zone", $Zone,
                 # 왜: CI에서 sudo 비밀번호 프롬프트가 뜨면 배포가 무기한 대기하므로,
-                # 비대화식(-n)으로 강제해 권한 문제를 즉시 실패로 노출합니다.
-                "--command", "sudo -n bash $remoteBasePath/deploy-stack.sh $remoteBasePath"
+                # root/무비밀번호 sudo 여부를 먼저 판단해 가능한 경로로만 실행합니다.
+                "--command", $remoteCommand
             )
             Write-Info "VM 배포 SSH 대상 확정: $targetHost"
             return

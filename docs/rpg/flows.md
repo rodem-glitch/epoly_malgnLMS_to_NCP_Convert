@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 12:50
+최근 자동 갱신: 2026-02-12 12:57
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -440,6 +440,8 @@
   - CI SSH 계정 보강:
     - `Deploy-StackToVm`은 VM 접속 계정을 단일값으로 고정하지 않고 `-VmSshUser`(지정값) → `gcloud config account` 사용자 → `newkl` → `ubuntu` → 인스턴스 기본호스트 순으로 명시적 시도
     - 모든 후보 실패 시 시도한 대상 목록과 마지막 오류를 함께 던져 재현 가능한 실패 로그를 남김
+    - 인스턴스 메타데이터 `ssh-keys`에 등록된 사용자도 후보 목록에 포함해 커스텀 운영 계정 누락을 줄임
+    - 원격 실행은 `id -u`/`sudo -n true`를 먼저 점검해 `root 직접 실행` 또는 `무비밀번호 sudo 실행` 경로만 허용
   - CI 재시도 보강:
     - `원클릭 배포 실행 (VM 스택)` 단계는 one-click 호출을 최대 2회까지 재시도하고, 1차 실패 메시지를 로그로 남긴 뒤 20초 대기 후 재실행
   - CI 인자 바인딩 보강:
