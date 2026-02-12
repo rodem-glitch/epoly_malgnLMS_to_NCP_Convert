@@ -226,11 +226,34 @@ jobs:
             }
           }
 
-      - name: 원클릭 실패 확인 (${{ steps.vm_stack.outputs.error_head }})
+      - name: 원클릭 실패 분류 (SCP 단계)
+        if: steps.vm_stack.outcome == 'failure' && contains(steps.vm_stack.outputs.error_head, 'gcloud compute scp')
+        run: |
+          echo "분류: gcloud compute scp"
+
+      - name: 원클릭 실패 분류 (SSH 단계)
+        if: steps.vm_stack.outcome == 'failure' && contains(steps.vm_stack.outputs.error_head, 'gcloud compute ssh')
+        run: |
+          echo "분류: gcloud compute ssh"
+
+      - name: 원클릭 실패 분류 (Gradle 빌드)
+        if: steps.vm_stack.outcome == 'failure' && (contains(steps.vm_stack.outputs.error_head, 'gradlew') || contains(steps.vm_stack.outputs.error_head, 'bootJar'))
+        run: |
+          echo "분류: Gradle build"
+
+      - name: 원클릭 실패 분류 (GCE 리소스)
+        if: steps.vm_stack.outcome == 'failure' && (contains(steps.vm_stack.outputs.error_head, 'gcloud compute addresses') || contains(steps.vm_stack.outputs.error_head, 'gcloud compute instances'))
+        run: |
+          echo "분류: GCE resource"
+
+      - name: 원클릭 실패 분류 (기타)
         if: steps.vm_stack.outcome == 'failure'
         run: |
-          echo "one-click 실패: ${{ steps.vm_stack.outputs.error_head }}"
-          exit 1
+          echo "분류: 기타 / error_head=${{ steps.vm_stack.outputs.error_head }}"
+
+      - name: 원클릭 실패 종료
+        if: steps.vm_stack.outcome == 'failure'
+        run: exit 1
 
       - name: vmproxy 대상 VM IP 동기화
         if: steps.vm_stack.outcome == 'success'
