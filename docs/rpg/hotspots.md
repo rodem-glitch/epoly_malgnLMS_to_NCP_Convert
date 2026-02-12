@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 18:37
+최근 자동 갱신: 2026-02-12 09:29
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -85,6 +85,7 @@
   - 실행 진입점은 `tools/gcp/start-one-click.bat` / `tools/gcp/one-click-setup.ps1`입니다.
   - 기본 원클릭은 Firebase를 `epoly-kopo.web.app -> VM` 302 리다이렉트로 배포합니다. 이 모드에서는 주소창이 VM 주소로 바뀝니다.
   - 주소 유지가 필요하면 `tools/gcp/firebase-proxy-deploy`(Hosting rewrite + Functions `vmproxy`)를 사용해야 합니다.
+  - `tools/gcp/firebase-proxy-deploy/firebase.json`은 `public` 디렉터리를 필수로 요구합니다. 빈 디렉터리는 Git 추적이 안 되므로 `public/index.html` 같은 추적 파일을 유지해야 CI 배포 실패(`Directory 'public' for Hosting does not exist`)를 막을 수 있습니다.
   - 프록시 모드에서 로그인 리다이렉트 `Location` 헤더가 IP로 내려오면 프론트 주소가 다시 깨지므로, 함수에서 `Location: http://34.64.207.10/...`을 `https://epoly-kopo.web.app/...`로 치환하는 로직을 유지해야 합니다.
   - Firebase Hosting 경유에서는 일반 쿠키가 안정적으로 전달되지 않을 수 있어, 레거시 로그인 쿠키(`MLMS*`, `JSESSIONID`)를 `__session` 번들로 브리지하는 로직(`tools/gcp/firebase-proxy-deploy/functions/index.js`)을 유지해야 합니다.
   - `tools/gcp/firebase-proxy-deploy/functions/index.js`에서 프록시 구현을 `fetch`로 되돌리면 쿠키 전달이 다시 누락될 수 있습니다. 저수준 HTTP 프록시 + `__session` 복원 경로를 기본으로 유지합니다.

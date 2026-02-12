@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-11 18:22
+최근 자동 갱신: 2026-02-12 09:29
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -445,6 +445,9 @@
     - `curl -I https://epoly-kopo.web.app/mypage/index.jsp` -> `302 Location: https://epoly-kopo.web.app/mypage/new_main/?login_required=Y...` (IP로 변경되지 않음)
     - `POST https://epoly-kopo.web.app/tutor/content-recommend/lessons` -> `200` + 추천 JSON 응답 확인
     - `GET https://epoly-kopo.web.app/actuator/health` -> `200`, `{\"status\":\"UP\"}`
+  - CI 복구 검증:
+    - GitHub Actions `Firebase vmproxy + Hosting 배포` 실패 원인(`Directory 'public' for Hosting does not exist`) 확인
+    - `tools/gcp/firebase-proxy-deploy/public/index.html` 추가 후 워크플로 재실행 기준으로 동일 오류 재발 방지
   - 장애 복구 확인:
     - 초기에 Resin이 `WEB-INF/work` 쓰기권한 부족으로 500 발생
     - `deploy-stack.sh.tpl`에 `WEB-INF/work` 권한 보정 추가 후 정상화 확인
