@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 11:35
+최근 자동 갱신: 2026-02-12 12:28
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -428,8 +428,11 @@
     - 배포 번들 `migration/source.sql`로 전송 후, VM 배포 단계에서 자동 import(`DB_IMPORT_ON_DEPLOY=true`)
   - 초기에는 Firebase Hosting을 `302 리다이렉트`로 배포하되, 주소 유지가 필요하면 `tools/gcp/firebase-proxy-deploy`(Hosting rewrite + Functions vmproxy)로 전환
   - GitHub Actions(`.github/workflows/deploy-lms-gcp.yml`)는
+    - 사전 점검 단계에서 `GCP_SA_KEY/GCP_PROJECT_ID/GCP_VM_SSH_USER/LMS_DB_PASSWORD/LMS_DB_ROOT_PASSWORD/QDRANT_API_KEY/GOOGLE_API_KEY/GEMINI_API_KEY` 누락 시 즉시 실패
     - VM 배포: `one-click-setup.ps1 -SkipProjectBootstrap -SkipFirebaseDeploy -VmSshUser`
+    - VM 배포 뒤 `gcloud compute addresses describe polytech-lms-vm-ip`로 현재 고정 IP를 조회해 `tools/gcp/firebase-proxy-deploy/functions/index.js`의 `TARGET`을 자동 치환
     - Firebase 배포: `tools/gcp/firebase-proxy-deploy`의 `functions:vmproxy,hosting` 별도 배포
+    - Firebase 인증은 `FIREBASE_TOKEN`이 있으면 토큰, 없으면 `google-github-actions/auth`가 내보낸 서비스 계정(ADC)으로 진행
     순서로 실행해 Hosting 덮어쓰기 충돌을 방지
   - CI 무대기 보강:
     - `gcloud compute scp/ssh`에 `BatchMode` 플래그 적용
@@ -460,6 +463,8 @@
   - CI 복구 검증:
     - GitHub Actions `Firebase vmproxy + Hosting 배포` 실패 원인(`Directory 'public' for Hosting does not exist`) 확인
     - `tools/gcp/firebase-proxy-deploy/public/index.html` 추가 후 워크플로 재실행 기준으로 동일 오류 재발 방지
+    - 워크플로 문법 검증: `npx -y js-yaml .github/workflows/deploy-lms-gcp.yml` 성공
+    - vmproxy 함수 문법 검증: `node --check tools/gcp/firebase-proxy-deploy/functions/index.js` 성공
   - 장애 복구 확인:
     - 초기에 Resin이 `WEB-INF/work` 쓰기권한 부족으로 500 발생
     - `deploy-stack.sh.tpl`에 `WEB-INF/work` 권한 보정 추가 후 정상화 확인

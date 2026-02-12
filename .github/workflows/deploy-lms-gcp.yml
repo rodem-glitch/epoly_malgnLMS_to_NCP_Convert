@@ -14,12 +14,52 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    env:
-      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
     steps:
       - name: 체크아웃
         uses: actions/checkout@v4
+
+      - name: 배포 시크릿 사전 점검
+        shell: bash
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_VM_SSH_USER: ${{ secrets.GCP_VM_SSH_USER }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          LMS_DB_PASSWORD: ${{ secrets.LMS_DB_PASSWORD }}
+          LMS_DB_ROOT_PASSWORD: ${{ secrets.LMS_DB_ROOT_PASSWORD }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          required_vars=(
+            GCP_SA_KEY
+            GCP_PROJECT_ID
+            GCP_VM_SSH_USER
+            LMS_DB_PASSWORD
+            LMS_DB_ROOT_PASSWORD
+            QDRANT_API_KEY
+            GOOGLE_API_KEY
+            GEMINI_API_KEY
+          )
+
+          missing_vars=()
+          for name in "${required_vars[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              missing_vars+=("$name")
+            fi
+          done
+
+          if [ "${#missing_vars[@]}" -gt 0 ]; then
+            echo "::error::필수 GitHub Secrets 누락: ${missing_vars[*]}"
+            exit 1
+          fi
+
+          if [ -z "${FIREBASE_TOKEN:-}" ]; then
+            echo "::warning::FIREBASE_TOKEN이 비어 있습니다. Firebase는 서비스 계정(ADC)으로 배포를 시도합니다."
+          fi
 
       - name: Node 설정
         uses: actions/setup-node@v4
@@ -36,6 +76,8 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+          create_credentials_file: true
+          export_environment_variables: true
 
       - name: gcloud 설치
         uses: google-github-actions/setup-gcloud@v2
@@ -53,17 +95,12 @@ jobs:
       - name: 원클릭 배포 실행 (VM 스택)
         shell: pwsh
         run: |
-          $vmSshUser = "${{ secrets.GCP_VM_SSH_USER }}"
-          if ([string]::IsNullOrWhiteSpace($vmSshUser)) {
-            $vmSshUser = "newkl"
-          }
-
           ./tools/gcp/one-click-setup.ps1 `
             -ProjectId "${{ secrets.GCP_PROJECT_ID }}" `
             -Region "asia-northeast3" `
             -Zone "asia-northeast3-a" `
             -VmName "polytech-lms-vm" `
-            -VmSshUser "$vmSshUser" `
+            -VmSshUser "${{ secrets.GCP_VM_SSH_USER }}" `
             -ApiDomain "api.example.com" `
             -WwwDomain "epoly-kopo.web.app" `
             -FirebaseSite "epoly-kopo" `
@@ -78,13 +115,47 @@ jobs:
             -SkipProjectBootstrap `
             -SkipFirebaseDeploy
 
+      - name: vmproxy 대상 VM IP 동기화
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          vm_ip="$(gcloud compute addresses describe polytech-lms-vm-ip --region asia-northeast3 --project "${{ secrets.GCP_PROJECT_ID }}" --format='value(address)')"
+          if [ -z "${vm_ip}" ]; then
+            echo "::error::고정 IP(polytech-lms-vm-ip)를 조회하지 못했습니다."
+            exit 1
+          fi
+
+          target_url="http://${vm_ip}"
+          echo "VM_IP=${vm_ip}" >> "${GITHUB_ENV}"
+          echo "VM_PROXY_TARGET=${target_url}" >> "${GITHUB_ENV}"
+
+          sed -i -E "s#^const TARGET = \"http://[^\"]+\";#const TARGET = \"${target_url}\";#" tools/gcp/firebase-proxy-deploy/functions/index.js
+          grep -n "^const TARGET" tools/gcp/firebase-proxy-deploy/functions/index.js
+
       - name: Firebase vmproxy 함수 의존성 설치
         run: npm --prefix tools/gcp/firebase-proxy-deploy/functions ci
 
+      - name: vmproxy 함수 문법 점검
+        run: node --check tools/gcp/firebase-proxy-deploy/functions/index.js
+
       - name: Firebase vmproxy + Hosting 배포
+        shell: bash
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
+          set -euo pipefail
           cd tools/gcp/firebase-proxy-deploy
-          firebase deploy --project "${{ secrets.GCP_PROJECT_ID }}" --only functions:vmproxy,hosting --token "${{ secrets.FIREBASE_TOKEN }}"
+          firebase_args=(deploy --project "${{ secrets.GCP_PROJECT_ID }}" --only functions:vmproxy,hosting --non-interactive)
+
+          if [ -n "${FIREBASE_TOKEN:-}" ]; then
+            echo "Firebase 인증: FIREBASE_TOKEN 사용"
+            firebase_args+=(--token "${FIREBASE_TOKEN}")
+          else
+            echo "Firebase 인증: 서비스 계정(ADC) 사용"
+          fi
+
+          firebase "${firebase_args[@]}"
 
       - name: 배포 후 스모크 테스트
         run: |
