@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 09:29
+최근 자동 갱신: 2026-02-12 09:49
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -425,6 +425,9 @@
     - VM 배포: `one-click-setup.ps1 -SkipProjectBootstrap -SkipFirebaseDeploy -VmSshUser`
     - Firebase 배포: `tools/gcp/firebase-proxy-deploy`의 `functions:vmproxy,hosting` 별도 배포
     순서로 실행해 Hosting 덮어쓰기 충돌을 방지
+  - CI 무대기 보강:
+    - `gcloud compute scp/ssh`에 `BatchMode` 플래그 적용
+    - 원격 배포 실행을 `sudo -n`으로 강제해 비밀번호 프롬프트 대기를 실패로 즉시 노출
   - `Build-ApiJar`는 Linux 러너에서 `bash ./gradlew bootJar -x test`를 사용해 실행권한 비트 누락(`chmod +x` 미반영)에도 빌드가 진행되도록 보강
   - 실행 결과를 `tools/gcp/generated/setup-summary.txt`에 저장(도메인 A레코드 값/민감정보 포함)
 - DB:

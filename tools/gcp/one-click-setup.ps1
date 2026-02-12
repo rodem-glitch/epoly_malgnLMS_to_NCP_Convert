@@ -994,13 +994,25 @@ function Deploy-StackToVm {
     if (Test-IsWindowsPlatform) {
         Invoke-Checked -Command "gcloud" -Arguments @("config", "set", "ssh/putty_force_connect", "true")
     }
-    Invoke-Checked -Command "gcloud" -Arguments @("compute", "scp", "--quiet", "--recurse", "--strict-host-key-checking=no", $StackDir, $remotePath, "--zone", $Zone)
+    Invoke-Checked -Command "gcloud" -Arguments @(
+        "compute", "scp",
+        "--quiet",
+        "--recurse",
+        "--strict-host-key-checking=no",
+        "--scp-flag=-oBatchMode=yes",
+        $StackDir, $remotePath,
+        "--zone", $Zone
+    )
     Invoke-Checked -Command "gcloud" -Arguments @(
         "compute", "ssh", $targetHost,
         "--quiet",
         "--strict-host-key-checking=no",
+        "--ssh-flag=-oBatchMode=yes",
+        "--ssh-flag=-T",
         "--zone", $Zone,
-        "--command", "sudo bash $remoteBasePath/deploy-stack.sh $remoteBasePath"
+        # 왜: CI에서 sudo 비밀번호 프롬프트가 뜨면 배포가 무기한 대기하므로,
+        # 비대화식(-n)으로 강제해 권한 문제를 즉시 실패로 노출합니다.
+        "--command", "sudo -n bash $remoteBasePath/deploy-stack.sh $remoteBasePath"
     )
 }
 
