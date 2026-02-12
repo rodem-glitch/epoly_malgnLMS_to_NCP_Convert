@@ -1048,51 +1048,54 @@ function Deploy-StackToVm {
     # 왜: CI/운영마다 VM 로그인 계정이 다를 수 있어 단일 계정에 고정하면 배포가 바로 실패합니다.
     # 지정 계정 -> gcloud 활성계정 -> 관례 계정 -> 인스턴스 기본값 순으로 명시적으로 시도합니다.
     $targetHosts = New-Object System.Collections.Generic.List[string]
+    $hasPinnedSshUser = -not [string]::IsNullOrWhiteSpace($SshUser)
     if (-not [string]::IsNullOrWhiteSpace($SshUser)) {
         $targetHosts.Add("$SshUser@$VmInstanceName")
     }
-    try {
-        # 왜: 운영 VM SSH 계정이 newkl/ubuntu가 아닌 커스텀 계정일 수 있어,
-        # 인스턴스 메타데이터의 ssh-keys에 등록된 실제 사용자 후보를 먼저 수집합니다.
-        $instanceJson = Invoke-Checked -Command "gcloud" -Arguments @(
-            "compute", "instances", "describe", $VmInstanceName,
-            "--zone", $Zone,
-            "--format=json"
-        )
-        $instanceObject = $instanceJson | ConvertFrom-Json
-        if ($instanceObject -and $instanceObject.metadata -and $instanceObject.metadata.items) {
-            foreach ($item in $instanceObject.metadata.items) {
-                if ($item.key -ne "ssh-keys") { continue }
-                $keyLines = ([string]$item.value) -split "`n"
-                foreach ($keyLine in $keyLines) {
-                    if ([string]::IsNullOrWhiteSpace($keyLine)) { continue }
-                    $delimiterIndex = $keyLine.IndexOf(":")
-                    if ($delimiterIndex -le 0) { continue }
-                    $candidateUser = $keyLine.Substring(0, $delimiterIndex).Trim()
-                    if (-not [string]::IsNullOrWhiteSpace($candidateUser)) {
-                        $targetHosts.Add("$candidateUser@$VmInstanceName")
+    if (-not $hasPinnedSshUser) {
+        try {
+            # 왜: 운영 VM SSH 계정이 newkl/ubuntu가 아닌 커스텀 계정일 수 있어,
+            # 인스턴스 메타데이터의 ssh-keys에 등록된 실제 사용자 후보를 먼저 수집합니다.
+            $instanceJson = Invoke-Checked -Command "gcloud" -Arguments @(
+                "compute", "instances", "describe", $VmInstanceName,
+                "--zone", $Zone,
+                "--format=json"
+            )
+            $instanceObject = $instanceJson | ConvertFrom-Json
+            if ($instanceObject -and $instanceObject.metadata -and $instanceObject.metadata.items) {
+                foreach ($item in $instanceObject.metadata.items) {
+                    if ($item.key -ne "ssh-keys") { continue }
+                    $keyLines = ([string]$item.value) -split "`n"
+                    foreach ($keyLine in $keyLines) {
+                        if ([string]::IsNullOrWhiteSpace($keyLine)) { continue }
+                        $delimiterIndex = $keyLine.IndexOf(":")
+                        if ($delimiterIndex -le 0) { continue }
+                        $candidateUser = $keyLine.Substring(0, $delimiterIndex).Trim()
+                        if (-not [string]::IsNullOrWhiteSpace($candidateUser)) {
+                            $targetHosts.Add("$candidateUser@$VmInstanceName")
+                        }
                     }
                 }
             }
+        } catch {
+            Write-Info "VM 메타데이터 ssh-keys 사용자 조회에 실패해 기본 SSH 후보만 사용합니다."
         }
-    } catch {
-        Write-Info "VM 메타데이터 ssh-keys 사용자 조회에 실패해 기본 SSH 후보만 사용합니다."
-    }
-    try {
-        $activeAccount = (Invoke-Checked -Command "gcloud" -Arguments @("config", "get-value", "account")).Trim()
-        if (-not [string]::IsNullOrWhiteSpace($activeAccount)) {
-            $activeUser = $activeAccount.Split("@")[0]
-            if (-not [string]::IsNullOrWhiteSpace($activeUser)) {
-                $targetHosts.Add("$activeUser@$VmInstanceName")
+        try {
+            $activeAccount = (Invoke-Checked -Command "gcloud" -Arguments @("config", "get-value", "account")).Trim()
+            if (-not [string]::IsNullOrWhiteSpace($activeAccount)) {
+                $activeUser = $activeAccount.Split("@")[0]
+                if (-not [string]::IsNullOrWhiteSpace($activeUser)) {
+                    $targetHosts.Add("$activeUser@$VmInstanceName")
+                }
             }
+        } catch {
+            Write-Info "활성 gcloud 계정 조회에 실패해 기본 SSH 후보만 사용합니다."
         }
-    } catch {
-        Write-Info "활성 gcloud 계정 조회에 실패해 기본 SSH 후보만 사용합니다."
+        $targetHosts.Add("newkl@$VmInstanceName")
+        $targetHosts.Add("ubuntu@$VmInstanceName")
+        $targetHosts.Add("root@$VmInstanceName")
+        $targetHosts.Add($VmInstanceName)
     }
-    $targetHosts.Add("newkl@$VmInstanceName")
-    $targetHosts.Add("ubuntu@$VmInstanceName")
-    $targetHosts.Add("root@$VmInstanceName")
-    $targetHosts.Add($VmInstanceName)
 
     $uniqueHosts = New-Object System.Collections.Generic.List[string]
     foreach ($candidate in $targetHosts) {

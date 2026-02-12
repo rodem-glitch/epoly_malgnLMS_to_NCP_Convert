@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:25
+최근 자동 갱신: 2026-02-12 13:31
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -106,6 +106,7 @@
   - `GOOGLE_API_KEY`/`GEMINI_API_KEY`가 비어 있으면 `one-click-setup.ps1`가 입력 대기를 시도할 수 있어 CI가 장시간 멈출 수 있습니다. 현재는 사전 점검에서 먼저 차단하므로, 우회해서 빈 값을 넘기지 않아야 합니다.
   - `one-click-setup.ps1`은 CI에서 `--ssh-flag=-oBatchMode=yes`, `sudo -n`을 사용합니다. 대상 계정에 무비밀번호 sudo 권한이 없으면 즉시 실패하므로, 계정/권한 불일치를 먼저 해결해야 합니다.
   - `one-click-setup.ps1`는 VM 메타데이터 `ssh-keys`에 등록된 사용자도 SSH 후보로 포함합니다. 운영에서 커스텀 계정을 쓰면 메타데이터 등록 여부가 배포 성공률에 직접 영향을 줍니다.
+  - 워크플로우가 사전 점검에서 `VmSshUser`를 확정해 전달하면 one-click은 그 계정만 사용합니다. 이 경로에서는 후보 순회가 없어 원인 로그가 덜 가려집니다.
   - 원격 배포 실행은 `root` 또는 `sudo -n`(무비밀번호 sudo)만 허용합니다. 일반 sudo 프롬프트가 필요한 계정이면 CI에서는 반드시 실패합니다.
   - one-click 실패 시 워크플로우 분류 단계(`원클릭 실패 분류 (SCP/SSH/Gradle/GCE/기타)`)가 조건식으로 실행됩니다. 로그 접근이 제한된 상황에서는 어떤 분류 step이 실행됐는지부터 확인하면 원인 범위를 빠르게 줄일 수 있습니다.
   - CI에서는 `gcloud compute scp/ssh`가 대화형 프롬프트(SSH 키/호스트 확인)로 멈출 수 있어, 원클릭 배포 스크립트의 `--quiet` + `--strict-host-key-checking=no` 조합을 유지해야 합니다.
