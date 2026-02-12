@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:31
+최근 자동 갱신: 2026-02-12 13:33
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -448,7 +448,7 @@
   - CI 재시도/진단 보강:
     - `원클릭 배포 실행 (VM 스택)` 단계는 one-click 호출을 최대 2회까지 재시도하고, 1차 실패 메시지를 로그로 남긴 뒤 20초 대기 후 재실행
     - one-click 단계를 `continue-on-error`로 실행하고 실패 메시지 첫 줄(`error_head`)을 step output으로 기록
-    - 후속 분류 단계(`SCP/SSH/Gradle/GCE/기타`)를 조건식으로 실행해 API step 상태만으로도 실패 지점을 좁힌 뒤, 마지막 `원클릭 실패 종료` 단계에서 명시적으로 실패 처리
+    - one-click 실패 시 후속 진단 단계(`로컬 JAR 존재`, `VM SSH 재확인`, `VM sudo 재확인`, `원격 배포 스크립트 존재`)를 실행해 API step 상태만으로도 실패 지점을 좁힌 뒤, 마지막 `원클릭 실패 종료` 단계에서 명시적으로 실패 처리
   - CI 인자 바인딩 보강:
     - one-click 호출은 배열 스플랫(`@args`) 방식에서 스위치 파라미터(`-SkipProjectBootstrap`, `-SkipFirebaseDeploy`)가 밀려 `SourceDbPort` 바인딩 오류를 낼 수 있어, 명시적 파라미터 호출 형태를 유지
   - `Build-ApiJar`는 Linux 러너에서 `bash ./gradlew bootJar -x test`를 사용해 실행권한 비트 누락(`chmod +x` 미반영)에도 빌드가 진행되도록 보강

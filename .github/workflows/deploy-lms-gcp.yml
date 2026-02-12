@@ -226,30 +226,73 @@ jobs:
             }
           }
 
-      - name: 원클릭 실패 분류 (SCP 단계)
-        if: steps.vm_stack.outcome == 'failure' && contains(steps.vm_stack.outputs.error_head, 'gcloud compute scp')
-        run: |
-          echo "분류: gcloud compute scp"
-
-      - name: 원클릭 실패 분류 (SSH 단계)
-        if: steps.vm_stack.outcome == 'failure' && contains(steps.vm_stack.outputs.error_head, 'gcloud compute ssh')
-        run: |
-          echo "분류: gcloud compute ssh"
-
-      - name: 원클릭 실패 분류 (Gradle 빌드)
-        if: steps.vm_stack.outcome == 'failure' && (contains(steps.vm_stack.outputs.error_head, 'gradlew') || contains(steps.vm_stack.outputs.error_head, 'bootJar'))
-        run: |
-          echo "분류: Gradle build"
-
-      - name: 원클릭 실패 분류 (GCE 리소스)
-        if: steps.vm_stack.outcome == 'failure' && (contains(steps.vm_stack.outputs.error_head, 'gcloud compute addresses') || contains(steps.vm_stack.outputs.error_head, 'gcloud compute instances'))
-        run: |
-          echo "분류: GCE resource"
-
-      - name: 원클릭 실패 분류 (기타)
+      - name: 원클릭 실패 진단 (로컬 JAR 존재)
         if: steps.vm_stack.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
         run: |
-          echo "분류: 기타 / error_head=${{ steps.vm_stack.outputs.error_head }}"
+          set -euo pipefail
+          ls -1 polytech-lms-api/build/libs/*.jar
+
+      - name: 원클릭 실패 진단 (VM SSH 재확인)
+        if: steps.vm_stack.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
+        env:
+          VM_NAME: polytech-lms-vm
+          VM_ZONE: asia-northeast3-a
+          VM_SSH_USER: ${{ steps.vm_ssh_probe.outputs.ssh_user }}
+        run: |
+          set -euo pipefail
+          gcloud compute ssh "${VM_SSH_USER}@${VM_NAME}" \
+            --zone "$VM_ZONE" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --quiet \
+            --strict-host-key-checking=no \
+            --ssh-flag=-oBatchMode=yes \
+            --ssh-flag=-oConnectTimeout=15 \
+            --ssh-flag=-T \
+            --command "id -u"
+
+      - name: 원클릭 실패 진단 (VM sudo 재확인)
+        if: steps.vm_stack.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
+        env:
+          VM_NAME: polytech-lms-vm
+          VM_ZONE: asia-northeast3-a
+          VM_SSH_USER: ${{ steps.vm_ssh_probe.outputs.ssh_user }}
+        run: |
+          set -euo pipefail
+          gcloud compute ssh "${VM_SSH_USER}@${VM_NAME}" \
+            --zone "$VM_ZONE" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --quiet \
+            --strict-host-key-checking=no \
+            --ssh-flag=-oBatchMode=yes \
+            --ssh-flag=-oConnectTimeout=15 \
+            --ssh-flag=-T \
+            --command "sudo -n true"
+
+      - name: 원클릭 실패 진단 (원격 배포 스크립트 존재)
+        if: steps.vm_stack.outcome == 'failure'
+        continue-on-error: true
+        shell: bash
+        env:
+          VM_NAME: polytech-lms-vm
+          VM_ZONE: asia-northeast3-a
+          VM_SSH_USER: ${{ steps.vm_ssh_probe.outputs.ssh_user }}
+        run: |
+          set -euo pipefail
+          gcloud compute ssh "${VM_SSH_USER}@${VM_NAME}" \
+            --zone "$VM_ZONE" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --quiet \
+            --strict-host-key-checking=no \
+            --ssh-flag=-oBatchMode=yes \
+            --ssh-flag=-oConnectTimeout=15 \
+            --ssh-flag=-T \
+            --command "sudo -n ls -1 /opt/polytech-lms/deploy-stack.sh /opt/polytech-lms/docker-compose.yml"
 
       - name: 원클릭 실패 종료
         if: steps.vm_stack.outcome == 'failure'
