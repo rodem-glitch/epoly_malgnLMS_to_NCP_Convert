@@ -1112,6 +1112,7 @@ function Deploy-StackToVm {
                 "--recurse",
                 "--strict-host-key-checking=no",
                 "--scp-flag=-oBatchMode=yes",
+                "--scp-flag=-oConnectTimeout=15",
                 $StackDir, $remotePath,
                 "--zone", $Zone
             )
@@ -1120,6 +1121,7 @@ function Deploy-StackToVm {
                 "--quiet",
                 "--strict-host-key-checking=no",
                 "--ssh-flag=-oBatchMode=yes",
+                "--ssh-flag=-oConnectTimeout=15",
                 "--ssh-flag=-T",
                 "--zone", $Zone,
                 # 왜: CI에서 sudo 비밀번호 프롬프트가 뜨면 배포가 무기한 대기하므로,

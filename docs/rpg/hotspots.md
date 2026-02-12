@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:03
+최근 자동 갱신: 2026-02-12 13:08
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -102,6 +102,7 @@
   - `.github/workflows/deploy-lms-gcp.yml`는 배포 시작 전에 필수 시크릿 누락을 즉시 실패시킵니다. 새 시크릿 추가/이름 변경 시 사전 점검 목록(`required_vars`)도 함께 수정해야 합니다.
   - `GCP_VM_SSH_USER`는 필수값이 아니며, 비어 있어도 `one-click`이 SSH 후보를 자동 탐색합니다. 다만 보안 정책상 허용된 운영 계정이 명확하면 시크릿을 고정하는 편이 실패 분석에 유리합니다.
   - 워크플로우 `VM SSH 권한 사전 점검`에서 `sudo -n` 가능한 계정을 찾지 못하면 one-click 이전에 즉시 실패합니다. 이 경우 VM 내부 sudo 정책(비밀번호 필요 여부)을 먼저 조정해야 합니다.
+  - SSH 사전 점검/배포 전송은 `ConnectTimeout=15`를 사용합니다. 네트워크가 막힌 환경에서는 빠르게 실패로 전환되므로, 반복 실패 시 방화벽/인스턴스 상태를 먼저 확인해야 합니다.
   - `GOOGLE_API_KEY`/`GEMINI_API_KEY`가 비어 있으면 `one-click-setup.ps1`가 입력 대기를 시도할 수 있어 CI가 장시간 멈출 수 있습니다. 현재는 사전 점검에서 먼저 차단하므로, 우회해서 빈 값을 넘기지 않아야 합니다.
   - `one-click-setup.ps1`은 CI에서 `--ssh-flag=-oBatchMode=yes`, `sudo -n`을 사용합니다. 대상 계정에 무비밀번호 sudo 권한이 없으면 즉시 실패하므로, 계정/권한 불일치를 먼저 해결해야 합니다.
   - `one-click-setup.ps1`는 VM 메타데이터 `ssh-keys`에 등록된 사용자도 SSH 후보로 포함합니다. 운영에서 커스텀 계정을 쓰면 메타데이터 등록 여부가 배포 성공률에 직접 영향을 줍니다.

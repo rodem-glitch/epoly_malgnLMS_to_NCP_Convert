@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:03
+최근 자동 갱신: 2026-02-12 13:08
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -439,6 +439,7 @@
     - 원격 배포 실행을 `sudo -n`으로 강제해 비밀번호 프롬프트 대기를 실패로 즉시 노출
   - CI SSH 계정 보강:
     - 워크플로우에 `VM SSH 권한 사전 점검` 단계를 두어 `id -u` 또는 `sudo -n true`가 통과하는 계정을 먼저 탐색하고(`secret -> gcloud account -> newkl -> ubuntu -> root`), 성공 계정을 one-click에 주입
+    - SSH 시도에는 `ConnectTimeout=15`를 명시해 네트워크 단절/방화벽 상황에서 장시간 멈추지 않고 빠르게 다음 후보로 진행
     - `Deploy-StackToVm`은 VM 접속 계정을 단일값으로 고정하지 않고 `-VmSshUser`(지정값) → `gcloud config account` 사용자 → `newkl` → `ubuntu` → 인스턴스 기본호스트 순으로 명시적 시도
     - 모든 후보 실패 시 시도한 대상 목록과 마지막 오류를 함께 던져 재현 가능한 실패 로그를 남김
     - 인스턴스 메타데이터 `ssh-keys`에 등록된 사용자도 후보 목록에 포함해 커스텀 운영 계정 누락을 줄임

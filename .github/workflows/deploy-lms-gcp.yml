@@ -136,6 +136,7 @@ jobs:
               --quiet \
               --strict-host-key-checking=no \
               --ssh-flag=-oBatchMode=yes \
+              --ssh-flag=-oConnectTimeout=15 \
               --ssh-flag=-T \
               --command 'if [ "$(id -u)" -eq 0 ] || sudo -n true >/dev/null 2>&1; then echo ok; else echo no_sudo; exit 19; fi' \
               >/dev/null 2>&1; then
