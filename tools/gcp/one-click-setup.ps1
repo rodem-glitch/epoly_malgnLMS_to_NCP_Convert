@@ -1105,21 +1105,32 @@ function Deploy-StackToVm {
         }
     }
 
+    $stackArchiveName = "$stackDirName.tar.gz"
+    $stackArchivePath = Join-Path $script:GeneratedDir $stackArchiveName
+    if (Test-Path $stackArchivePath) {
+        Remove-Item -Path $stackArchivePath -Force
+    }
+    # 왜: public_html/src 파일 수가 많아 디렉터리 재귀 scp가 느리므로, tar.gz 단일 파일 전송으로 업로드 시간을 줄입니다.
+    Invoke-Checked -Command "tar" -Arguments @(
+        "-czf", $stackArchivePath,
+        "-C", (Split-Path -Path $StackDir -Parent),
+        $stackDirName
+    )
+
     $lastError = ""
     foreach ($targetHost in $uniqueHosts) {
-        $remotePath = "$targetHost`:"
+        $remoteArchiveTarget = "$targetHost`:~/$stackArchiveName"
         Write-Info "VM SSH 대상 확인: $targetHost"
         try {
             # 왜: 원격 apt/docker pull 단계가 비정상 지연될 때 CI가 오래 멈추지 않도록 실행 시간을 짧게 제한합니다.
-            $remoteCommand = 'if [ "$(id -u)" -eq 0 ]; then timeout 360 bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; elif sudo -n true >/dev/null 2>&1; then sudo -n timeout 360 bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; else echo ''sudo_nopasswd_required''; exit 1; fi'.Replace("__REMOTE_PATH__", $remoteBasePath)
+            $remoteCommand = 'set -euo pipefail; rm -rf __REMOTE_PATH__; tar -xzf __REMOTE_ARCHIVE__ -C ~; rm -f __REMOTE_ARCHIVE__; if [ "$(id -u)" -eq 0 ]; then timeout 360 bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; elif sudo -n true >/dev/null 2>&1; then sudo -n timeout 360 bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; else echo ''sudo_nopasswd_required''; exit 1; fi'.Replace("__REMOTE_PATH__", $remoteBasePath).Replace("__REMOTE_ARCHIVE__", "~/$stackArchiveName")
             Invoke-Checked -Command "gcloud" -Arguments @(
                 "compute", "scp",
                 "--quiet",
-                "--recurse",
                 "--strict-host-key-checking=no",
                 "--scp-flag=-oBatchMode=yes",
                 "--scp-flag=-oConnectTimeout=15",
-                $StackDir, $remotePath,
+                $stackArchivePath, $remoteArchiveTarget,
                 "--zone", $Zone
             )
             Invoke-Checked -Command "gcloud" -Arguments @(

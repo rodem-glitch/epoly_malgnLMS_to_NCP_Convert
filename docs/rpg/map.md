@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:16
+최근 자동 갱신: 2026-02-12 14:27
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -112,3 +112,4 @@
 | GitHub Actions 통계 폴더 누락 복구 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `.gitignore`, `통계/*.xlsx` | CI 체크아웃에 통계 원본 포함(원클릭 번들 생성 실패 방지) | 확인 근거: run(#26) `원클릭 배포 실행` 로그에서 `통계 폴더를 찾지 못했습니다` 오류 확인 후 `.gitignore`의 `통계` 제외 규칙 제거, 통계 엑셀 파일을 Git 추적 대상으로 반영 |
 | GitHub Actions 원클릭 장기대기 차단 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `.github/workflows/deploy-lms-gcp.yml`, `tools/gcp/one-click-setup.ps1` | 워크플로 step 타임아웃(6분) + CI 재시도 1회 + 원격 `deploy-stack.sh` 실행 360초 상한 | 확인 근거: run(#27)에서 `원클릭 배포 실행`이 13분 이상 `in_progress`로 유지되는 상태 확인 후 fail-fast 정책을 더 단축 적용 |
 | GitHub Actions 원격 배포 속도 최적화 | `Deploy LMS to GCP + Firebase` 워크플로의 VM 원격 배포 구간 | `tools/gcp/templates/deploy-stack.sh.tpl` | 설치 완료 VM에서 apt 재설치/이미지 pull 기본 생략(필요 시 `DEPLOY_FORCE_PULL=true`) | 확인 근거: run(#28)에서 6분 타임아웃 발생 로그 확인 후 `install_base_packages`/`start_stack`/`start_stack_for_import`를 속도 우선 경로로 보강 |
+| GitHub Actions VM 업로드 시간 단축 | `Deploy LMS to GCP + Firebase` 워크플로의 VM 원격 배포 구간 | `tools/gcp/one-click-setup.ps1` | 배포 번들을 tar.gz 단일 파일로 전송 후 원격 압축해제(`scp --recurse` 제거) | 확인 근거: run(#29)에서 VM 배포 직후 6분 타임아웃 재발 확인 후 대량 파일 재귀 전송 병목을 해소하도록 업로드 방식을 변경 |
