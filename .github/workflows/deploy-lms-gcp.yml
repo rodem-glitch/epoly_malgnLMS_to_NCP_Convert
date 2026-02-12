@@ -94,11 +94,70 @@ jobs:
           gcloud --version
           firebase --version
 
+      - name: VM SSH 권한 사전 점검
+        id: vm_ssh_probe
+        shell: bash
+        env:
+          VM_NAME: polytech-lms-vm
+          VM_ZONE: asia-northeast3-a
+          VM_SSH_USER_SECRET: ${{ secrets.GCP_VM_SSH_USER }}
+        run: |
+          set -euo pipefail
+
+          if ! gcloud compute instances describe "$VM_NAME" --zone "$VM_ZONE" --project "${{ secrets.GCP_PROJECT_ID }}" >/dev/null 2>&1; then
+            echo "::warning::VM($VM_NAME)가 아직 없어 SSH 사전 점검을 건너뜁니다."
+            echo "ssh_user=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          candidates=()
+          if [ -n "${VM_SSH_USER_SECRET:-}" ]; then
+            candidates+=("${VM_SSH_USER_SECRET}")
+          fi
+          active_user="$(gcloud config get-value account 2>/dev/null | cut -d'@' -f1 || true)"
+          if [ -n "${active_user:-}" ] && [ "${active_user}" != "(unset)" ]; then
+            candidates+=("${active_user}")
+          fi
+          candidates+=("newkl" "ubuntu" "root")
+
+          selected=""
+          tried=""
+          for user in "${candidates[@]}"; do
+            [ -z "${user}" ] && continue
+            case " ${tried} " in
+              *" ${user} "*) continue ;;
+            esac
+            tried="${tried} ${user}"
+
+            echo "SSH 권한 점검: ${user}@${VM_NAME}"
+            if gcloud compute ssh "${user}@${VM_NAME}" \
+              --zone "$VM_ZONE" \
+              --project "${{ secrets.GCP_PROJECT_ID }}" \
+              --quiet \
+              --strict-host-key-checking=no \
+              --ssh-flag=-oBatchMode=yes \
+              --ssh-flag=-T \
+              --command 'if [ "$(id -u)" -eq 0 ] || sudo -n true >/dev/null 2>&1; then echo ok; else echo no_sudo; exit 19; fi' \
+              >/dev/null 2>&1; then
+              selected="${user}"
+              break
+            fi
+          done
+
+          if [ -z "${selected}" ]; then
+            echo "::error::VM SSH 접속/권한 확인에 실패했습니다. 시도 사용자:${tried}"
+            exit 1
+          fi
+
+          echo "ssh_user=${selected}" >> "$GITHUB_OUTPUT"
+          echo "선택된 VM SSH 사용자: ${selected}"
+
       - name: 원클릭 배포 실행 (VM 스택)
         shell: pwsh
         run: |
           $invokeOneClick = {
-            if ([string]::IsNullOrWhiteSpace("${{ secrets.GCP_VM_SSH_USER }}")) {
+            $vmSshUser = "${{ steps.vm_ssh_probe.outputs.ssh_user }}"
+            if ([string]::IsNullOrWhiteSpace($vmSshUser)) {
               ./tools/gcp/one-click-setup.ps1 `
                 -ProjectId "${{ secrets.GCP_PROJECT_ID }}" `
                 -Region "asia-northeast3" `
@@ -123,7 +182,7 @@ jobs:
                 -Region "asia-northeast3" `
                 -Zone "asia-northeast3-a" `
                 -VmName "polytech-lms-vm" `
-                -VmSshUser "${{ secrets.GCP_VM_SSH_USER }}" `
+                -VmSshUser "$vmSshUser" `
                 -ApiDomain "api.example.com" `
                 -WwwDomain "epoly-kopo.web.app" `
                 -FirebaseSite "epoly-kopo" `
