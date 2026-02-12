@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:04
+최근 자동 갱신: 2026-02-12 14:16
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -412,6 +412,7 @@
   - `polytech-lms-api`를 `bootJar`로 빌드해 VM 배포 번들 생성
   - 배포 번들은 실행마다 `tools/gcp/generated/stack-YYYYMMDD-HHmmss`로 고유 폴더를 생성하고, 원격 실행도 같은 폴더를 직접 지정해 이전 `~/stack` 잔여물 오배포를 방지
   - VM에 Docker 스택(`MySQL + Qdrant + Spring API + Resin`)과 Nginx 리버스 프록시 배포
+  - 원격 배포 스크립트는 이미 패키지가 설치된 VM이면 `apt update/install`을 건너뛰고, Docker 이미지는 기본값으로 `pull` 없이 즉시 재기동(필요 시 `DEPLOY_FORCE_PULL=true`로 강제 pull)
   - Nginx 경로 분기:
     - 기본 화면(`/`, `/mypage/*`, `/member/*`, `/tutor_lms/*`)은 Resin(8080)
     - API 경로(`/statistics/*`, `/student/*`, `/tutor/*`, `/job/*`, `/actuator/*`)는 Spring API(8081)

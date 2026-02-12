@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:04
+최근 자동 갱신: 2026-02-12 14:16
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -115,6 +115,7 @@
   - Firebase 배포 인증은 `FIREBASE_TOKEN`이 있으면 토큰, 없으면 서비스 계정(ADC)으로 진행합니다. 권한 문제 발생 시 `GCP_SA_KEY` 서비스계정에 Firebase Hosting/Functions 배포 권한이 실제로 부여됐는지 먼저 확인해야 합니다.
   - VM 스택 단계는 one-click을 1회만 실행하고 step 타임아웃(`6분`)을 적용합니다. 오래 멈추는 런은 자동 중단 후 진단 단계로 넘어가므로, 실패 메시지를 바로 확인해 다음 패치를 빠르게 적용해야 합니다.
   - `Deploy-StackToVm`의 원격 `deploy-stack.sh` 실행은 `timeout 360`(6분 상한)으로 고정되어, VM 내부 패키지 설치/이미지 pull이 비정상 지연되면 즉시 실패합니다.
+  - `deploy-stack.sh`는 기본적으로 속도 우선(패키지 설치 감지 시 `apt` 생략, `docker compose pull` 생략)으로 동작합니다. 이미지 최신화가 꼭 필요할 때만 `DEPLOY_FORCE_PULL=true`를 사용해야 합니다.
   - GitHub Actions의 pwsh 단계에서 one-click 파라미터를 배열 스플랫(`@args`)으로 넘기면 스위치 파라미터가 밀려 `SourceDbPort` 변환 오류가 발생할 수 있습니다. 이 구간은 명시적 파라미터 호출 형태를 유지해야 합니다.
   - Linux CI에서 `./gradlew` 실행권한 비트가 없으면 원클릭의 API 빌드 단계가 실패합니다. `Build-ApiJar`는 `bash ./gradlew` 경로를 유지해야 합니다.
   - Linux CI에서 JAR 산출물 경로를 `build\\libs\\*.jar`처럼 백슬래시로 찾으면 파일을 못 찾을 수 있습니다. `Build-ApiJar`는 `build/libs/*.jar` 경로를 유지해야 합니다.

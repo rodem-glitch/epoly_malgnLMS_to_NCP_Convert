@@ -40,6 +40,12 @@ install_docker() {
 }
 
 install_base_packages() {
+  if command -v jq >/dev/null 2>&1 && command -v rsync >/dev/null 2>&1 && command -v nginx >/dev/null 2>&1 && command -v certbot >/dev/null 2>&1; then
+    # 왜: CI에서 이미 준비된 VM에 매번 apt update/install을 반복하면 배포 시간이 크게 늘어 타임아웃이 자주 발생합니다.
+    log "기본 패키지가 이미 설치되어 있어 apt 업데이트/설치를 건너뜁니다."
+    return
+  fi
+
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -y
   apt-get install -y ca-certificates curl gnupg lsb-release jq rsync nginx certbot python3-certbot-nginx
@@ -70,14 +76,25 @@ load_env() {
 start_stack() {
   log "Docker 스택을 시작합니다."
   cd "${STACK_TARGET}"
-  docker compose pull
+  if [[ "${DEPLOY_FORCE_PULL:-false}" == "true" ]]; then
+    log "DEPLOY_FORCE_PULL=true 이므로 이미지 pull을 수행합니다."
+    docker compose pull
+  else
+    # 왜: 운영 복구 속도를 우선하기 위해, 기본 동작은 pull 없이 즉시 재기동합니다.
+    log "이미지 pull을 건너뛰고 즉시 재기동합니다."
+  fi
   docker compose up -d
 }
 
 start_stack_for_import() {
   log "DB import 선행을 위해 mysql/qdrant만 먼저 시작합니다."
   cd "${STACK_TARGET}"
-  docker compose pull mysql qdrant
+  if [[ "${DEPLOY_FORCE_PULL:-false}" == "true" ]]; then
+    log "DEPLOY_FORCE_PULL=true 이므로 mysql/qdrant 이미지 pull을 수행합니다."
+    docker compose pull mysql qdrant
+  else
+    log "mysql/qdrant 이미지 pull을 건너뛰고 즉시 기동합니다."
+  fi
   docker compose up -d mysql qdrant
 }
 
