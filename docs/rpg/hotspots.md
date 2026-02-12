@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-11
+최근 갱신: 2026-02-12
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 17:14
+최근 자동 갱신: 2026-02-12 20:41
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -27,6 +27,12 @@
 - 상태값 관례: `status`의 의미(테이블마다 다를 수 있으니 항상 확인)
 - 템플릿 렌더링: JSP의 `p.setVar()/p.setLoop()` ↔ 템플릿 `.html` 변수/루프 매칭
 - 파일 업로드/경로: `public_html/data/` 및 저장 경로/권한
+- (클라우드/VM) `FormData`(multipart/form-data) 업로드/등록이 200인데 빈 응답으로 떨어지는 이슈(중요):
+  - 증상: `homework_insert.jsp`, `materials_upload.jsp` 같은 업로드/등록 API가 `HTTP 200`인데 본문이 비어 프론트에서 `rst_code 없음`으로 보입니다.
+  - 원인: `public_html/init.jsp`에서 `f.setRequest(request)`가 업로드 임시 폴더(`.../data/tmp`) 생성 실패로 예외 종료되며, 이때 API는 Content-Length 0으로 끝납니다.
+  - 해결: Resin 컨테이너의 `/var/resin/webapps/ROOT/data/tmp`, `/var/resin/webapps/ROOT/data/file`이 존재하고 쓰기 가능해야 합니다.
+  - 배포 반영: `tools/gcp/templates/deploy-stack.sh.tpl`의 `prepare_legacy_permissions()`에서 `data/tmp`, `data/file` 생성/권한 보정이 필요합니다.
+  - 확인 근거: `public_html/data/log/error_YYYYMMDD.log`에 `can't make directory .../data/tmp` 로그가 남습니다.
 - 교수자 LMS 과제 제출물 첨부파일(주의):
   - 교수자 과제 제출 첨부는 `TB_FILE`이 아니라 `CL_FILE`에 저장되는 흐름이 있습니다(과제 모듈).
   - 다운로드 링크는 `/classroom/download_cl.jsp?id=...&ek=...`를 사용하며, `ek`는 보통 `m.encrypt(id)` 또는 `m.encrypt(id + yyyyMMdd)` 패턴입니다.

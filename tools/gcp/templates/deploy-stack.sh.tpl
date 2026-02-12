@@ -195,7 +195,10 @@ prepare_legacy_permissions() {
   local webinf_dir="${STACK_TARGET}/legacy/public_html/WEB-INF"
   local work_dir="${webinf_dir}/work"
   local classes_dir="${webinf_dir}/classes"
+  local data_dir="${STACK_TARGET}/legacy/public_html/data"
   local log_dir="${STACK_TARGET}/legacy/public_html/data/log"
+  local tmp_dir="${data_dir}/tmp"
+  local file_dir="${data_dir}/file"
 
   if [[ ! -d "${webinf_dir}" ]]; then
     return
@@ -215,6 +218,16 @@ prepare_legacy_permissions() {
   # 경로가 없으면 추천/로그인 흐름의 예외 로그 기록 시점에 추가 예외가 발생합니다.
   mkdir -p "${log_dir}"
   chmod -R a+rwX "${log_dir}"
+
+  # 왜: multipart/form-data(파일 업로드 포함) 요청을 파싱할 때 /data/tmp가 필요합니다.
+  # 이 폴더가 없거나 쓰기 불가이면 `init.jsp`의 `f.setRequest()`가 예외로 중단되어,
+  # API 응답이 Content-Length 0(빈 바디)로 떨어지고 프론트에서는 `rst_code 없음`처럼 보입니다.
+  mkdir -p "${tmp_dir}"
+  chmod -R a+rwX "${tmp_dir}"
+
+  # 왜: 업로드된 파일이 실제로 저장되는 기본 경로(/data/file)도 Resin 계정이 쓸 수 있어야 합니다.
+  mkdir -p "${file_dir}"
+  chmod -R a+rwX "${file_dir}"
 }
 
 apply_kollus_tls_truststore_fix() {

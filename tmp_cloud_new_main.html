@@ -1,0 +1,1587 @@
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ko" lang="ko">
+<head>
+	<meta name="apple-mobile-web-app-capable" content="no">
+	<meta name="mobile-web-app-capable" content="no">
+	<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+	<link rel="icon" type="image/png" href="../../favicon_newkl.png">
+	<title>한국폴리텍대학 학습관리시스템</title>
+	<meta name="malgnsoft-lms-design" content="v5" />
+
+  	
+	<link rel="stylesheet" type="text/css" href="/common/summernote/summernote-lite.min.css" />
+	<link rel="stylesheet" type="text/css" href="/common/css/skin5.css" />
+
+    <link rel="stylesheet" type="text/css" href="/html/css/custom.css?t=1120260212" />
+
+	<script type="text/javascript" src="/common/js/jquery-1.12.3.min.js"></script>
+	<script type="text/javascript" src="/common/js/slides.min.jquery.js"></script>
+	<script type="text/javascript" src="/common/summernote/summernote-lite.min.js"></script>
+	<script type="text/javascript" src="/common/summernote/lang/summernote-ko-KR.min.js"></script>
+	<script type="text/javascript" src="/common/js/common.js"></script>
+	<script type="text/javascript" src="/common/js/validate.js"></script>
+	<script type="text/javascript" src="/common/js/style.js"></script>
+	<script type="text/javascript" src="/html/js/links.js?q=1120260212"></script>
+	
+
+	<script src="https://cdn.jsdelivr.net/npm/swiper@11.0.5/swiper-bundle.min.js"></script>
+	<link href="https://cdn.jsdelivr.net/npm/swiper@11.0.5/swiper-bundle.min.css" rel="stylesheet">
+	<!-- Bootstrap Icons -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+<div class="new-main-fullscreen" id="new-main-fullscreen">
+	<style>
+		/* GrowAI 스타일 기반 레이아웃 */
+		html {
+			scroll-behavior: smooth;
+		}
+		*, *::before, *::after {
+			box-sizing: border-box;
+		}
+		.new-main-fullscreen {
+			min-height: 100vh;
+			background: #f9fafb;
+			font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+		}
+		
+		/* ========== 상단바 (Header) ========== */
+		.nm-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0 24px;
+			height: 64px;
+			background: #fff;
+			border-bottom: 1px solid #e5e7eb;
+			position: sticky;
+			top: 0;
+			z-index: 1000;
+		}
+		.nm-header__logo {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			text-decoration: none;
+			z-index: 1;
+		}
+		.nm-header__logo img {
+			height: 36px;
+		}
+		.nm-header__logo-text {
+			font-size: 18px;
+			font-weight: 700;
+			color: #101828;
+		}
+		
+		/* 메인 네비게이션 - 화면 중앙 고정 */
+		.nm-header__nav {
+			position: absolute;
+			left: 50%;
+			transform: translateX(-50%);
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		.nm-header__nav-item {
+			padding: 10px 16px;
+			font-size: 14px;
+			font-weight: 500;
+			color: #344054;
+			text-decoration: none;
+			border-radius: 8px;
+			transition: all 0.2s;
+			cursor: pointer;
+		}
+		.nm-header__nav-item:hover {
+			background: #f3f4f6;
+			color: #2b58e6;
+		}
+		.nm-header__nav-item.active {
+			color: #2b58e6;
+			font-weight: 600;
+		}
+		
+		/* 드롭다운 메뉴 */
+		.nm-header__dropdown {
+			position: relative;
+		}
+		.nm-header__dropdown-toggle {
+			padding: 10px 16px;
+			font-size: 14px;
+			font-weight: 500;
+			color: #344054;
+			text-decoration: none;
+			border-radius: 8px;
+			transition: all 0.2s;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 4px;
+		}
+		.nm-header__dropdown-toggle:hover {
+			background: #f3f4f6;
+			color: #2b58e6;
+		}
+		.nm-header__dropdown-toggle i {
+			font-size: 10px;
+			transition: transform 0.2s;
+		}
+		.nm-header__dropdown:hover .nm-header__dropdown-toggle i {
+			transform: rotate(180deg);
+		}
+		.nm-header__dropdown-menu {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			min-width: 180px;
+			background: #fff;
+			border-radius: 12px;
+			box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+			padding: 8px 0;
+			opacity: 0;
+			visibility: hidden;
+			transform: translateY(10px);
+			transition: all 0.2s;
+			z-index: 1000;
+		}
+		.nm-header__dropdown:hover .nm-header__dropdown-menu {
+			opacity: 1;
+			visibility: visible;
+			transform: translateY(0);
+		}
+		.nm-header__dropdown-item {
+			display: block;
+			padding: 10px 20px;
+			font-size: 14px;
+			color: #344054;
+			text-decoration: none;
+			transition: all 0.2s;
+		}
+		.nm-header__dropdown-item:hover {
+			background: #f3f4f6;
+			color: #2b58e6;
+		}
+		
+		/* 우측 액션 버튼 */
+		.nm-header__actions {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+		.nm-header__icon-btn {
+			width: 40px;
+			height: 40px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border: none;
+			background: transparent;
+			border-radius: 50%;
+			cursor: pointer;
+			color: #667085;
+			font-size: 18px;
+			transition: all 0.2s;
+		}
+		.nm-header__icon-btn:hover {
+			background: #f3f4f6;
+			color: #2b58e6;
+		}
+		.nm-header__icon-btn .badge {
+			position: absolute;
+			top: -4px;
+			right: -4px;
+			background: #dc2626;
+			color: #fff;
+			font-size: 10px;
+			padding: 2px 5px;
+			border-radius: 10px;
+		}
+		.nm-header__user {
+			position: relative;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 6px 12px;
+			background: #f3f4f6;
+			border-radius: 20px;
+			font-size: 14px;
+			color: #344054;
+			cursor: pointer;
+		}
+		.nm-header__user-menu {
+			position: absolute;
+			top: 100%;
+			right: 0;
+			margin-top: 8px;
+			min-width: 160px;
+			background: #fff;
+			border-radius: 12px;
+			box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+			padding: 8px 0;
+			opacity: 0;
+			visibility: hidden;
+			transform: translateY(10px);
+			transition: all 0.2s;
+			z-index: 1000;
+		}
+		.nm-header__user:hover .nm-header__user-menu {
+			opacity: 1;
+			visibility: visible;
+			transform: translateY(0);
+		}
+		.nm-header__user-menu-item {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 10px 16px;
+			font-size: 14px;
+			color: #344054;
+			text-decoration: none;
+			transition: all 0.15s;
+		}
+		.nm-header__user-menu-item:hover {
+			background: #f3f4f6;
+			color: #2b58e6;
+		}
+		.nm-header__user-menu-item i {
+			font-size: 16px;
+		}
+		.nm-header__user-menu-item--danger {
+			color: #dc2626;
+		}
+		.nm-header__user-menu-item--danger:hover {
+			background: #fef2f2;
+			color: #dc2626;
+		}
+		.nm-header__user-avatar {
+			width: 28px;
+			height: 28px;
+			background: linear-gradient(135deg, #2b58e6, #8e44ad);
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #fff;
+			font-size: 12px;
+			font-weight: 600;
+		}
+		.nm-header__login-btn {
+			padding: 8px 16px;
+			background: linear-gradient(135deg, #2b58e6, #8e44ad);
+			color: #fff;
+			border: none;
+			border-radius: 8px;
+			font-size: 14px;
+			font-weight: 500;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.nm-header__login-btn:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 4px 12px rgba(43, 88, 230, 0.3);
+		}
+		
+		/* 모바일 메뉴 버튼 */
+		.nm-header__mobile-btn {
+			display: none;
+			width: 40px;
+			height: 40px;
+			align-items: center;
+			justify-content: center;
+			border: none;
+			background: transparent;
+			border-radius: 8px;
+			cursor: pointer;
+			font-size: 20px;
+			color: #344054;
+		}
+		@media (max-width: 992px) {
+			.nm-header__nav {
+				display: none;
+			}
+			.nm-header__mobile-btn {
+				display: flex;
+			}
+		}
+		
+		
+		/* 히어로 섹션 */
+		.nm-hero {
+			background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/html/images/common/hero_tech_bg.png');
+			background-size: cover;
+			background-position: center;
+			background-repeat: no-repeat;
+			padding: 80px 20px;
+			text-align: center;
+			color: #fff;
+		}
+		.nm-hero__title {
+			font-size: 28px;
+			font-weight: 800;
+			margin: 0 0 24px 0;
+			line-height: 1.4;
+		}
+		.nm-hero__search {
+			max-width: 800px;
+			margin: 0 auto 24px;
+			display: flex;
+			background: #fff;
+			border-radius: 50px;
+			overflow: hidden;
+			box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+		}
+		.nm-hero__search input {
+			flex: 1;
+			border: none !important;
+			background: transparent !important;
+			padding: 20px 32px;
+			font-size: 18px;
+			outline: none;
+			height: auto !important;
+			margin: 0 !important;
+			box-shadow: none !important;
+		}
+		.nm-hero__search button {
+			background: transparent !important;
+			border: none !important;
+			padding: 20px 32px;
+			cursor: pointer;
+			color: #667085;
+			font-size: 20px;
+			margin: 0 !important;
+		}
+
+		
+		/* 컨테이너 */
+		.nm-container {
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 0 20px;
+		}
+		
+		/* 필터 탭 */
+		.nm-tabs {
+			display: flex;
+			gap: 10px;
+			padding: 24px 0;
+			flex-wrap: wrap;
+		}
+		.nm-tab {
+			padding: 10px 20px;
+			border-radius: 50px;
+			font-size: 14px;
+			font-weight: 500;
+			border: 1px solid #e5e7eb;
+			background: #fff;
+			color: #667085;
+			cursor: pointer;
+			text-decoration: none;
+			transition: all 0.2s;
+		}
+		.nm-tab:hover, .nm-tab.active {
+			background: #2b58e6;
+			color: #fff;
+			border-color: #2b58e6;
+		}
+		.nm-tab i {
+			margin-right: 6px;
+		}
+		
+		/* 섹션 헤더 */
+		.nm-section {
+			margin-bottom: 40px;
+			scroll-margin-top: 84px; /* 헤더 높이(64px) + 여백(20px) */
+		}
+		.nm-section__header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
+		}
+		.nm-section__title {
+			font-size: 20px;
+			font-weight: 700;
+			color: #101828;
+			margin: 0;
+		}
+		.nm-section__title-row {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+		.nm-reco-config-btn {
+			width: 28px;
+			height: 28px;
+			border-radius: 8px;
+			border: 1px solid #e5e7eb;
+			background: #fff;
+			color: #667085;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.nm-reco-config-btn:hover {
+			color: #2b58e6;
+			border-color: #c7d7ff;
+			background: #f4f7ff;
+		}
+
+		/* 추천 프롬프트 모달 */
+		.nm-reco-modal {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0,0,0,0.45);
+			display: none;
+			align-items: center;
+			justify-content: center;
+			z-index: 2000;
+		}
+		.nm-reco-modal.active { display: flex; }
+		.nm-reco-modal__card {
+			width: 100%;
+			max-width: 520px;
+			background: #fff;
+			border-radius: 16px;
+			box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+			padding: 20px 20px 16px;
+		}
+		.nm-reco-modal__title {
+			font-size: 18px;
+			font-weight: 700;
+			color: #101828;
+			margin: 0 0 8px 0;
+		}
+		.nm-reco-modal__desc {
+			font-size: 13px;
+			color: #667085;
+			margin: 0 0 12px 0;
+		}
+		.nm-reco-modal__textarea {
+			width: 100%;
+			min-height: 120px;
+			border: 1px solid #d0d5dd;
+			border-radius: 10px;
+			padding: 10px 12px;
+			font-size: 14px;
+			resize: vertical;
+			box-sizing: border-box;
+		}
+		.nm-reco-modal__textarea:focus {
+			outline: none;
+			border-color: #2b58e6;
+			box-shadow: 0 0 0 3px rgba(43, 88, 230, 0.15);
+		}
+		.nm-reco-modal__actions {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-top: 12px;
+		}
+		.nm-reco-modal__left {
+			display: flex;
+			gap: 8px;
+		}
+		.nm-reco-modal__msg {
+			font-size: 12px;
+			color: #667085;
+		}
+		.nm-reco-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 8px 14px;
+			border-radius: 8px;
+			font-size: 13px;
+			font-weight: 600;
+			border: 1px solid transparent;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.nm-reco-btn--primary {
+			background: #2b58e6;
+			color: #fff;
+			border-color: #2b58e6;
+		}
+		.nm-reco-btn--primary:hover { background: #1f46c2; }
+		.nm-reco-btn--ghost {
+			background: #fff;
+			color: #475467;
+			border: 1px solid #d0d5dd;
+		}
+		.nm-reco-btn--ghost:hover { background: #f3f4f6; }
+		.nm-reco-btn--text {
+			background: transparent;
+			color: #667085;
+		}
+		.nm-reco-btn--text:hover { color: #2b58e6; }
+		.nm-section__more {
+			font-size: 14px;
+			color: #667085;
+			text-decoration: none;
+		}
+		.nm-section__more:hover {
+			color: #2b58e6;
+		}
+		
+		/* 카드 그리드 */
+		.nm-grid {
+			display: grid;
+			gap: 20px;
+		}
+		.nm-grid--4 {
+			grid-template-columns: repeat(4, 1fr);
+		}
+		.nm-grid--3 {
+			grid-template-columns: repeat(3, 1fr);
+		}
+		.nm-grid--6 {
+			grid-template-columns: repeat(6, 1fr);
+		}
+		@media (max-width: 992px) {
+			.nm-grid--4, .nm-grid--3 { grid-template-columns: repeat(2, 1fr); }
+			.nm-grid--6 { grid-template-columns: repeat(3, 1fr); }
+		}
+		@media (max-width: 576px) {
+			.nm-grid--4, .nm-grid--3, .nm-grid--6 { grid-template-columns: 1fr; }
+		}
+		
+		/* 강의 카드 */
+		.nm-card {
+			background: #fff;
+			border-radius: 14px;
+			overflow: hidden;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+			transition: all 0.2s;
+		}
+		.nm-card:hover {
+			transform: translateY(-5px);
+			box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+		}
+		.nm-card__img {
+			width: 100%;
+			height: 160px;
+			object-fit: cover;
+		}
+		.nm-card__body {
+			padding: 16px;
+		}
+		.nm-card__title {
+			font-size: 15px;
+			font-weight: 600;
+			color: #101828;
+			margin: 0 0 8px;
+			line-height: 1.4;
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+		}
+		.nm-card__meta {
+			font-size: 13px;
+			color: #667085;
+			margin: 0;
+		}
+		.nm-card__footer {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-top: 12px;
+		}
+		.nm-card__rating {
+			font-size: 13px;
+			color: #667085;
+		}
+		.nm-card__rating i {
+			color: #fbbf24;
+		}
+		.nm-card__badge {
+			background: #fee2e2;
+			color: #dc2626;
+			font-size: 11px;
+			font-weight: 600;
+			padding: 4px 8px;
+			border-radius: 6px;
+		}
+		
+		/* 숏폼 카드 */
+		.nm-shorts {
+			position: relative;
+			border-radius: 14px;
+			overflow: hidden;
+			aspect-ratio: 9/16;
+			max-height: 280px;
+		}
+		.nm-shorts__img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+		.nm-shorts__play {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 48px;
+			color: #fff;
+			text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+		}
+		.nm-shorts__title {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			padding: 40px 12px 12px;
+			background: linear-gradient(transparent, rgba(0,0,0,0.8));
+			color: #fff;
+			font-size: 13px;
+			font-weight: 500;
+			margin: 0;
+		}
+		
+		/* 계속 학습하기 카드 */
+		.nm-continue {
+			background: #fff;
+			border-radius: 14px;
+			overflow: hidden;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+		}
+		.nm-continue__img {
+			width: 100%;
+			height: 180px;
+			object-fit: cover;
+		}
+		.nm-continue__body {
+			padding: 16px;
+		}
+		.nm-continue__title {
+			font-size: 15px;
+			font-weight: 600;
+			color: #101828;
+			margin: 0 0 6px;
+		}
+		.nm-continue__meta {
+			font-size: 13px;
+			color: #667085;
+			margin: 0 0 12px;
+		}
+		.nm-continue__progress-label {
+			display: flex;
+			justify-content: space-between;
+			font-size: 13px;
+			color: #667085;
+			margin-bottom: 6px;
+		}
+		.nm-continue__progress {
+			height: 8px;
+			background: #e5e7eb;
+			border-radius: 4px;
+			overflow: hidden;
+		}
+		.nm-continue__progress-bar {
+			height: 100%;
+			background: linear-gradient(90deg, #2b58e6, #8e44ad);
+			border-radius: 4px;
+		}
+		.nm-continue__btn {
+			display: block;
+			width: 100%;
+			margin-top: 12px;
+			padding: 12px;
+			background: #fff;
+			border: 1px solid #d0d5dd;
+			border-radius: 8px;
+			font-size: 14px;
+			font-weight: 500;
+			color: #344054;
+			text-align: center;
+			text-decoration: none;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+		.nm-continue__btn:hover {
+			background: #f9fafb;
+			border-color: #2b58e6;
+			color: #2b58e6;
+		}
+		
+		/* 빈 상태 */
+		.nm-empty {
+			text-align: center;
+			padding: 40px;
+			color: #667085;
+		}
+		.nm-empty i {
+			font-size: 48px;
+			margin-bottom: 16px;
+			display: block;
+		}
+		
+		/* 백버튼 */
+		.nm-back {
+			position: fixed;
+			top: 20px;
+			left: 20px;
+			background: rgba(255,255,255,0.9);
+			padding: 10px 16px;
+			border-radius: 8px;
+			font-size: 14px;
+			color: #344054;
+			text-decoration: none;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+			z-index: 100;
+		}
+		.nm-back:hover {
+			background: #fff;
+			color: #2b58e6;
+		}
+
+		/* ========== 로그인 모달 ========== */
+		.nm-modal-overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0, 0, 0, 0.5);
+			backdrop-filter: blur(4px);
+			z-index: 9999;
+			align-items: center;
+			justify-content: center;
+		}
+		.nm-modal-overlay.active {
+			display: flex;
+		}
+		.nm-login-modal {
+			width: 100%;
+			max-width: 420px;
+			background: #fff;
+			border-radius: 24px;
+			box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+			overflow: hidden;
+			animation: modalSlideIn 0.3s ease;
+		}
+		@keyframes modalSlideIn {
+			from {
+				opacity: 0;
+				transform: translateY(-20px) scale(0.95);
+			}
+			to {
+				opacity: 1;
+				transform: translateY(0) scale(1);
+			}
+		}
+		.nm-login-modal__header {
+			background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+			padding: 32px 32px 28px;
+			text-align: center;
+			color: #fff;
+		}
+		.nm-login-modal__logo {
+			font-size: 28px;
+			font-weight: 800;
+			margin-bottom: 8px;
+		}
+		.nm-login-modal__subtitle {
+			font-size: 14px;
+			opacity: 0.9;
+		}
+		.nm-login-modal__body {
+			padding: 32px;
+		}
+		.nm-login-modal__field {
+			margin-bottom: 20px;
+		}
+		.nm-login-modal__label {
+			display: block;
+			font-size: 14px;
+			font-weight: 600;
+			color: #344054;
+			margin-bottom: 8px;
+		}
+		.nm-login-modal__input {
+			width: 100%;
+			padding: 14px 16px;
+			border: 2px solid #e5e7eb !important;
+			border-radius: 12px;
+			font-size: 16px;
+			background: #f9fafb !important;
+			transition: all 0.2s;
+			outline: none;
+			height: auto !important;
+			margin: 0 !important;
+		}
+		.nm-login-modal__input:focus {
+			border-color: #4f46e5 !important;
+			background: #fff !important;
+			box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+		}
+		.nm-login-modal__submit {
+			width: 100%;
+			padding: 16px;
+			background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+			color: #fff;
+			border: none;
+			border-radius: 12px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+			margin-top: 8px;
+		}
+		.nm-login-modal__submit:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+		}
+		.nm-login-modal__close {
+			position: absolute;
+			top: 16px;
+			right: 16px;
+			width: 36px;
+			height: 36px;
+			background: rgba(255, 255, 255, 0.2);
+			border: none;
+			border-radius: 50%;
+			color: #fff;
+			font-size: 20px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s;
+		}
+		.nm-login-modal__close:hover {
+			background: rgba(255, 255, 255, 0.3);
+		}
+		.nm-login-modal__footer {
+			text-align: center;
+			padding: 20px 32px 28px;
+			border-top: 1px solid #e5e7eb;
+			background: #f9fafb;
+		}
+		.nm-login-modal__footer a {
+			color: #6b7280;
+			font-size: 14px;
+			text-decoration: none;
+			margin: 0 12px;
+		}
+		.nm-login-modal__footer a:hover {
+			color: #4f46e5;
+		}
+		.nm-login-modal__error {
+			background: #fef2f2;
+			color: #dc2626;
+			padding: 12px 16px;
+			border-radius: 8px;
+			font-size: 14px;
+			margin-bottom: 16px;
+			display: none;
+		}
+
+		/* ========== 푸터 ========== */
+		.nm-footer {
+			background: #1e293b;
+			color: #94a3b8;
+			padding: 48px 0 0;
+		}
+		.nm-footer__container {
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 0 24px;
+		}
+		.nm-footer__main {
+			padding-bottom: 32px;
+		}
+		.nm-footer__title {
+			font-size: 20px;
+			font-weight: 700;
+			color: #fff;
+			margin-bottom: 16px;
+		}
+		.nm-footer__desc {
+			font-size: 14px;
+			line-height: 1.7;
+			max-width: 500px;
+		}
+		.nm-footer__desc-highlight {
+			color: #a78bfa;
+		}
+		.nm-footer__social {
+			display: flex;
+			gap: 16px;
+			margin-top: 24px;
+		}
+		.nm-footer__social a {
+			width: 36px;
+			height: 36px;
+			background: #334155;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #94a3b8;
+			text-decoration: none;
+			transition: all 0.2s;
+		}
+		.nm-footer__social a:hover {
+			background: #4f46e5;
+			color: #fff;
+		}
+		.nm-footer__bottom {
+			border-top: 1px solid #334155;
+			padding: 20px 0;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 16px;
+		}
+		.nm-footer__copyright {
+			font-size: 13px;
+		}
+		.nm-footer__links {
+			display: flex;
+			gap: 24px;
+		}
+		.nm-footer__links a {
+			font-size: 13px;
+			color: #94a3b8;
+			text-decoration: none;
+			transition: color 0.2s;
+		}
+		.nm-footer__links a:hover {
+			color: #fff;
+		}
+	</style>
+	
+	<!-- 상단바 (Header) -->
+	<header class="nm-header">
+		<!-- 로고 -->
+		<a href="javascript:void(0)" class="nm-header__logo" onclick="alert('메뉴 연결 예정')">
+			<img src="/html/images/demo/logo_plism.png" alt="PLISM" onerror="this.style.display='none'">
+			<span class="nm-header__logo-text">PLISM</span>
+		</a>
+		
+		<!-- 메인 네비게이션 -->
+		<nav class="nm-header__nav">
+			<a href="javascript:void(0)" class="nm-header__nav-item active" onclick="alert('메뉴 연결 예정')">홈</a>
+			
+			
+			<!-- 왜: 비로그인 사용자가 나의강의실을 눌렀을 때 구페이지로 이동하지 않고 현재 화면의 로그인 모달을 사용하도록 통일합니다. -->
+			<a href="javascript:void(0)" class="nm-header__nav-item" onclick="openLoginModal(); return false;">나의강의실</a>
+			
+			
+			<!-- 이러닝 드롭다운 -->
+			<div class="nm-header__dropdown">
+				<span class="nm-header__dropdown-toggle">이러닝 <i class="bi bi-chevron-down"></i></span>
+				<div class="nm-header__dropdown-menu">
+					<a href="/course/course_list.jsp?cid=133" class="nm-header__dropdown-item">폴리텍 콘텐츠</a>
+					<a href="javascript:void(0)" class="nm-header__dropdown-item" onclick="alert('메뉴 연결 예정')">개설과목</a>
+					<a href="/course/course_list.jsp?cid=135&ch=course135" class="nm-header__dropdown-item">프리클래스</a>
+				</div>
+			</div>
+			
+			<!-- 전자도서관 드롭다운 -->
+			<div class="nm-header__dropdown">
+				<span class="nm-header__dropdown-toggle">전자도서관 <i class="bi bi-chevron-down"></i></span>
+				<div class="nm-header__dropdown-menu">
+					<a href="https://kopo.dkyobobook.co.kr/main.ink" target="_blank" class="nm-header__dropdown-item">교보문고 전자책</a>
+					<a href="https://kopo.yes24library.com/" target="_blank" class="nm-header__dropdown-item">YES24 전자책</a>
+					<a href="http://kopo.arasoft.net/" target="_blank" class="nm-header__dropdown-item">멀티미디어 디지털 교재</a>
+				</div>
+			</div>
+			
+			<a href="/mypage/new_main/job.jsp" class="nm-header__nav-item">채용</a>
+			<!-- 이용안내 드롭다운 -->
+		<div class="nm-header__dropdown">
+			<span class="nm-header__dropdown-toggle">이용안내 <i class="bi bi-chevron-down"></i></span>
+			<div class="nm-header__dropdown-menu">
+				<a href="/mypage/new_main/manual.jsp" class="nm-header__dropdown-item">매뉴얼</a>
+			</div>
+		</div>
+	</nav>
+		
+		<!-- 우측 액션 버튼 -->
+		<div class="nm-header__actions">
+			<button type="button" class="nm-header__icon-btn" onclick="alert('알림 기능 연결 예정')" title="알림">
+				<i class="bi bi-bell"></i>
+			</button>
+			
+			
+			<button type="button" class="nm-header__login-btn" onclick="openLoginModal()">로그인</button>
+			
+			<button type="button" class="nm-header__mobile-btn" onclick="alert('모바일 메뉴 연결 예정')">
+				<i class="bi bi-list"></i>
+			</button>
+		</div>
+	</header>
+	
+	<!-- 히어로 섹션 -->
+	<section class="nm-hero">
+		<h1 class="nm-hero__title">한국폴리텍대학<br>미래형 직업교육 플랫폼</h1>
+		<form class="nm-hero__search" action="/main/search.jsp" method="get">
+			<input type="text" name="s_keyword" placeholder="강의, 진로, 기업 검색...">
+			<input type="hidden" name="ch" value="new_main">
+			<button type="submit"><i class="bi bi-search"></i></button>
+		</form>
+
+	</section>
+	
+	<!-- 메인 콘텐츠 -->
+	<main class="nm-container">
+		
+	<!-- 필터 탭 -->
+		<nav class="nm-tabs">
+			<a href="#videos" class="nm-tab active"><i class="bi bi-film"></i>추천 동영상</a>
+			<a href="#courses" class="nm-tab"><i class="bi bi-book"></i>강의</a>
+			<a href="#shorts" class="nm-tab"><i class="bi bi-camera-video"></i>숏폼</a>
+			<a href="#continue" class="nm-tab"><i class="bi bi-play-circle"></i>계속 학습하기</a>
+		</nav>
+		
+		<!-- 추천 동영상 섹션 -->
+		<section class="nm-section" id="videos">
+			<div class="nm-section__header">
+				<div class="nm-section__title-row">
+					<h2 class="nm-section__title">추천 동영상</h2>
+					<button type="button" class="nm-reco-config-btn" id="recoPromptOpenBtn" aria-label="추천 설정">
+						<i class="bi bi-gear"></i>
+					</button>
+				</div>
+				<a href="/mypage/reco_video_more.jsp" class="nm-section__more">더보기 →</a>
+			</div>
+			<div class="nm-grid nm-grid--4" id="recoVideoGrid">
+				
+				<div class="nm-card">
+					<a href="javascript:OpenWindowr('/kollus/preview.jsp?key=2IW51noR', 'RECO_VIEWER', 1000, 700);" class="nm-card__img-link" style="display:block; position:relative;">
+						<img src="https://newkl.video.kr.kollus.com/kr/snapshot/newkl/20240429/9/20240429-6ec235e51aa4099f.jpg" alt="[대학생 인터넷·스마트폰 과의존 예방교육]2차시-OTT 과의존" class="nm-card__img">
+						<span style="position:absolute; right:10px; bottom:10px; width:34px; height:34px; border-radius:999px; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center;">
+							<i class="bi bi-play-fill" style="color:#fff; font-size:18px; margin-left:2px;"></i>
+						</span>
+					</a>
+					<div class="nm-card__body">
+						<h3 class="nm-card__title">[대학생 인터넷·스마트폰 과의존 예방교육]2차시-OTT 과의존</h3>
+						<p class="nm-card__meta" style="font-size:12px; margin-bottom:4px; color:#667085;">디지털 중독, OTT 서비스</p>
+						
+						<a href="javascript:OpenWindowr('/kollus/preview.jsp?key=2IW51noR', 'RECO_VIEWER', 1000, 700);" class="nm-continue__btn">미리보기</a>
+					</div>
+				</div>
+				
+				<div class="nm-card">
+					<a href="javascript:OpenWindowr('/kollus/preview.jsp?key=vOHJ1noR', 'RECO_VIEWER', 1000, 700);" class="nm-card__img-link" style="display:block; position:relative;">
+						<img src="https://newkl.video.kr.kollus.com/kr/snapshot/newkl/20240429/9/20240429-7188c5f0175970c9.jpg" alt="[대학생 인터넷·스마트폰 과의존 예방교육]1차시-유튜브 및 동영상(숏폼(short-form))" class="nm-card__img">
+						<span style="position:absolute; right:10px; bottom:10px; width:34px; height:34px; border-radius:999px; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center;">
+							<i class="bi bi-play-fill" style="color:#fff; font-size:18px; margin-left:2px;"></i>
+						</span>
+					</a>
+					<div class="nm-card__body">
+						<h3 class="nm-card__title">[대학생 인터넷·스마트폰 과의존 예방교육]1차시-유튜브 및 동영상(숏폼(short-form))</h3>
+						<p class="nm-card__meta" style="font-size:12px; margin-bottom:4px; color:#667085;">스마트폰 과의존, 미디어 중독</p>
+						
+						<a href="javascript:OpenWindowr('/kollus/preview.jsp?key=vOHJ1noR', 'RECO_VIEWER', 1000, 700);" class="nm-continue__btn">미리보기</a>
+					</div>
+				</div>
+				
+				<div class="nm-card">
+					<a href="javascript:OpenWindowr('/kollus/preview.jsp?key=aKqIXIej', 'RECO_VIEWER', 1000, 700);" class="nm-card__img-link" style="display:block; position:relative;">
+						<img src="https://newkl.video.kr.kollus.com/kr/snapshot/newkl/20241007/7/20241007-c5c984f90843f458.jpg" alt="뉴클영상02" class="nm-card__img">
+						<span style="position:absolute; right:10px; bottom:10px; width:34px; height:34px; border-radius:999px; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center;">
+							<i class="bi bi-play-fill" style="color:#fff; font-size:18px; margin-left:2px;"></i>
+						</span>
+					</a>
+					<div class="nm-card__body">
+						<h3 class="nm-card__title">뉴클영상02</h3>
+						<p class="nm-card__meta" style="font-size:12px; margin-bottom:4px; color:#667085;">정보통신, 중독예방</p>
+						
+						<a href="javascript:OpenWindowr('/kollus/preview.jsp?key=aKqIXIej', 'RECO_VIEWER', 1000, 700);" class="nm-continue__btn">미리보기</a>
+					</div>
+				</div>
+				
+				<div class="nm-card">
+					<a href="javascript:OpenWindowr('/kollus/preview.jsp?key=0wmB4ePI', 'RECO_VIEWER', 1000, 700);" class="nm-card__img-link" style="display:block; position:relative;">
+						<img src="https://newkl.video.kr.kollus.com/kr/snapshot/newkl/20240507/6/20240507-ab75c6149a6e89ab.jpg" alt="대학생성폭력·가정폭력예방교육_5. 지붕뚫고 하이킥" class="nm-card__img">
+						<span style="position:absolute; right:10px; bottom:10px; width:34px; height:34px; border-radius:999px; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center;">
+							<i class="bi bi-play-fill" style="color:#fff; font-size:18px; margin-left:2px;"></i>
+						</span>
+					</a>
+					<div class="nm-card__body">
+						<h3 class="nm-card__title">대학생성폭력·가정폭력예방교육_5. 지붕뚫고 하이킥</h3>
+						<p class="nm-card__meta" style="font-size:12px; margin-bottom:4px; color:#667085;">가정폭력 예방, 인권 교육</p>
+						
+						<a href="javascript:OpenWindowr('/kollus/preview.jsp?key=0wmB4ePI', 'RECO_VIEWER', 1000, 700);" class="nm-continue__btn">미리보기</a>
+					</div>
+				</div>
+				
+				
+			</div>
+		</section>
+		
+		<!-- 강의 섹션 -->
+		<section class="nm-section" id="courses">
+			<div class="nm-section__header">
+				<h2 class="nm-section__title">강의</h2>
+				<a href="/course/course_list.jsp?cid=133" class="nm-section__more">더보기 →</a>
+			</div>
+			<div class="nm-grid nm-grid--4">
+				
+				<div class="nm-card">
+					<img src="/data/file/868f7e45db9caa52865b3937902411ff.jpg" alt="재료 공학 기초" class="nm-card__img">
+					<div class="nm-card__body">
+						<h3 class="nm-card__title">재료 공학 기초</h3>
+						<p class="nm-card__meta" style="color:#667085; font-size:12px; margin-bottom:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"></p>
+						<p class="nm-card__meta" style="font-size:12px; margin-bottom:4px;"><i class="bi bi-person" style="margin-right:4px;"></i>김민지 교수</p>
+						<p class="nm-card__meta" style="font-size:11px; color:#9ca3af;"><i class="bi bi-calendar3" style="margin-right:4px;"></i>상시수강</p>
+						<a href="/course/course_view.jsp?id=443" class="nm-continue__btn">상세보기</a>
+					</div>
+				</div>
+				
+				<div class="nm-card">
+					<img src="/data/file/f9351b55f8d8adaa2a72eb33d0125548.jpg" alt="Acting! Motion Graphics" class="nm-card__img">
+					<div class="nm-card__body">
+						<h3 class="nm-card__title">Acting! Motion Graphics</h3>
+						<p class="nm-card__meta" style="color:#667085; font-size:12px; margin-bottom:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"></p>
+						<p class="nm-card__meta" style="font-size:12px; margin-bottom:4px;"><i class="bi bi-person" style="margin-right:4px;"></i>정현진 교수</p>
+						<p class="nm-card__meta" style="font-size:11px; color:#9ca3af;"><i class="bi bi-calendar3" style="margin-right:4px;"></i>상시수강</p>
+						<a href="/course/course_view.jsp?id=444" class="nm-continue__btn">상세보기</a>
+					</div>
+				</div>
+				
+				<div class="nm-card">
+					<img src="/data/file/20b2ea54539ac1c9a0f8181b053d4189.jpg" alt="인터그랄 패션테크 솔루션" class="nm-card__img">
+					<div class="nm-card__body">
+						<h3 class="nm-card__title">인터그랄 패션테크 솔루션</h3>
+						<p class="nm-card__meta" style="color:#667085; font-size:12px; margin-bottom:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"></p>
+						<p class="nm-card__meta" style="font-size:12px; margin-bottom:4px;"><i class="bi bi-person" style="margin-right:4px;"></i>김태미 교수</p>
+						<p class="nm-card__meta" style="font-size:11px; color:#9ca3af;"><i class="bi bi-calendar3" style="margin-right:4px;"></i>상시수강</p>
+						<a href="/course/course_view.jsp?id=445" class="nm-continue__btn">상세보기</a>
+					</div>
+				</div>
+				
+				<div class="nm-card">
+					<img src="/data/file/dec834c3963c576fcc6d1f5f6da40dde.png" alt="디자인 3D 모델링" class="nm-card__img">
+					<div class="nm-card__body">
+						<h3 class="nm-card__title">디자인 3D 모델링</h3>
+						<p class="nm-card__meta" style="color:#667085; font-size:12px; margin-bottom:4px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;"></p>
+						<p class="nm-card__meta" style="font-size:12px; margin-bottom:4px;"><i class="bi bi-person" style="margin-right:4px;"></i>김태우 교수</p>
+						<p class="nm-card__meta" style="font-size:11px; color:#9ca3af;"><i class="bi bi-calendar3" style="margin-right:4px;"></i>상시수강</p>
+						<a href="/course/course_view.jsp?id=446" class="nm-continue__btn">상세보기</a>
+					</div>
+				</div>
+				
+				
+			</div>
+		</section>
+
+		<!-- 숏폼 섹션 (YouTube API 동적 로딩) -->
+		<section class="nm-section" id="shorts">
+			<div class="nm-section__header">
+				<h2 class="nm-section__title">숏폼</h2>
+				<a href="https://www.youtube.com/channel/UCDlUa248Pg7_e4V-vwT5V8A" target="_blank" class="nm-section__more">더보기 →</a>
+			</div>
+			<div class="nm-grid nm-grid--6" id="shorts-container">
+				<!-- 로딩 스피너 -->
+				<div class="nm-shorts-loading" id="shorts-loading" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+					<i class="bi bi-arrow-clockwise" style="font-size: 32px; animation: spin 1s linear infinite;"></i>
+					<p style="margin-top: 12px; color: #667085;">숏폼 영상을 불러오는 중...</p>
+				</div>
+		</div>
+		</section>
+		
+		<!-- 계속 학습하기 섹션 -->
+		<section class="nm-section" id="continue">
+			<div class="nm-section__header">
+				<h2 class="nm-section__title">계속 학습하기</h2>
+				<a href="/mypage/course_list.jsp" class="nm-section__more">더보기 →</a>
+			</div>
+			<div class="nm-grid nm-grid--3">
+				
+				
+				<div class="nm-empty" style="grid-column: 1/-1;">
+					<i class="bi bi-book"></i>
+					<p>수강 중인 과정이 없습니다.</p>
+				</div>
+				
+			</div>
+		</section>
+		
+		<style>
+			@keyframes spin {
+				from { transform: rotate(0deg); }
+				to { transform: rotate(360deg); }
+			}
+			.nm-shorts {
+				cursor: pointer;
+				transition: transform 0.2s, box-shadow 0.2s;
+			}
+			.nm-shorts:hover {
+				transform: scale(1.03);
+				box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+			}
+		</style>
+		
+		<script>
+		// YouTube Shorts 로딩
+		(function() {
+			function loadYoutubeShorts() {
+				var container = document.getElementById('shorts-container');
+				var loading = document.getElementById('shorts-loading');
+				
+				fetch('/api/youtube_shorts.jsp?maxResults=6')
+					.then(function(response) { return response.json(); })
+					.then(function(data) {
+						if (data.success && data.shorts && data.shorts.length > 0) {
+							var html = '';
+							data.shorts.forEach(function(short) {
+								html += '<a href="' + short.shortsUrl + '" target="_blank" class="nm-shorts" title="' + escapeHtml(short.title) + '">';
+								html += '  <img src="' + short.thumbnailUrl + '" alt="' + escapeHtml(short.title) + '" class="nm-shorts__img" onerror="this.src=\'/html/images/common/noimage_course.gif\'">';
+								html += '  <i class="bi bi-youtube nm-shorts__play"></i>';
+								html += '  <p class="nm-shorts__title">' + escapeHtml(truncateText(short.title, 30)) + '</p>';
+								html += '</a>';
+							});
+							container.innerHTML = html;
+						} else {
+							container.innerHTML = '<div class="nm-empty" style="grid-column: 1/-1;"><i class="bi bi-camera-video"></i><p>숏폼 영상이 없습니다.</p></div>';
+						}
+					})
+					.catch(function(error) {
+						console.error('YouTube Shorts 로딩 오류:', error);
+						container.innerHTML = '<div class="nm-empty" style="grid-column: 1/-1;"><i class="bi bi-exclamation-triangle"></i><p>영상을 불러오는 중 오류가 발생했습니다.</p></div>';
+					});
+			}
+			
+			function escapeHtml(text) {
+				var div = document.createElement('div');
+				div.textContent = text;
+				return div.innerHTML;
+			}
+			
+			function truncateText(text, maxLength) {
+				if (text.length <= maxLength) return text;
+				return text.substring(0, maxLength) + '...';
+			}
+			
+			// 페이지 로드 시 실행
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', loadYoutubeShorts);
+			} else {
+				loadYoutubeShorts();
+			}
+		})();
+		</script>
+		
+
+	</main>
+
+	<!-- 추천 프롬프트 설정 모달 -->
+	<div class="nm-reco-modal" id="recoPromptModal" aria-hidden="true">
+		<div class="nm-reco-modal__card" role="dialog" aria-modal="true" aria-labelledby="recoPromptTitle">
+			<h3 class="nm-reco-modal__title" id="recoPromptTitle">추천 설정</h3>
+			<p class="nm-reco-modal__desc">원하는 추천 내용을 자연어로 적어주세요. 저장하면 다음부터 이 기준으로 추천됩니다.</p>
+			<textarea class="nm-reco-modal__textarea" id="recoPromptInput" maxlength="500" placeholder="예) 전기/전자 전공에 도움이 되는 취업 준비 영상 추천해줘"></textarea>
+			<div class="nm-reco-modal__actions">
+				<div class="nm-reco-modal__left">
+					<button type="button" class="nm-reco-btn nm-reco-btn--ghost" id="recoPromptResetBtn">초기화</button>
+					<button type="button" class="nm-reco-btn nm-reco-btn--text" id="recoPromptCloseBtn">닫기</button>
+				</div>
+				<div>
+					<button type="button" class="nm-reco-btn nm-reco-btn--primary" id="recoPromptSaveBtn">저장</button>
+				</div>
+			</div>
+			<p class="nm-reco-modal__msg" id="recoPromptMsg"></p>
+		</div>
+	</div>
+	
+	<!-- 푸터 -->
+	<footer class="nm-footer">
+		<div class="nm-footer__container">
+			<div class="nm-footer__main">
+				<h3 class="nm-footer__title">한국폴리텍대학 직업교육연구원</h3>
+				<p class="nm-footer__desc">
+					<span class="nm-footer__desc-highlight">미래지향적인 교육 콘텐츠</span> 개발과 정책연구를 통해 대한민국 직업교육의
+					<span class="nm-footer__desc-highlight">새로운 길을 열어갑니다</span>.
+				</p>
+				<div class="nm-footer__social">
+					<a href="https://www.youtube.com/channel/UCDlUa248Pg7_e4V-vwT5V8A" target="_blank" title="YouTube"><i class="bi bi-youtube"></i></a>
+				</div>
+			</div>
+			<div class="nm-footer__bottom">
+				<p class="nm-footer__copyright">© 2025 한국폴리텍대학 직업교육연구원. All Rights Reserved.</p>
+				<div class="nm-footer__links">
+					<a href="/etc/privacy.jsp">개인정보처리방침</a>
+					<a href="/etc/term.jsp">이용약관</a>
+				</div>
+			</div>
+		</div>
+	</footer>
+	
+	<!-- 로그인 모달 -->
+	<div class="nm-modal-overlay" id="loginModal" onclick="closeLoginModal(event)">
+		<div class="nm-login-modal" onclick="event.stopPropagation()" style="position: relative;">
+			<div class="nm-login-modal__header">
+				<button type="button" class="nm-login-modal__close" onclick="closeLoginModal()">&times;</button>
+				<div class="nm-login-modal__logo">PLISM</div>
+				<div class="nm-login-modal__subtitle">미래형 직업교육 플랫폼에 오신 것을 환영합니다</div>
+			</div>
+			<form id="loginForm" method="post" action="/member/login.jsp" target="loginFrame" onsubmit="return submitLogin()">
+				<input type="hidden" name="returl" value="/tutor_lms/">
+				
+				<div class="nm-login-modal__body">
+					<div id="loginError" class="nm-login-modal__error"></div>
+					<div class="nm-login-modal__field">
+						<label class="nm-login-modal__label" for="login_id">아이디</label>
+						<input type="text" id="login_id" name="id" class="nm-login-modal__input" placeholder="아이디를 입력하세요" value="kopo_pr01" required>
+					</div>
+					<div class="nm-login-modal__field">
+						<label class="nm-login-modal__label" for="login_passwd">비밀번호</label>
+						<input type="password" id="login_passwd" name="passwd" class="nm-login-modal__input" placeholder="비밀번호를 입력하세요" value="Growai!2026" required>
+					</div>
+					<button type="submit" class="nm-login-modal__submit">로그인</button>
+				</div>
+			</form>
+			<div class="nm-login-modal__footer">
+				<a href="/member/find_id.jsp">아이디 찾기</a>
+				<a href="/member/find_passwd.jsp">비밀번호 찾기</a>
+				<a href="/member/regist.jsp">회원가입</a>
+			</div>
+		</div>
+	</div>
+	<iframe name="loginFrame" id="loginFrame" style="display:none;"></iframe>
+	
+	<script>
+	// 왜: 학생/교수자 메뉴 진입 경로에 맞는 테스트 계정을 서버에서 미리 정해 전달합니다.
+	function applyDefaultLoginPreset() {
+		document.getElementById('login_id').value = 'kopo_pr01';
+		document.getElementById('login_passwd').value = 'Growai!2026';
+	}
+
+	// 로그인 모달 열기
+	function openLoginModal() {
+		document.getElementById('loginModal').classList.add('active');
+		applyDefaultLoginPreset();
+		document.getElementById('login_id').focus();
+		document.body.style.overflow = 'hidden';
+	}
+	
+	// 로그인 모달 닫기
+	function closeLoginModal(event) {
+		if (event && event.target !== document.getElementById('loginModal')) return;
+		document.getElementById('loginModal').classList.remove('active');
+		document.body.style.overflow = '';
+		// 폼 초기화
+		document.getElementById('loginForm').reset();
+		applyDefaultLoginPreset();
+		document.getElementById('loginError').style.display = 'none';
+	}
+	
+	// 로그인 제출
+	function submitLogin() {
+		var id = document.getElementById('login_id').value.trim();
+		var passwd = document.getElementById('login_passwd').value;
+		
+		if (!id || !passwd) {
+			showLoginError('아이디와 비밀번호를 입력해주세요.');
+			return false;
+		}
+
+		// 왜: /member/login.jsp 응답은 parent.location.replace(returl) 스크립트를 내려주므로,
+		// 여기서 강제 reload를 하면 returl 이동을 덮어써 "교수자 진입 후 로그인해도 학생 메인으로 복귀" 문제가 생깁니다.
+		// 로그인 후 이동은 서버 응답 스크립트에 맡깁니다.
+		return true;
+	}
+
+	// 로그인 에러 표시
+	function showLoginError(message) {
+		var errorDiv = document.getElementById('loginError');
+		errorDiv.textContent = message;
+		errorDiv.style.display = 'block';
+	}
+	
+	// 비밀번호 초기화 (login.jsp에서 호출)
+	function resetPassword() {
+		document.getElementById('login_passwd').value = '';
+		document.getElementById('login_passwd').focus();
+	}
+	
+	// ESC 키로 모달 닫기
+	document.addEventListener('keydown', function(e) {
+		if (e.key === 'Escape' && document.getElementById('loginModal').classList.contains('active')) {
+			closeLoginModal();
+		}
+	});
+
+	document.addEventListener('DOMContentLoaded', applyDefaultLoginPreset);
+
+	
+	// 왜: 권한 없는 진입에서 넘어온 경우, 화면 진입 즉시 로그인 모달을 열어 사용자가 바로 로그인할 수 있게 합니다.
+	document.addEventListener('DOMContentLoaded', function() {
+		openLoginModal();
+		showLoginError('로그인이 필요한 서비스입니다.');
+	});
+	
+
+	// 추천 프롬프트 설정
+	(function() {
+		var openBtn = document.getElementById('recoPromptOpenBtn');
+		var modal = document.getElementById('recoPromptModal');
+		var input = document.getElementById('recoPromptInput');
+		var saveBtn = document.getElementById('recoPromptSaveBtn');
+		var resetBtn = document.getElementById('recoPromptResetBtn');
+		var closeBtn = document.getElementById('recoPromptCloseBtn');
+		var msg = document.getElementById('recoPromptMsg');
+
+		if (!openBtn) return;
+
+		function setMsg(text, isError) {
+			msg.textContent = text || '';
+			msg.style.color = isError ? '#dc2626' : '#667085';
+		}
+
+		function openModal() {
+			modal.classList.add('active');
+			modal.setAttribute('aria-hidden', 'false');
+			document.body.style.overflow = 'hidden';
+			setMsg('불러오는 중...', false);
+			fetch('/mypage/new_main/reco_prompt.jsp')
+				.then(function(res) { return res.json(); })
+				.then(function(data) {
+					if (data && data.ok === false) {
+						setMsg(data.msg || '로그인이 필요합니다.', true);
+						input.value = '';
+						return;
+					}
+					input.value = (data && data.prompt) ? data.prompt : '';
+					setMsg('', false);
+					input.focus();
+				})
+				.catch(function() {
+					setMsg('불러오기에 실패했습니다.', true);
+				});
+		}
+
+		function closeModal() {
+			modal.classList.remove('active');
+			modal.setAttribute('aria-hidden', 'true');
+			document.body.style.overflow = '';
+		}
+
+		function escapeHtml(text) {
+			var div = document.createElement('div');
+			div.textContent = text || '';
+			return div.innerHTML;
+		}
+
+		function escapeJsString(text) {
+			return String(text || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+		}
+
+		function renderRecoList(items) {
+			var grid = document.getElementById('recoVideoGrid');
+			if (!grid) return;
+			if (!items || items.length === 0) {
+				grid.innerHTML = '<div class="nm-empty" style="grid-column: 1/-1;"><i class="bi bi-film"></i><p>추천 동영상이 준비 중입니다.</p></div>';
+				return;
+			}
+
+			var html = '';
+			items.forEach(function(item) {
+				var title = escapeHtml(item.title || '');
+				var category = escapeHtml(item.category_nm || '');
+				var playUrl = escapeJsString(item.play_url || '#');
+				var thumb = item.thumbnail || '/html/images/common/noimage_course.gif';
+				html += "<div class=\"nm-card\">";
+				html += "  <a href=\"javascript:OpenWindowr('" + playUrl + "', 'RECO_VIEWER', 1000, 700);\" class=\"nm-card__img-link\" style=\"display:block; position:relative;\">";
+				html += "    <img src=\"" + thumb + "\" alt=\"" + title + "\" class=\"nm-card__img\" onerror=\"this.src='/html/images/common/noimage_course.gif'\">";
+				html += "    <span style=\"position:absolute; right:10px; bottom:10px; width:34px; height:34px; border-radius:999px; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center;\">";
+				html += "      <i class=\"bi bi-play-fill\" style=\"color:#fff; font-size:18px; margin-left:2px;\"></i>";
+				html += "    </span>";
+				html += "  </a>";
+				html += "  <div class=\"nm-card__body\">";
+				html += "    <h3 class=\"nm-card__title\">" + title + "</h3>";
+				if (category) {
+					html += "  <p class=\"nm-card__meta\" style=\"font-size:12px; margin-bottom:4px; color:#667085;\">" + category + "</p>";
+				}
+				html += "    <a href=\"javascript:OpenWindowr('" + playUrl + "', 'RECO_VIEWER', 1000, 700);\" class=\"nm-continue__btn\">미리보기</a>";
+				html += "  </div>";
+				html += "</div>";
+			});
+			grid.innerHTML = html;
+		}
+
+		function refreshRecoList() {
+			return fetch('/mypage/new_main/reco_video_list.jsp')
+				.then(function(res) { return res.json(); })
+				.then(function(data) {
+					renderRecoList(data && data.items ? data.items : []);
+				});
+		}
+
+		function savePrompt() {
+			var value = (input.value || '').trim();
+			setMsg('저장 중...', false);
+			var body = new URLSearchParams();
+			body.set('prompt', value);
+			fetch('/mypage/new_main/reco_prompt.jsp', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+				body: body.toString()
+			})
+				.then(function(res) { return res.json(); })
+				.then(function(data) {
+					if (data && data.ok) {
+						setMsg(data.msg || '저장되었습니다.', false);
+						refreshRecoList();
+					} else {
+						setMsg((data && data.msg) ? data.msg : '저장에 실패했습니다.', true);
+					}
+				})
+				.catch(function() {
+					setMsg('저장 중 오류가 발생했습니다.', true);
+				});
+		}
+
+		function resetPrompt() {
+			input.value = '';
+			savePrompt();
+		}
+
+		openBtn.addEventListener('click', openModal);
+		closeBtn.addEventListener('click', closeModal);
+		modal.addEventListener('click', function(e) {
+			if (e.target === modal) closeModal();
+		});
+		saveBtn.addEventListener('click', savePrompt);
+		resetBtn.addEventListener('click', resetPrompt);
+
+		document.addEventListener('keydown', function(e) {
+			if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+		});
+	})();
+	</script>
+</div>
+
+
+<iframe name="sysfrmblank" id="sysfrmblank" frameborder="0" width="100%" height="0" src=""></iframe>
+<script>
+var _SKIN_VERSION = "5";
+var _IS_RESP_WEB = true;
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 17:14
+최근 자동 갱신: 2026-02-12 20:41
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app

@@ -113,6 +113,15 @@ async function requestJson<T>(url: string, options?: RequestInit): Promise<Tutor
       }
 
       if (looksJson) {
+        // 왜: Content-Type은 JSON인데 본문이 0바이트로 내려오는 경우가 있습니다.
+        //     (예: 서버 공통 init.jsp에서 multipart 파싱 중 예외로 조기 종료)
+        //     이때는 "rst_code 없음"보다 원인 힌트를 더 직접적으로 주는 편이 디버깅에 유리합니다.
+        if (!trimmed) {
+          return response.ok
+            ? '서버가 JSON(Content-Type)로 응답했지만 본문이 비어 있습니다. 서버에서 요청 파싱(특히 FormData/multipart) 중 예외가 발생했을 가능성이 큽니다. 서버 로그와 업로드 임시폴더(data/tmp) 권한을 확인해 주세요.'
+            : `서버 응답 오류(${response.status}). 서버가 JSON(Content-Type)로 응답했지만 본문이 비어 있습니다. 서버 로그와 업로드 임시폴더(data/tmp) 권한을 확인해 주세요.`;
+        }
+
         // 왜: JSON은 맞는데 rst_code가 없으면(예: 다른 서버 응답) 화면에서 처리가 불가능합니다.
         return response.ok
           ? '서버 응답 JSON 형식이 예상과 다릅니다(rst_code 없음). 로그인 상태/권한 또는 API 경로를 확인해 주세요.'
