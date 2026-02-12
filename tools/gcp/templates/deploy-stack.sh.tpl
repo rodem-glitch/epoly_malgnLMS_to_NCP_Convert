@@ -194,6 +194,7 @@ sync_stack_files() {
 prepare_legacy_permissions() {
   local webinf_dir="${STACK_TARGET}/legacy/public_html/WEB-INF"
   local work_dir="${webinf_dir}/work"
+  local classes_dir="${webinf_dir}/classes"
   local log_dir="${STACK_TARGET}/legacy/public_html/data/log"
 
   if [[ ! -d "${webinf_dir}" ]]; then
@@ -204,6 +205,11 @@ prepare_legacy_permissions() {
   # 이 디렉터리에 쓰기 권한이 없으면 첫 요청부터 500이 발생하므로 배포 시 권한을 선제 보정합니다.
   mkdir -p "${work_dir}"
   chmod -R a+rwX "${work_dir}"
+
+  # 왜: Resin은 JSP/클래스 컴파일 산출물을 WEB-INF/classes에도 기록할 수 있어
+  # 이 경로가 없거나 쓰기 불가이면 /tutor_lms 포함 JSP 요청이 500으로 실패합니다.
+  mkdir -p "${classes_dir}"
+  chmod -R a+rwX "${classes_dir}"
 
   # 왜: 레거시 공통 로그(Malgn.errorLog)가 /data/log를 기준으로 동작하므로
   # 경로가 없으면 추천/로그인 흐름의 예외 로그 기록 시점에 추가 예외가 발생합니다.

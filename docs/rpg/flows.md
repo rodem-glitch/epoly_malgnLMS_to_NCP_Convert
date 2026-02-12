@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:27
+최근 자동 갱신: 2026-02-12 14:50
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -430,6 +430,7 @@
     - MySQL 함수 생성 오류(1418) 방지를 위해 import 직전 `log_bin_trust_function_creators=1`을 root 계정으로 설정
     - 배포 번들 `migration/source.sql`로 전송 후, VM 배포 단계에서 자동 import(`DB_IMPORT_ON_DEPLOY=true`)
   - 초기에는 Firebase Hosting을 `302 리다이렉트`로 배포하되, 주소 유지가 필요하면 `tools/gcp/firebase-proxy-deploy`(Hosting rewrite + Functions vmproxy)로 전환
+  - `tools/gcp/firebase-proxy-deploy/public`은 Git 추적용 파일이 필요하지만, `index.html`을 두면 루트(`/`)가 정적 파일로 먼저 매칭되어 rewrite가 우회되므로 non-index placeholder만 유지
   - GitHub Actions(`.github/workflows/deploy-lms-gcp.yml`)는
     - 사전 점검 단계에서 `GCP_SA_KEY/GCP_PROJECT_ID/GCP_VM_SSH_USER/LMS_DB_PASSWORD/LMS_DB_ROOT_PASSWORD/QDRANT_API_KEY/GOOGLE_API_KEY/GEMINI_API_KEY` 누락 시 즉시 실패
     - VM 배포: `one-click-setup.ps1 -SkipProjectBootstrap -SkipFirebaseDeploy -VmSshUser`
@@ -481,7 +482,7 @@
     - 반영 후 동일 호출 -> `200` + 학과별 취업률 JSON 응답
   - CI 복구 검증:
     - GitHub Actions `Firebase vmproxy + Hosting 배포` 실패 원인(`Directory 'public' for Hosting does not exist`) 확인
-    - `tools/gcp/firebase-proxy-deploy/public/index.html` 추가 후 워크플로 재실행 기준으로 동일 오류 재발 방지
+    - `tools/gcp/firebase-proxy-deploy/public/vmproxy-placeholder.txt` 추적으로 워크플로 재실행 기준 `public` 디렉터리 누락 재발 방지(`index.html`은 rewrite 우회 이슈로 미사용)
     - 워크플로 문법 검증: `npx -y js-yaml .github/workflows/deploy-lms-gcp.yml` 성공
     - vmproxy 함수 문법 검증: `node --check tools/gcp/firebase-proxy-deploy/functions/index.js` 성공
     - API JAR 빌드 검증: `cd polytech-lms-api && .\\gradlew.bat bootJar -x test` 성공

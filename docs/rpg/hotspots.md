@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 14:27
+최근 자동 갱신: 2026-02-12 14:50
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -85,7 +85,7 @@
   - 실행 진입점은 `tools/gcp/start-one-click.bat` / `tools/gcp/one-click-setup.ps1`입니다.
   - 기본 원클릭은 Firebase를 `epoly-kopo.web.app -> VM` 302 리다이렉트로 배포합니다. 이 모드에서는 주소창이 VM 주소로 바뀝니다.
   - 주소 유지가 필요하면 `tools/gcp/firebase-proxy-deploy`(Hosting rewrite + Functions `vmproxy`)를 사용해야 합니다.
-  - `tools/gcp/firebase-proxy-deploy/firebase.json`은 `public` 디렉터리를 필수로 요구합니다. 빈 디렉터리는 Git 추적이 안 되므로 `public/index.html` 같은 추적 파일을 유지해야 CI 배포 실패(`Directory 'public' for Hosting does not exist`)를 막을 수 있습니다.
+  - `tools/gcp/firebase-proxy-deploy/firebase.json`은 `public` 디렉터리를 필수로 요구합니다. 빈 디렉터리는 Git 추적이 안 되므로 추적 파일이 필요하지만, `public/index.html`을 두면 `/`가 정적 파일로 먼저 매칭되어 vmproxy rewrite가 우회될 수 있습니다. `public/vmproxy-placeholder.txt` 같은 non-index 파일만 유지해야 합니다.
   - 프록시 모드에서 로그인 리다이렉트 `Location` 헤더가 IP로 내려오면 프론트 주소가 다시 깨지므로, 함수에서 `Location: http://34.64.207.10/...`을 `https://epoly-kopo.web.app/...`로 치환하는 로직을 유지해야 합니다.
   - Firebase Hosting 경유에서는 일반 쿠키가 안정적으로 전달되지 않을 수 있어, 레거시 로그인 쿠키(`MLMS*`, `JSESSIONID`)를 `__session` 번들로 브리지하는 로직(`tools/gcp/firebase-proxy-deploy/functions/index.js`)을 유지해야 합니다.
   - `tools/gcp/firebase-proxy-deploy/functions/index.js`에서 프록시 구현을 `fetch`로 되돌리면 쿠키 전달이 다시 누락될 수 있습니다. 저수준 HTTP 프록시 + `__session` 복원 경로를 기본으로 유지합니다.
@@ -122,6 +122,7 @@
   - Linux CI에서 JAR 산출물 경로를 `build\\libs\\*.jar`처럼 백슬래시로 찾으면 파일을 못 찾을 수 있습니다. `Build-ApiJar`는 `build/libs/*.jar` 경로를 유지해야 합니다.
   - VM Resin은 `public_html/WEB-INF/classes`를 우선 사용하되, 누락 클래스는 `source=/opt/polytech-lms/legacy/src` 경로로 런타임 컴파일합니다. CI 배포 시 `src` 볼륨 마운트가 빠지면 `package dao does not exist`로 첫 화면 500이 재발합니다.
   - Resin 첫 요청 시 `WEB-INF/work`에 JSP 컴파일 파일을 쓰므로, 배포 스크립트의 `prepare_legacy_permissions` 권한 보정 단계를 제거하면 `Permission denied`로 500이 재발할 수 있습니다.
+  - `/tutor_lms/`에서 `Cannot create directory: /var/resin/webapps/ROOT/WEB-INF/classes`가 뜨면 `prepare_legacy_permissions`에 `WEB-INF/classes` 생성/권한 보정이 빠진 상태일 가능성이 큽니다.
   - 배포 번들을 `stack-타임스탬프`로 생성할 때는 원격 실행 경로도 같은 폴더(`~/stack-...`)를 써야 합니다. 고정 `~/stack`을 실행하면 이전 dump가 재사용될 수 있습니다.
   - 레거시 dump는 `LM_COURSE`/`LM_COURSE_USER` 컬럼 수 mismatch와 `DEFINER` 구문으로 import 실패가 날 수 있어, 보정 로직(`Normalize-DbDumpIfNeeded`)을 우회하지 않아야 합니다.
   - MySQL 함수 생성 정책 오류(1418)는 `lms` 계정으로는 해결되지 않습니다. `log_bin_trust_function_creators`는 반드시 root 계정으로 설정해야 합니다.
