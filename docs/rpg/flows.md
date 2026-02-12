@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:08
+최근 자동 갱신: 2026-02-12 13:10
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -446,6 +446,7 @@
     - 원격 실행은 `id -u`/`sudo -n true`를 먼저 점검해 `root 직접 실행` 또는 `무비밀번호 sudo 실행` 경로만 허용
   - CI 재시도 보강:
     - `원클릭 배포 실행 (VM 스택)` 단계는 one-click 호출을 최대 2회까지 재시도하고, 1차 실패 메시지를 로그로 남긴 뒤 20초 대기 후 재실행
+    - one-click 단계를 `continue-on-error`로 실행하고 실패 메시지 첫 줄(`error_head`)을 step output으로 기록한 뒤, 후속 `원클릭 실패 확인` 단계에서 즉시 실패 처리해 원인 헤더를 step 이름으로 노출
   - CI 인자 바인딩 보강:
     - one-click 호출은 배열 스플랫(`@args`) 방식에서 스위치 파라미터(`-SkipProjectBootstrap`, `-SkipFirebaseDeploy`)가 밀려 `SourceDbPort` 바인딩 오류를 낼 수 있어, 명시적 파라미터 호출 형태를 유지
   - `Build-ApiJar`는 Linux 러너에서 `bash ./gradlew bootJar -x test`를 사용해 실행권한 비트 누락(`chmod +x` 미반영)에도 빌드가 진행되도록 보강

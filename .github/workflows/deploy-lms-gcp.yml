@@ -154,8 +154,11 @@ jobs:
           echo "선택된 VM SSH 사용자: ${selected}"
 
       - name: 원클릭 배포 실행 (VM 스택)
+        id: vm_stack
+        continue-on-error: true
         shell: pwsh
         run: |
+          $errorHead = "OK"
           $invokeOneClick = {
             $vmSshUser = "${{ steps.vm_ssh_probe.outputs.ssh_user }}"
             if ([string]::IsNullOrWhiteSpace($vmSshUser)) {
@@ -206,9 +209,16 @@ jobs:
             try {
               & $invokeOneClick
               Write-Host "[deploy] one-click 실행 성공"
+              "error_head=$errorHead" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
               break
             } catch {
+              $firstLine = ($_.Exception.Message -split "`r?`n")[0]
+              $errorHead = $firstLine -replace '[^a-zA-Z0-9ㄱ-힣 _:\\/\\.-]', ''
+              if ($errorHead.Length -gt 120) {
+                $errorHead = $errorHead.Substring(0, 120)
+              }
               if ($attempt -eq $maxAttempts) {
+                "error_head=$errorHead" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
                 throw
               }
               Write-Host ("[deploy] one-click 실행 실패, 재시도합니다: {0}" -f $_.Exception.Message) -ForegroundColor Yellow
@@ -216,7 +226,14 @@ jobs:
             }
           }
 
+      - name: 원클릭 실패 확인 (${{ steps.vm_stack.outputs.error_head }})
+        if: steps.vm_stack.outcome == 'failure'
+        run: |
+          echo "one-click 실패: ${{ steps.vm_stack.outputs.error_head }}"
+          exit 1
+
       - name: vmproxy 대상 VM IP 동기화
+        if: steps.vm_stack.outcome == 'success'
         shell: bash
         run: |
           set -euo pipefail
@@ -235,12 +252,15 @@ jobs:
           grep -n "^const TARGET" tools/gcp/firebase-proxy-deploy/functions/index.js
 
       - name: Firebase vmproxy 함수 의존성 설치
+        if: steps.vm_stack.outcome == 'success'
         run: npm --prefix tools/gcp/firebase-proxy-deploy/functions ci
 
       - name: vmproxy 함수 문법 점검
+        if: steps.vm_stack.outcome == 'success'
         run: node --check tools/gcp/firebase-proxy-deploy/functions/index.js
 
       - name: Firebase vmproxy + Hosting 배포
+        if: steps.vm_stack.outcome == 'success'
         shell: bash
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
@@ -259,6 +279,7 @@ jobs:
           firebase "${firebase_args[@]}"
 
       - name: 배포 후 스모크 테스트
+        if: steps.vm_stack.outcome == 'success'
         run: |
           curl -fsS -o /dev/null -w "health=%{http_code}\n" https://epoly-kopo.web.app/actuator/health
           curl -fsS -o /dev/null -w "root=%{http_code}\n" https://epoly-kopo.web.app/

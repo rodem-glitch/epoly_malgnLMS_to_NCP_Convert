@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:08
+최근 자동 갱신: 2026-02-12 13:10
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -107,6 +107,7 @@
   - `one-click-setup.ps1`은 CI에서 `--ssh-flag=-oBatchMode=yes`, `sudo -n`을 사용합니다. 대상 계정에 무비밀번호 sudo 권한이 없으면 즉시 실패하므로, 계정/권한 불일치를 먼저 해결해야 합니다.
   - `one-click-setup.ps1`는 VM 메타데이터 `ssh-keys`에 등록된 사용자도 SSH 후보로 포함합니다. 운영에서 커스텀 계정을 쓰면 메타데이터 등록 여부가 배포 성공률에 직접 영향을 줍니다.
   - 원격 배포 실행은 `root` 또는 `sudo -n`(무비밀번호 sudo)만 허용합니다. 일반 sudo 프롬프트가 필요한 계정이면 CI에서는 반드시 실패합니다.
+  - one-click 실패 시 워크플로우 `원클릭 실패 확인` 단계 이름에 `error_head`가 노출됩니다. 반복 장애 분석은 이 헤더(첫 줄 오류) 기준으로 분기하는 것이 빠릅니다.
   - CI에서는 `gcloud compute scp/ssh`가 대화형 프롬프트(SSH 키/호스트 확인)로 멈출 수 있어, 원클릭 배포 스크립트의 `--quiet` + `--strict-host-key-checking=no` 조합을 유지해야 합니다.
   - `vmproxy`의 업스트림은 워크플로에서 `polytech-lms-vm-ip` 고정 IP를 조회해 `functions/index.js`의 `TARGET`을 매번 치환합니다. 이 치환 단계를 제거하면 VM 교체/재생성 시 web.app가 이전 IP를 바라봐 502가 재발할 수 있습니다.
   - Firebase 배포 인증은 `FIREBASE_TOKEN`이 있으면 토큰, 없으면 서비스 계정(ADC)으로 진행합니다. 권한 문제 발생 시 `GCP_SA_KEY` 서비스계정에 Firebase Hosting/Functions 배포 권한이 실제로 부여됐는지 먼저 확인해야 합니다.
