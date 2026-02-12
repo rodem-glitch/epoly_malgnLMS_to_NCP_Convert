@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:14
+최근 자동 갱신: 2026-02-12 13:25
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -108,3 +108,4 @@
 | GitHub Actions VM 배포 단계 무대기 보강 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `tools/gcp/one-click-setup.ps1` | CI에서 sudo/ssh 대기 프롬프트 제거 | 확인 근거: `gcloud compute scp/ssh`에 `BatchMode` 적용, 원격 실행 `sudo -n`으로 강제해 프롬프트 대기를 즉시 실패로 노출 |
 | GitHub Actions 시크릿/프록시 안정화 | `Deploy LMS to GCP + Firebase` 워크플로의 사전 점검 + `vmproxy` 배포 단계 | `.github/workflows/deploy-lms-gcp.yml` | 시크릿 누락 즉시 실패 + VM 고정 IP 자동 동기화 + Firebase 인증 분기(토큰/서비스계정) | 확인 근거: `npx -y js-yaml .github/workflows/deploy-lms-gcp.yml` 파싱 성공, `node --check tools/gcp/firebase-proxy-deploy/functions/index.js` 문법 확인, `git diff`로 `TARGET` 치환/인증 분기 반영 확인 |
 | GitHub Actions VM SSH 계정 불일치 복구 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `tools/gcp/one-click-setup.ps1`, `.github/workflows/deploy-lms-gcp.yml` | SSH 계정 자동 후보 탐색 + one-click 재시도(최대 2회) + 인자 바인딩 오류 제거 + root/sudo 경로 명시화 | 확인 근거: 최근 실패 run(#11, #12)이 동일하게 VM 스택 단계에서 중단된 이력 확인 후 `Deploy-StackToVm`에 `지정계정→메타 ssh-keys 계정→gcloud계정→newkl→ubuntu→root→기본호스트` 순차 시도 추가, run(#13,#14)에서 재현된 `SourceDbPort` 바인딩 오류를 원인으로 확인해 워크플로 원클릭 호출을 배열 스플랫(`@args`) 방식에서 명시적 파라미터 호출로 복구, 워크플로 `VM SSH 권한 사전 점검` 단계를 추가해 `sudo -n` 가능한 계정을 먼저 선별하고 SSH 타임아웃(`ConnectTimeout=15`)으로 무대기 보강, one-click 실패 헤더(`error_head`)를 기반으로 분류 step(`SCP/SSH/Gradle/GCE/기타`)을 실행해 로그 접근 없이도 원인 범위를 단계별로 추적 가능하게 개선 |
+| GitHub Actions Linux JAR 경로 호환 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `tools/gcp/one-click-setup.ps1` | ubuntu 러너에서 JAR 산출물 탐색 경로를 `build/libs/*.jar`로 통일 | 확인 근거: Linux에서 `build\\libs\\*.jar` 경로가 JAR 탐색 실패로 이어질 수 있어 `Build-ApiJar`를 경로 중립적으로 수정 |

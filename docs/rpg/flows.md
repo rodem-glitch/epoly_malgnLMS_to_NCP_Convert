@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:14
+최근 자동 갱신: 2026-02-12 13:25
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -451,6 +451,7 @@
   - CI 인자 바인딩 보강:
     - one-click 호출은 배열 스플랫(`@args`) 방식에서 스위치 파라미터(`-SkipProjectBootstrap`, `-SkipFirebaseDeploy`)가 밀려 `SourceDbPort` 바인딩 오류를 낼 수 있어, 명시적 파라미터 호출 형태를 유지
   - `Build-ApiJar`는 Linux 러너에서 `bash ./gradlew bootJar -x test`를 사용해 실행권한 비트 누락(`chmod +x` 미반영)에도 빌드가 진행되도록 보강
+  - `Build-ApiJar`는 빌드 산출물 검색을 `build/libs/*.jar` 경로로 통일해(백슬래시 경로 의존 제거) Windows/ubuntu 모두 동일하게 JAR을 찾습니다.
   - 실행 결과를 `tools/gcp/generated/setup-summary.txt`에 저장(도메인 A레코드 값/민감정보 포함)
 - DB:
   - MySQL 컨테이너(`mysql:8.4`) + Qdrant 컨테이너(`qdrant/qdrant:v1.15.3`)

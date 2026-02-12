@@ -403,7 +403,9 @@ function Build-ApiJar {
         Pop-Location
     }
 
-    $jar = Get-ChildItem -Path (Join-Path $apiDir "build\libs\*.jar") |
+    # 왜: GitHub Actions(ubuntu)에서도 동일하게 동작하도록, OS 경로 구분자에 의존하지 않는 경로를 사용합니다.
+    $libsDir = Join-Path $apiDir "build/libs"
+    $jar = Get-ChildItem -Path $libsDir -Filter "*.jar" |
         Where-Object { $_.Name -notmatch "plain" } |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1
