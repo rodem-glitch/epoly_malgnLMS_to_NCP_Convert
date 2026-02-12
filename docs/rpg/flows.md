@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:33
+최근 자동 갱신: 2026-02-12 13:45
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -419,6 +419,7 @@
   - API 컨테이너는 `SPRING_DATASOURCE_*`, `SPRING_AI_VECTORSTORE_QDRANT_*` 환경변수로 운영값을 강제 주입해 JAR 내부 `application-local.yml` 오버라이드를 방지
   - 통계 기능 엑셀 원본(`통계/`)을 배포 번들에 포함하고 API 컨테이너 `/data/statistics`로 마운트
   - API에 `STATISTICS_MAJOR_INDUSTRY_FILE`, `STATISTICS_EMPLOYMENT_FILE`, `STATISTICS_ADMISSION_FILE`, `STATISTICS_STUDENT_POPULATION_FILE`을 절대경로(`/data/statistics/*.xlsx`)로 주입
+  - GitHub Actions 체크아웃에서 `통계/`가 제외되면 one-click이 `통계 폴더를 찾지 못했습니다`로 즉시 실패하므로, `.gitignore`에서 `통계` 제외 규칙을 두지 않고 `통계/*.xlsx`를 추적 상태로 유지
   - `-EnableDbMigration` 사용 시:
     - `-SourceDbDumpPath`가 있으면 해당 dump를 사용
     - 없으면 `mysqldump`로 소스 DB를 로컬에서 dump 생성
@@ -483,6 +484,7 @@
     - API JAR 빌드 검증: `cd polytech-lms-api && .\\gradlew.bat bootJar -x test` 성공
     - one-click DryRun 검증: `pwsh -NoLogo -NoProfile -Command ". ./tools/gcp/one-click-setup.ps1 -DryRun -SkipProjectBootstrap -SkipVmProvision -SkipFirebaseDeploy -ProjectId test-polytech"` 실행 완료
     - 워크플로 호출 재현 검증: 배열 스플랫(`@args`) 호출 시 `SourceDbPort` 변환 오류 재현, 명시적 파라미터 호출(`-DryRun`)로 정상 동작 확인
+    - run(#26) 로그 검증: `원클릭 배포 실행` 단계에서 `통계 폴더를 찾지 못했습니다: /home/runner/work/polytech-lms/polytech-lms/통계` 확인 후 `.gitignore`/`통계/*.xlsx` 반영
   - 장애 복구 확인:
     - 초기에 Resin이 `WEB-INF/work` 쓰기권한 부족으로 500 발생
     - `deploy-stack.sh.tpl`에 `WEB-INF/work` 권한 보정 추가 후 정상화 확인

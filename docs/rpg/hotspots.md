@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:33
+최근 자동 갱신: 2026-02-12 13:45
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -94,6 +94,7 @@
   - 추천 API가 500일 때는 DB/Qdrant보다 먼저 `lms-api` 로그의 Gemini 403을 확인해야 합니다. 현재 키는 `virtualclass-2ee22` 프로젝트 키를 사용하므로, `generativelanguage.googleapis.com` 비활성화 시 즉시 추천이 전체 실패합니다.
   - `Malgn.errorLog`는 `/var/resin/webapps/ROOT/data/log` 경로가 없으면 추가 예외를 발생시켜 원인 로그를 가립니다. 배포 시 `public_html/data/log` 생성/권한 보정을 반드시 유지해야 합니다.
   - 통계 대시보드는 엑셀 파일 의존(`통계/*.xlsx`)이 있어, API 컨테이너에 `/data/statistics` 마운트와 `STATISTICS_*_FILE` 절대경로 주입이 없으면 `/statistics/api/internal/*`가 즉시 500으로 실패합니다.
+  - `.gitignore`에 `통계`가 들어가 있으면 GitHub Actions 체크아웃에서 통계 폴더가 빠져 `one-click-setup.ps1`가 `통계 폴더를 찾지 못했습니다`로 실패합니다. `통계/*.xlsx`는 추적 상태를 유지해야 CI 배포가 재현됩니다.
   - `one-click-setup.ps1` 배포 번들에 `statistics_data` 복사가 누락되면 운영에서 통계만 부분 장애가 나므로, 배포 후 `GET /statistics/api/internal/employment/top`를 스모크 테스트에 포함해야 합니다.
   - 실제 실행 시 민감정보(DB 비밀번호, Qdrant API 키)가 `tools/gcp/generated/setup-summary.txt`와 `tools/gcp/generated/stack/.env`에 기록됩니다.
   - `tools/gcp/generated/`는 `.gitignore` 처리되어 있으므로, 스크립트 실행 전후에 `git status`로 민감파일이 추적되지 않는지 확인합니다.
