@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 12:43
+최근 자동 갱신: 2026-02-12 12:50
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -107,6 +107,7 @@
   - `vmproxy`의 업스트림은 워크플로에서 `polytech-lms-vm-ip` 고정 IP를 조회해 `functions/index.js`의 `TARGET`을 매번 치환합니다. 이 치환 단계를 제거하면 VM 교체/재생성 시 web.app가 이전 IP를 바라봐 502가 재발할 수 있습니다.
   - Firebase 배포 인증은 `FIREBASE_TOKEN`이 있으면 토큰, 없으면 서비스 계정(ADC)으로 진행합니다. 권한 문제 발생 시 `GCP_SA_KEY` 서비스계정에 Firebase Hosting/Functions 배포 권한이 실제로 부여됐는지 먼저 확인해야 합니다.
   - VM 스택 단계는 one-click 재시도(최대 2회)를 수행합니다. 1차 실패가 권한/네트워크 일시 오류인지 영구 설정 오류인지 구분하려면 1차/2차 실패 메시지를 함께 확인해야 합니다.
+  - GitHub Actions의 pwsh 단계에서 one-click 파라미터를 배열 스플랫(`@args`)으로 넘기면 스위치 파라미터가 밀려 `SourceDbPort` 변환 오류가 발생할 수 있습니다. 이 구간은 명시적 파라미터 호출 형태를 유지해야 합니다.
   - Linux CI에서 `./gradlew` 실행권한 비트가 없으면 원클릭의 API 빌드 단계가 실패합니다. `Build-ApiJar`는 `bash ./gradlew` 경로를 유지해야 합니다.
   - VM Resin은 `public_html/WEB-INF/classes`를 우선 사용하되, 누락 클래스는 `source=/opt/polytech-lms/legacy/src` 경로로 런타임 컴파일합니다. CI 배포 시 `src` 볼륨 마운트가 빠지면 `package dao does not exist`로 첫 화면 500이 재발합니다.
   - Resin 첫 요청 시 `WEB-INF/work`에 JSP 컴파일 파일을 쓰므로, 배포 스크립트의 `prepare_legacy_permissions` 권한 보정 단계를 제거하면 `Permission denied`로 500이 재발할 수 있습니다.

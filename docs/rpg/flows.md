@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 12:43
+최근 자동 갱신: 2026-02-12 12:50
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -442,6 +442,8 @@
     - 모든 후보 실패 시 시도한 대상 목록과 마지막 오류를 함께 던져 재현 가능한 실패 로그를 남김
   - CI 재시도 보강:
     - `원클릭 배포 실행 (VM 스택)` 단계는 one-click 호출을 최대 2회까지 재시도하고, 1차 실패 메시지를 로그로 남긴 뒤 20초 대기 후 재실행
+  - CI 인자 바인딩 보강:
+    - one-click 호출은 배열 스플랫(`@args`) 방식에서 스위치 파라미터(`-SkipProjectBootstrap`, `-SkipFirebaseDeploy`)가 밀려 `SourceDbPort` 바인딩 오류를 낼 수 있어, 명시적 파라미터 호출 형태를 유지
   - `Build-ApiJar`는 Linux 러너에서 `bash ./gradlew bootJar -x test`를 사용해 실행권한 비트 누락(`chmod +x` 미반영)에도 빌드가 진행되도록 보강
   - 실행 결과를 `tools/gcp/generated/setup-summary.txt`에 저장(도메인 A레코드 값/민감정보 포함)
 - DB:
@@ -472,6 +474,7 @@
     - vmproxy 함수 문법 검증: `node --check tools/gcp/firebase-proxy-deploy/functions/index.js` 성공
     - API JAR 빌드 검증: `cd polytech-lms-api && .\\gradlew.bat bootJar -x test` 성공
     - one-click DryRun 검증: `pwsh -NoLogo -NoProfile -Command ". ./tools/gcp/one-click-setup.ps1 -DryRun -SkipProjectBootstrap -SkipVmProvision -SkipFirebaseDeploy -ProjectId test-polytech"` 실행 완료
+    - 워크플로 호출 재현 검증: 배열 스플랫(`@args`) 호출 시 `SourceDbPort` 변환 오류 재현, 명시적 파라미터 호출(`-DryRun`)로 정상 동작 확인
   - 장애 복구 확인:
     - 초기에 Resin이 `WEB-INF/work` 쓰기권한 부족으로 500 발생
     - `deploy-stack.sh.tpl`에 `WEB-INF/work` 권한 보정 추가 후 정상화 확인
