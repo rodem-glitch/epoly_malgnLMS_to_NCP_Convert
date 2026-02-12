@@ -15,7 +15,7 @@
 - 웹 방화벽 규칙(80/443) 생성
 - `polytech-lms-api` JAR 빌드
 - VM에 Docker 스택(MySQL/Qdrant/Spring API/Resin JSP) 배포
-- 레거시 `public_html`를 VM 번들에 포함하고, VM용 `resin-web.xml`을 자동 생성
+- 레거시 `public_html` + `src`를 VM 번들에 포함하고, VM용 `resin-web.xml`을 자동 생성
 - (옵션) 기존 DB dump 자동 import
 - Nginx 리버스 프록시 설정
   - 기본 화면(`/`, `/mypage/*`, `/member/*`, `/tutor_lms/*`)은 Resin
@@ -123,5 +123,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/gcp/one-click-setup.ps
 - `tools/gcp/generated/`에는 민감정보가 저장됩니다. 외부 공유 금지입니다.
 - DB 이관을 켜면 대상 MySQL에 데이터가 반영되므로, 빈 DB 또는 테스트 VM에서 먼저 검증해 주세요.
 - 최초 실행은 VM 생성/빌드 때문에 시간이 걸릴 수 있습니다.
-- VM Resin은 `public_html/WEB-INF/classes`의 기존 컴파일 결과를 사용합니다. VM에서 `src` 동적 컴파일을 기대하지 않도록 운영 기준을 맞춰 주세요.
+- VM Resin은 `public_html/WEB-INF/classes`를 기본으로 사용하되, 누락 클래스는 `src`를 기준으로 동적 컴파일합니다.
 - MySQL은 Linux 대소문자 이슈를 피하려고 `--lower_case_table_names=1`로 동작합니다(소스 DB와 테이블명 호환).

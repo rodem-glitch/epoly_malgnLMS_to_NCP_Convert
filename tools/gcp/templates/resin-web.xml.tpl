@@ -1,7 +1,8 @@
 <web-app xmlns="http://caucho.com/ns/resin">
-  <!-- 왜: WEB-INF/classes의 기존 컴파일 결과를 우선 사용하고, 라이브러리 로더만 명시적으로 유지합니다. -->
+  <!-- 왜: CI 배포 시 WEB-INF/classes가 비어 있어도 src를 기준으로 필요한 클래스를 즉시 컴파일해
+       dao.* 누락으로 첫 화면이 500 나는 장애를 막습니다. -->
   <class-loader>
-    <compiling-loader path="WEB-INF/classes"/>
+    <compiling-loader path="WEB-INF/classes" source="__LEGACY_SOURCE_DIR__"/>
     <library-loader path="WEB-INF/lib"/>
   </class-loader>
 

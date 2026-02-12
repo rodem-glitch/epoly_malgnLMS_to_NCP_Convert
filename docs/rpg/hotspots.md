@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 09:49
+최근 자동 갱신: 2026-02-12 10:00
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -97,7 +97,7 @@
   - `one-click-setup.ps1`은 CI에서 `--ssh-flag=-oBatchMode=yes`, `sudo -n`을 사용합니다. 대상 계정에 무비밀번호 sudo 권한이 없으면 즉시 실패하므로, 계정/권한 불일치를 먼저 해결해야 합니다.
   - CI에서는 `gcloud compute scp/ssh`가 대화형 프롬프트(SSH 키/호스트 확인)로 멈출 수 있어, 원클릭 배포 스크립트의 `--quiet` + `--strict-host-key-checking=no` 조합을 유지해야 합니다.
   - Linux CI에서 `./gradlew` 실행권한 비트가 없으면 원클릭의 API 빌드 단계가 실패합니다. `Build-ApiJar`는 `bash ./gradlew` 경로를 유지해야 합니다.
-  - VM Resin은 `src` 런타임 컴파일을 쓰지 않고 `public_html/WEB-INF/classes`를 사용합니다. VM용 `resin-web.xml.tpl`에 `source=/opt/polytech-lms/legacy/src`를 다시 넣으면 `CourseSectionDao` 컴파일 오류로 첫 화면 500이 재발할 수 있습니다.
+  - VM Resin은 `public_html/WEB-INF/classes`를 우선 사용하되, 누락 클래스는 `source=/opt/polytech-lms/legacy/src` 경로로 런타임 컴파일합니다. CI 배포 시 `src` 볼륨 마운트가 빠지면 `package dao does not exist`로 첫 화면 500이 재발합니다.
   - Resin 첫 요청 시 `WEB-INF/work`에 JSP 컴파일 파일을 쓰므로, 배포 스크립트의 `prepare_legacy_permissions` 권한 보정 단계를 제거하면 `Permission denied`로 500이 재발할 수 있습니다.
   - 배포 번들을 `stack-타임스탬프`로 생성할 때는 원격 실행 경로도 같은 폴더(`~/stack-...`)를 써야 합니다. 고정 `~/stack`을 실행하면 이전 dump가 재사용될 수 있습니다.
   - 레거시 dump는 `LM_COURSE`/`LM_COURSE_USER` 컬럼 수 mismatch와 `DEFINER` 구문으로 import 실패가 날 수 있어, 보정 로직(`Normalize-DbDumpIfNeeded`)을 우회하지 않아야 합니다.

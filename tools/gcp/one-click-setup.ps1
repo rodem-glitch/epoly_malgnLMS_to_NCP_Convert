@@ -898,6 +898,7 @@ function Prepare-StackBundle {
     $migrationDir = Join-Path $stackDir "migration"
     $legacyDir = Join-Path $stackDir "legacy"
     $legacyPublicDir = Join-Path $legacyDir "public_html"
+    $legacySrcDir = Join-Path $legacyDir "src"
     New-Item -Path $stackDir -ItemType Directory -Force | Out-Null
     New-Item -Path $appDir -ItemType Directory -Force | Out-Null
     New-Item -Path $nginxDir -ItemType Directory -Force | Out-Null
@@ -921,18 +922,25 @@ function Prepare-StackBundle {
     if ([string]::IsNullOrWhiteSpace($script:LetsEncryptEmail)) { $script:LetsEncryptEmail = "admin@$ApiDomain" }
 
     $legacyPublicSource = Join-Path $script:RepoRoot "public_html"
+    $legacySrcSource = Join-Path $script:RepoRoot "src"
     if ($script:DryRun) {
         New-Item -Path (Join-Path $legacyPublicDir "WEB-INF") -ItemType Directory -Force | Out-Null
+        New-Item -Path $legacySrcDir -ItemType Directory -Force | Out-Null
         Set-Content -Path (Join-Path $legacyPublicDir "index.jsp") -Value "<% out.print(""dryrun""); %>" -Encoding ASCII
         Write-Info "DryRun: 레거시 웹앱 복사 생략(더미 파일 생성)"
     } else {
         if (-not (Test-Path $legacyPublicSource)) {
             throw "레거시 웹 루트를 찾지 못했습니다: $legacyPublicSource"
         }
+        if (-not (Test-Path $legacySrcSource)) {
+            throw "레거시 Java 소스 폴더를 찾지 못했습니다: $legacySrcSource"
+        }
 
         New-Item -Path $legacyPublicDir -ItemType Directory -Force | Out-Null
+        New-Item -Path $legacySrcDir -ItemType Directory -Force | Out-Null
         Copy-Item -Path (Join-Path $legacyPublicSource "*") -Destination $legacyPublicDir -Recurse -Force
-        Write-Info "레거시 웹앱(public_html) 번들 복사 완료"
+        Copy-Item -Path (Join-Path $legacySrcSource "*") -Destination $legacySrcDir -Recurse -Force
+        Write-Info "레거시 웹앱(public_html + src) 번들 복사 완료"
     }
 
     $importFlag = "false"
@@ -954,6 +962,7 @@ function Prepare-StackBundle {
         APP_DB_URL = $appDbUrlXml
         DB_USER = $DbUser
         DB_PASSWORD = $script:DbPassword
+        LEGACY_SOURCE_DIR = "/opt/polytech-lms/legacy/src"
     }
     Write-Info "레거시 Resin DB/JNDI 설정 생성 완료: $legacyResinWebPath"
 

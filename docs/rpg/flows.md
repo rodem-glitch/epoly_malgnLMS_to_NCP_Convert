@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 09:49
+최근 자동 갱신: 2026-02-12 10:00
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -411,7 +411,7 @@
   - Nginx 경로 분기:
     - 기본 화면(`/`, `/mypage/*`, `/member/*`, `/tutor_lms/*`)은 Resin(8080)
     - API 경로(`/statistics/*`, `/student/*`, `/tutor/*`, `/job/*`, `/actuator/*`)는 Spring API(8081)
-  - VM Resin은 `public_html` + `WEB-INF/classes`를 사용하고, `src` 런타임 컴파일은 제외(컴파일 오류/500 재발 방지)
+  - VM Resin은 `public_html` + `WEB-INF/classes`를 기본으로 사용하고, 필요한 클래스가 없으면 `legacy/src`를 기준으로 런타임 컴파일
   - API 컨테이너는 `SPRING_DATASOURCE_*`, `SPRING_AI_VECTORSTORE_QDRANT_*` 환경변수로 운영값을 강제 주입해 JAR 내부 `application-local.yml` 오버라이드를 방지
   - `-EnableDbMigration` 사용 시:
     - `-SourceDbDumpPath`가 있으면 해당 dump를 사용

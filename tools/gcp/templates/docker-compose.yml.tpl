@@ -96,6 +96,7 @@ services:
     # 학생 로그인/신규메인/교수자 진입의 세션 흐름을 유지합니다.
     volumes:
       - ./legacy/public_html:/var/resin/webapps/ROOT
+      - ./legacy/src:/opt/polytech-lms/legacy/src:ro
     ports:
       - "127.0.0.1:8080:8080"
     networks:
