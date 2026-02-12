@@ -1039,31 +1039,73 @@ function Deploy-StackToVm {
     # 업로드한 최신 폴더를 정확히 지정하지 않으면 이전 ~/stack을 잘못 실행할 수 있습니다.
     $stackDirName = Split-Path -Path $StackDir -Leaf
     $remoteBasePath = "~/$stackDirName"
-    $targetHost = if ([string]::IsNullOrWhiteSpace($SshUser)) { $VmInstanceName } else { "$SshUser@$VmInstanceName" }
-    $remotePath = "$targetHost`:"
     if (Test-IsWindowsPlatform) {
         Invoke-Checked -Command "gcloud" -Arguments @("config", "set", "ssh/putty_force_connect", "true")
     }
-    Invoke-Checked -Command "gcloud" -Arguments @(
-        "compute", "scp",
-        "--quiet",
-        "--recurse",
-        "--strict-host-key-checking=no",
-        "--scp-flag=-oBatchMode=yes",
-        $StackDir, $remotePath,
-        "--zone", $Zone
-    )
-    Invoke-Checked -Command "gcloud" -Arguments @(
-        "compute", "ssh", $targetHost,
-        "--quiet",
-        "--strict-host-key-checking=no",
-        "--ssh-flag=-oBatchMode=yes",
-        "--ssh-flag=-T",
-        "--zone", $Zone,
-        # 왜: CI에서 sudo 비밀번호 프롬프트가 뜨면 배포가 무기한 대기하므로,
-        # 비대화식(-n)으로 강제해 권한 문제를 즉시 실패로 노출합니다.
-        "--command", "sudo -n bash $remoteBasePath/deploy-stack.sh $remoteBasePath"
-    )
+
+    # 왜: CI/운영마다 VM 로그인 계정이 다를 수 있어 단일 계정에 고정하면 배포가 바로 실패합니다.
+    # 지정 계정 -> gcloud 활성계정 -> 관례 계정 -> 인스턴스 기본값 순으로 명시적으로 시도합니다.
+    $targetHosts = New-Object System.Collections.Generic.List[string]
+    if (-not [string]::IsNullOrWhiteSpace($SshUser)) {
+        $targetHosts.Add("$SshUser@$VmInstanceName")
+    }
+    try {
+        $activeAccount = (Invoke-Checked -Command "gcloud" -Arguments @("config", "get-value", "account")).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($activeAccount)) {
+            $activeUser = $activeAccount.Split("@")[0]
+            if (-not [string]::IsNullOrWhiteSpace($activeUser)) {
+                $targetHosts.Add("$activeUser@$VmInstanceName")
+            }
+        }
+    } catch {
+        Write-Info "활성 gcloud 계정 조회에 실패해 기본 SSH 후보만 사용합니다."
+    }
+    $targetHosts.Add("newkl@$VmInstanceName")
+    $targetHosts.Add("ubuntu@$VmInstanceName")
+    $targetHosts.Add($VmInstanceName)
+
+    $uniqueHosts = New-Object System.Collections.Generic.List[string]
+    foreach ($candidate in $targetHosts) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+        if (-not $uniqueHosts.Contains($candidate)) {
+            $uniqueHosts.Add($candidate)
+        }
+    }
+
+    $lastError = ""
+    foreach ($targetHost in $uniqueHosts) {
+        $remotePath = "$targetHost`:"
+        Write-Info "VM SSH 대상 확인: $targetHost"
+        try {
+            Invoke-Checked -Command "gcloud" -Arguments @(
+                "compute", "scp",
+                "--quiet",
+                "--recurse",
+                "--strict-host-key-checking=no",
+                "--scp-flag=-oBatchMode=yes",
+                $StackDir, $remotePath,
+                "--zone", $Zone
+            )
+            Invoke-Checked -Command "gcloud" -Arguments @(
+                "compute", "ssh", $targetHost,
+                "--quiet",
+                "--strict-host-key-checking=no",
+                "--ssh-flag=-oBatchMode=yes",
+                "--ssh-flag=-T",
+                "--zone", $Zone,
+                # 왜: CI에서 sudo 비밀번호 프롬프트가 뜨면 배포가 무기한 대기하므로,
+                # 비대화식(-n)으로 강제해 권한 문제를 즉시 실패로 노출합니다.
+                "--command", "sudo -n bash $remoteBasePath/deploy-stack.sh $remoteBasePath"
+            )
+            Write-Info "VM 배포 SSH 대상 확정: $targetHost"
+            return
+        } catch {
+            $lastError = $_.Exception.Message
+            Write-Info "SSH 대상 실패: $targetHost"
+        }
+    }
+
+    throw "VM 배포 SSH/권한 검증에 실패했습니다. 시도 대상: $($uniqueHosts -join ', ') / 마지막 오류: $lastError"
 }
 
 function Ensure-FirebaseSite {

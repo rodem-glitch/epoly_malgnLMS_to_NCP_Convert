@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 12:28
+최근 자동 갱신: 2026-02-12 12:43
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -437,6 +437,11 @@
   - CI 무대기 보강:
     - `gcloud compute scp/ssh`에 `BatchMode` 플래그 적용
     - 원격 배포 실행을 `sudo -n`으로 강제해 비밀번호 프롬프트 대기를 실패로 즉시 노출
+  - CI SSH 계정 보강:
+    - `Deploy-StackToVm`은 VM 접속 계정을 단일값으로 고정하지 않고 `-VmSshUser`(지정값) → `gcloud config account` 사용자 → `newkl` → `ubuntu` → 인스턴스 기본호스트 순으로 명시적 시도
+    - 모든 후보 실패 시 시도한 대상 목록과 마지막 오류를 함께 던져 재현 가능한 실패 로그를 남김
+  - CI 재시도 보강:
+    - `원클릭 배포 실행 (VM 스택)` 단계는 one-click 호출을 최대 2회까지 재시도하고, 1차 실패 메시지를 로그로 남긴 뒤 20초 대기 후 재실행
   - `Build-ApiJar`는 Linux 러너에서 `bash ./gradlew bootJar -x test`를 사용해 실행권한 비트 누락(`chmod +x` 미반영)에도 빌드가 진행되도록 보강
   - 실행 결과를 `tools/gcp/generated/setup-summary.txt`에 저장(도메인 A레코드 값/민감정보 포함)
 - DB:
@@ -465,6 +470,8 @@
     - `tools/gcp/firebase-proxy-deploy/public/index.html` 추가 후 워크플로 재실행 기준으로 동일 오류 재발 방지
     - 워크플로 문법 검증: `npx -y js-yaml .github/workflows/deploy-lms-gcp.yml` 성공
     - vmproxy 함수 문법 검증: `node --check tools/gcp/firebase-proxy-deploy/functions/index.js` 성공
+    - API JAR 빌드 검증: `cd polytech-lms-api && .\\gradlew.bat bootJar -x test` 성공
+    - one-click DryRun 검증: `pwsh -NoLogo -NoProfile -Command ". ./tools/gcp/one-click-setup.ps1 -DryRun -SkipProjectBootstrap -SkipVmProvision -SkipFirebaseDeploy -ProjectId test-polytech"` 실행 완료
   - 장애 복구 확인:
     - 초기에 Resin이 `WEB-INF/work` 쓰기권한 부족으로 500 발생
     - `deploy-stack.sh.tpl`에 `WEB-INF/work` 권한 보정 추가 후 정상화 확인

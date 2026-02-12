@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 12:28
+최근 자동 갱신: 2026-02-12 12:43
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -100,11 +100,13 @@
   - `tools/gcp/templates/deploy-stack.sh.tpl`은 VM에서 Docker/Nginx/Certbot을 한 번에 설치하므로, 기존 운영 VM에 재실행하면 설정이 덮어써질 수 있습니다(신규 VM 기준 사용 권장).
   - GitHub Actions 배포에서 VM SSH 계정이 다르면 `gcloud compute scp/ssh` 단계가 즉시 실패합니다. 워크플로 시크릿 `GCP_VM_SSH_USER`를 실제 sudo 가능한 계정으로 맞춰야 합니다.
   - `.github/workflows/deploy-lms-gcp.yml`는 배포 시작 전에 필수 시크릿 누락을 즉시 실패시킵니다. 새 시크릿 추가/이름 변경 시 사전 점검 목록(`required_vars`)도 함께 수정해야 합니다.
+  - `GCP_VM_SSH_USER`는 필수값이 아니며, 비어 있어도 `one-click`이 SSH 후보를 자동 탐색합니다. 다만 보안 정책상 허용된 운영 계정이 명확하면 시크릿을 고정하는 편이 실패 분석에 유리합니다.
   - `GOOGLE_API_KEY`/`GEMINI_API_KEY`가 비어 있으면 `one-click-setup.ps1`가 입력 대기를 시도할 수 있어 CI가 장시간 멈출 수 있습니다. 현재는 사전 점검에서 먼저 차단하므로, 우회해서 빈 값을 넘기지 않아야 합니다.
   - `one-click-setup.ps1`은 CI에서 `--ssh-flag=-oBatchMode=yes`, `sudo -n`을 사용합니다. 대상 계정에 무비밀번호 sudo 권한이 없으면 즉시 실패하므로, 계정/권한 불일치를 먼저 해결해야 합니다.
   - CI에서는 `gcloud compute scp/ssh`가 대화형 프롬프트(SSH 키/호스트 확인)로 멈출 수 있어, 원클릭 배포 스크립트의 `--quiet` + `--strict-host-key-checking=no` 조합을 유지해야 합니다.
   - `vmproxy`의 업스트림은 워크플로에서 `polytech-lms-vm-ip` 고정 IP를 조회해 `functions/index.js`의 `TARGET`을 매번 치환합니다. 이 치환 단계를 제거하면 VM 교체/재생성 시 web.app가 이전 IP를 바라봐 502가 재발할 수 있습니다.
   - Firebase 배포 인증은 `FIREBASE_TOKEN`이 있으면 토큰, 없으면 서비스 계정(ADC)으로 진행합니다. 권한 문제 발생 시 `GCP_SA_KEY` 서비스계정에 Firebase Hosting/Functions 배포 권한이 실제로 부여됐는지 먼저 확인해야 합니다.
+  - VM 스택 단계는 one-click 재시도(최대 2회)를 수행합니다. 1차 실패가 권한/네트워크 일시 오류인지 영구 설정 오류인지 구분하려면 1차/2차 실패 메시지를 함께 확인해야 합니다.
   - Linux CI에서 `./gradlew` 실행권한 비트가 없으면 원클릭의 API 빌드 단계가 실패합니다. `Build-ApiJar`는 `bash ./gradlew` 경로를 유지해야 합니다.
   - VM Resin은 `public_html/WEB-INF/classes`를 우선 사용하되, 누락 클래스는 `source=/opt/polytech-lms/legacy/src` 경로로 런타임 컴파일합니다. CI 배포 시 `src` 볼륨 마운트가 빠지면 `package dao does not exist`로 첫 화면 500이 재발합니다.
   - Resin 첫 요청 시 `WEB-INF/work`에 JSP 컴파일 파일을 쓰므로, 배포 스크립트의 `prepare_legacy_permissions` 권한 보정 단계를 제거하면 `Permission denied`로 500이 재발할 수 있습니다.

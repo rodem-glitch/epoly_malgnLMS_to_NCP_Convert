@@ -24,7 +24,6 @@ jobs:
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_VM_SSH_USER: ${{ secrets.GCP_VM_SSH_USER }}
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           LMS_DB_PASSWORD: ${{ secrets.LMS_DB_PASSWORD }}
           LMS_DB_ROOT_PASSWORD: ${{ secrets.LMS_DB_ROOT_PASSWORD }}
@@ -37,7 +36,6 @@ jobs:
           required_vars=(
             GCP_SA_KEY
             GCP_PROJECT_ID
-            GCP_VM_SSH_USER
             LMS_DB_PASSWORD
             LMS_DB_ROOT_PASSWORD
             QDRANT_API_KEY
@@ -59,6 +57,10 @@ jobs:
 
           if [ -z "${FIREBASE_TOKEN:-}" ]; then
             echo "::warning::FIREBASE_TOKEN이 비어 있습니다. Firebase는 서비스 계정(ADC)으로 배포를 시도합니다."
+          fi
+
+          if [ -z "${{ secrets.GCP_VM_SSH_USER }}" ]; then
+            echo "::warning::GCP_VM_SSH_USER가 비어 있습니다. one-click 스크립트의 SSH 자동 후보 탐색을 사용합니다."
           fi
 
       - name: Node 설정
@@ -95,25 +97,44 @@ jobs:
       - name: 원클릭 배포 실행 (VM 스택)
         shell: pwsh
         run: |
-          ./tools/gcp/one-click-setup.ps1 `
-            -ProjectId "${{ secrets.GCP_PROJECT_ID }}" `
-            -Region "asia-northeast3" `
-            -Zone "asia-northeast3-a" `
-            -VmName "polytech-lms-vm" `
-            -VmSshUser "${{ secrets.GCP_VM_SSH_USER }}" `
-            -ApiDomain "api.example.com" `
-            -WwwDomain "epoly-kopo.web.app" `
-            -FirebaseSite "epoly-kopo" `
-            -DbName "lms" `
-            -DbUser "lms" `
-            -DbPassword "${{ secrets.LMS_DB_PASSWORD }}" `
-            -DbRootPassword "${{ secrets.LMS_DB_ROOT_PASSWORD }}" `
-            -QdrantApiKey "${{ secrets.QDRANT_API_KEY }}" `
-            -GoogleApiKey "${{ secrets.GOOGLE_API_KEY }}" `
-            -GeminiApiKey "${{ secrets.GEMINI_API_KEY }}" `
-            -LetsEncryptEmail "${{ secrets.LETSENCRYPT_EMAIL }}" `
-            -SkipProjectBootstrap `
-            -SkipFirebaseDeploy
+          $args = @(
+            "-ProjectId", "${{ secrets.GCP_PROJECT_ID }}",
+            "-Region", "asia-northeast3",
+            "-Zone", "asia-northeast3-a",
+            "-VmName", "polytech-lms-vm",
+            "-ApiDomain", "api.example.com",
+            "-WwwDomain", "epoly-kopo.web.app",
+            "-FirebaseSite", "epoly-kopo",
+            "-DbName", "lms",
+            "-DbUser", "lms",
+            "-DbPassword", "${{ secrets.LMS_DB_PASSWORD }}",
+            "-DbRootPassword", "${{ secrets.LMS_DB_ROOT_PASSWORD }}",
+            "-QdrantApiKey", "${{ secrets.QDRANT_API_KEY }}",
+            "-GoogleApiKey", "${{ secrets.GOOGLE_API_KEY }}",
+            "-GeminiApiKey", "${{ secrets.GEMINI_API_KEY }}",
+            "-LetsEncryptEmail", "${{ secrets.LETSENCRYPT_EMAIL }}",
+            "-SkipProjectBootstrap",
+            "-SkipFirebaseDeploy"
+          )
+          if (-not [string]::IsNullOrWhiteSpace("${{ secrets.GCP_VM_SSH_USER }}")) {
+            $args += @("-VmSshUser", "${{ secrets.GCP_VM_SSH_USER }}")
+          }
+
+          $maxAttempts = 2
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host ("[deploy] one-click 실행 시도 {0}/{1}" -f $attempt, $maxAttempts)
+            try {
+              & ./tools/gcp/one-click-setup.ps1 @args
+              Write-Host "[deploy] one-click 실행 성공"
+              break
+            } catch {
+              if ($attempt -eq $maxAttempts) {
+                throw
+              }
+              Write-Host ("[deploy] one-click 실행 실패, 재시도합니다: {0}" -f $_.Exception.Message) -ForegroundColor Yellow
+              Start-Sleep -Seconds 20
+            }
+          }
 
       - name: vmproxy 대상 VM IP 동기화
         shell: bash
