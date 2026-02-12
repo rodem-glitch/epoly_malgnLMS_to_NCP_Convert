@@ -156,6 +156,7 @@ jobs:
       - name: 원클릭 배포 실행 (VM 스택)
         id: vm_stack
         continue-on-error: true
+        timeout-minutes: 6
         shell: pwsh
         run: |
           $errorHead = "OK"
@@ -203,7 +204,8 @@ jobs:
             }
           }
 
-          $maxAttempts = 2
+          # 왜: CI에서 오래 대기하기보다 빠르게 실패/진단 후 다음 패치를 적용하는 게 운영 복구에 유리합니다.
+          $maxAttempts = 1
           for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             Write-Host ("[deploy] one-click 실행 시도 {0}/{1}" -f $attempt, $maxAttempts)
             try {

@@ -1110,7 +1110,8 @@ function Deploy-StackToVm {
         $remotePath = "$targetHost`:"
         Write-Info "VM SSH 대상 확인: $targetHost"
         try {
-            $remoteCommand = 'if [ "$(id -u)" -eq 0 ]; then bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; elif sudo -n true >/dev/null 2>&1; then sudo -n bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; else echo ''sudo_nopasswd_required''; exit 1; fi'.Replace("__REMOTE_PATH__", $remoteBasePath)
+            # 왜: 원격 apt/docker pull 단계가 비정상 지연될 때 CI가 오래 멈추지 않도록 실행 시간을 짧게 제한합니다.
+            $remoteCommand = 'if [ "$(id -u)" -eq 0 ]; then timeout 360 bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; elif sudo -n true >/dev/null 2>&1; then sudo -n timeout 360 bash __REMOTE_PATH__/deploy-stack.sh __REMOTE_PATH__; else echo ''sudo_nopasswd_required''; exit 1; fi'.Replace("__REMOTE_PATH__", $remoteBasePath)
             Invoke-Checked -Command "gcloud" -Arguments @(
                 "compute", "scp",
                 "--quiet",

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:45
+최근 자동 갱신: 2026-02-12 14:04
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -447,8 +447,9 @@
     - 인스턴스 메타데이터 `ssh-keys`에 등록된 사용자도 후보 목록에 포함해 커스텀 운영 계정 누락을 줄임
     - 원격 실행은 `id -u`/`sudo -n true`를 먼저 점검해 `root 직접 실행` 또는 `무비밀번호 sudo 실행` 경로만 허용
   - CI 재시도/진단 보강:
-    - `원클릭 배포 실행 (VM 스택)` 단계는 one-click 호출을 최대 2회까지 재시도하고, 1차 실패 메시지를 로그로 남긴 뒤 20초 대기 후 재실행
+    - `원클릭 배포 실행 (VM 스택)` 단계는 one-click 호출을 1회만 실행하고, step 타임아웃(`timeout-minutes: 6`)으로 장기대기를 강제 종료
     - one-click 단계를 `continue-on-error`로 실행하고 실패 메시지 첫 줄(`error_head`)을 step output으로 기록
+    - `Deploy-StackToVm`의 원격 `deploy-stack.sh` 실행은 `timeout 360`으로 감싸 6분 이상 지연 시 즉시 실패 처리
     - one-click 실패 시 후속 진단 단계(`로컬 JAR 존재`, `VM SSH 재확인`, `VM sudo 재확인`, `원격 배포 스크립트 존재`)를 실행해 API step 상태만으로도 실패 지점을 좁힌 뒤, 마지막 `원클릭 실패 종료` 단계에서 명시적으로 실패 처리
   - CI 인자 바인딩 보강:
     - one-click 호출은 배열 스플랫(`@args`) 방식에서 스위치 파라미터(`-SkipProjectBootstrap`, `-SkipFirebaseDeploy`)가 밀려 `SourceDbPort` 바인딩 오류를 낼 수 있어, 명시적 파라미터 호출 형태를 유지

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:45
+최근 자동 갱신: 2026-02-12 14:04
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -113,7 +113,8 @@
   - CI에서는 `gcloud compute scp/ssh`가 대화형 프롬프트(SSH 키/호스트 확인)로 멈출 수 있어, 원클릭 배포 스크립트의 `--quiet` + `--strict-host-key-checking=no` 조합을 유지해야 합니다.
   - `vmproxy`의 업스트림은 워크플로에서 `polytech-lms-vm-ip` 고정 IP를 조회해 `functions/index.js`의 `TARGET`을 매번 치환합니다. 이 치환 단계를 제거하면 VM 교체/재생성 시 web.app가 이전 IP를 바라봐 502가 재발할 수 있습니다.
   - Firebase 배포 인증은 `FIREBASE_TOKEN`이 있으면 토큰, 없으면 서비스 계정(ADC)으로 진행합니다. 권한 문제 발생 시 `GCP_SA_KEY` 서비스계정에 Firebase Hosting/Functions 배포 권한이 실제로 부여됐는지 먼저 확인해야 합니다.
-  - VM 스택 단계는 one-click 재시도(최대 2회)를 수행합니다. 1차 실패가 권한/네트워크 일시 오류인지 영구 설정 오류인지 구분하려면 1차/2차 실패 메시지를 함께 확인해야 합니다.
+  - VM 스택 단계는 one-click을 1회만 실행하고 step 타임아웃(`6분`)을 적용합니다. 오래 멈추는 런은 자동 중단 후 진단 단계로 넘어가므로, 실패 메시지를 바로 확인해 다음 패치를 빠르게 적용해야 합니다.
+  - `Deploy-StackToVm`의 원격 `deploy-stack.sh` 실행은 `timeout 360`(6분 상한)으로 고정되어, VM 내부 패키지 설치/이미지 pull이 비정상 지연되면 즉시 실패합니다.
   - GitHub Actions의 pwsh 단계에서 one-click 파라미터를 배열 스플랫(`@args`)으로 넘기면 스위치 파라미터가 밀려 `SourceDbPort` 변환 오류가 발생할 수 있습니다. 이 구간은 명시적 파라미터 호출 형태를 유지해야 합니다.
   - Linux CI에서 `./gradlew` 실행권한 비트가 없으면 원클릭의 API 빌드 단계가 실패합니다. `Build-ApiJar`는 `bash ./gradlew` 경로를 유지해야 합니다.
   - Linux CI에서 JAR 산출물 경로를 `build\\libs\\*.jar`처럼 백슬래시로 찾으면 파일을 못 찾을 수 있습니다. `Build-ApiJar`는 `build/libs/*.jar` 경로를 유지해야 합니다.

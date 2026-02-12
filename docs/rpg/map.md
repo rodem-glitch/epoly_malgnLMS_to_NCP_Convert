@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 13:45
+최근 자동 갱신: 2026-02-12 14:04
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
@@ -110,3 +110,4 @@
 | GitHub Actions VM SSH 계정 불일치 복구 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `tools/gcp/one-click-setup.ps1`, `.github/workflows/deploy-lms-gcp.yml` | SSH 계정 자동 후보 탐색 + one-click 재시도(최대 2회) + 인자 바인딩 오류 제거 + root/sudo 경로 명시화 | 확인 근거: 최근 실패 run(#11, #12)이 동일하게 VM 스택 단계에서 중단된 이력 확인 후 `Deploy-StackToVm`에 `지정계정→메타 ssh-keys 계정→gcloud계정→newkl→ubuntu→root→기본호스트` 순차 시도 추가, run(#13,#14)에서 재현된 `SourceDbPort` 바인딩 오류를 원인으로 확인해 워크플로 원클릭 호출을 배열 스플랫(`@args`) 방식에서 명시적 파라미터 호출로 복구, 워크플로 `VM SSH 권한 사전 점검` 단계를 추가해 `sudo -n` 가능한 계정을 먼저 선별하고 SSH 타임아웃(`ConnectTimeout=15`)으로 무대기 보강, one-click 실패 시 진단 step(`로컬 JAR/VM SSH/VM sudo/원격 스크립트`)을 자동 실행해 로그 접근 없이도 원인 범위를 단계별로 추적 가능하게 개선, `VmSshUser`가 명시된 경우 해당 계정만 사용해 실패 원인 마스킹을 줄이도록 보강 |
 | GitHub Actions Linux JAR 경로 호환 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `tools/gcp/one-click-setup.ps1` | ubuntu 러너에서 JAR 산출물 탐색 경로를 `build/libs/*.jar`로 통일 | 확인 근거: Linux에서 `build\\libs\\*.jar` 경로가 JAR 탐색 실패로 이어질 수 있어 `Build-ApiJar`를 경로 중립적으로 수정 |
 | GitHub Actions 통계 폴더 누락 복구 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `.gitignore`, `통계/*.xlsx` | CI 체크아웃에 통계 원본 포함(원클릭 번들 생성 실패 방지) | 확인 근거: run(#26) `원클릭 배포 실행` 로그에서 `통계 폴더를 찾지 못했습니다` 오류 확인 후 `.gitignore`의 `통계` 제외 규칙 제거, 통계 엑셀 파일을 Git 추적 대상으로 반영 |
+| GitHub Actions 원클릭 장기대기 차단 | `Deploy LMS to GCP + Firebase` 워크플로의 `원클릭 배포 실행 (VM 스택)` 단계 | `.github/workflows/deploy-lms-gcp.yml`, `tools/gcp/one-click-setup.ps1` | 워크플로 step 타임아웃(6분) + CI 재시도 1회 + 원격 `deploy-stack.sh` 실행 360초 상한 | 확인 근거: run(#27)에서 `원클릭 배포 실행`이 13분 이상 `in_progress`로 유지되는 상태 확인 후 fail-fast 정책을 더 단축 적용 |
