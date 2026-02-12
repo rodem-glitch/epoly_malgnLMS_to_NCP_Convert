@@ -74,9 +74,15 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8081
       CONTENTSUMMARY_WORKER_ENABLED: "false"
+      # 왜: 통계 대시보드가 엑셀 원본 파일을 직접 읽는 구조라, 컨테이너 내부 고정 경로로 명시합니다.
+      STATISTICS_MAJOR_INDUSTRY_FILE: /data/statistics/통계 기능 관련 학과 정보 매칭.xlsx
+      STATISTICS_EMPLOYMENT_FILE: /data/statistics/2024.02_학위과정 졸업자 취업률_집계배포_251204.xlsx
+      STATISTICS_ADMISSION_FILE: /data/statistics/입시율관리.xlsx
+      STATISTICS_STUDENT_POPULATION_FILE: /data/statistics/재학생_인구_가데이터_20260120.xlsx
     command: ["java", "-jar", "/app/polytech-lms-api.jar"]
     volumes:
       - ./app/polytech-lms-api.jar:/app/polytech-lms-api.jar:ro
+      - ./statistics_data:/data/statistics:ro
     ports:
       - "127.0.0.1:8081:8081"
     networks:

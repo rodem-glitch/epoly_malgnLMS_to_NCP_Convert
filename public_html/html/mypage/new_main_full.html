@@ -1328,12 +1328,10 @@
 			showLoginError('아이디와 비밀번호를 입력해주세요.');
 			return false;
 		}
-		
-		// 폼 제출 후 페이지 새로고침 (로그인 성공 시 returl로 이동)
-		setTimeout(function() {
-			location.reload();
-		}, 500);
-		
+
+		// 왜: /member/login.jsp 응답은 parent.location.replace(returl) 스크립트를 내려주므로,
+		// 여기서 강제 reload를 하면 returl 이동을 덮어써 "교수자 진입 후 로그인해도 학생 메인으로 복귀" 문제가 생깁니다.
+		// 로그인 후 이동은 서버 응답 스크립트에 맡깁니다.
 		return true;
 	}
 

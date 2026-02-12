@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 10:00
+최근 자동 갱신: 2026-02-12 11:35
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -282,8 +282,10 @@
 - 처리(핵심):
   - Functions 프록시를 `fetch` 기반에서 저수준 HTTP 프록시로 변경해 쿠키 헤더 전달을 제어
   - `MLMS*`, `JSESSIONID`를 `__session` 쿠키에 번들링/복원해 Firebase Hosting 경유 시에도 레거시 로그인 세션 유지
+  - 프록시 응답 헤더에서 `Content-Type: text/html; charset=US-ASCII`가 내려오면 `charset=utf-8`으로 교정해 `교수자 LMS` 탭 제목 한글 깨짐을 방지
   - `reco_video_list.jsp`는 `POLYTECH_LMS_API_BASE` 누락 시 즉시 로그를 남기고 빈 결과 반환(침묵 실패 방지)
   - Resin 컨테이너에 `POLYTECH_LMS_API_BASE=http://api:8081` 주입해 JSP->Spring API 내부 호출 고정
+  - Resin 런타임 로그 경로(`/data/log`)가 없으면 예외 기록 시 추가 예외가 터지므로 배포 단계에서 `public_html/data/log`를 생성/권한 보정
 - DB:
   - 추천 조회는 내부 Spring API(`/student/content-recommend/home`)가 MySQL(`TB_RECO_CONTENT` 등) + Qdrant를 사용
   - JSP 쪽 직접 DB 업데이트 없음(프롬프트 저장 제외)
@@ -292,9 +294,11 @@
   - `GET /mypage/new_main/reco_video_list.jsp` -> 추천 `items[]` 반환
 - 확인(근거):
   - Functions 배포: `firebase deploy --only functions:vmproxy`
+  - 헤더 확인: `curl -I https://epoly-kopo.web.app/tutor_lms/app/index.html`에서 `Content-Type: text/html; charset=utf-8` 확인
   - 운영 반영 확인: `Set-Cookie: __session=...` 응답 확인, `Cookie: __session=...`로 `reco_prompt.jsp` 정상 응답 확인
-  - VM 반영 확인: `lms-resin` env에 `POLYTECH_LMS_API_BASE=http://api:8081` 존재, `reco_video_list.jsp`에서 추천 타이틀 4건 확인
-- 최근 갱신: 2026-02-11
+  - 추천 장애 원인 확인: `/student/content-recommend/home` 500 시 `lms-api` 로그에 `Generative Language API ... disabled (project 351209535185)` 확인
+  - 복구 확인: `virtualclass-2ee22` 프로젝트에서 `generativelanguage.googleapis.com` 활성화 후 `/student/content-recommend/home` 200, `reco_video_list.jsp` 추천 타이틀 4건 확인
+- 최근 갱신: 2026-02-12
 
 ### FLOW-4102: 신규메인/공통 레이아웃 로그인 모달 기본값 통일
 - 사용자 동작(의도): 이러닝/채용 등 하위 메뉴 로그인 모달에서도 아이디/비밀번호 기본값이 동일하게 보이도록 통일
@@ -413,6 +417,8 @@
     - API 경로(`/statistics/*`, `/student/*`, `/tutor/*`, `/job/*`, `/actuator/*`)는 Spring API(8081)
   - VM Resin은 `public_html` + `WEB-INF/classes`를 기본으로 사용하고, 필요한 클래스가 없으면 `legacy/src`를 기준으로 런타임 컴파일
   - API 컨테이너는 `SPRING_DATASOURCE_*`, `SPRING_AI_VECTORSTORE_QDRANT_*` 환경변수로 운영값을 강제 주입해 JAR 내부 `application-local.yml` 오버라이드를 방지
+  - 통계 기능 엑셀 원본(`통계/`)을 배포 번들에 포함하고 API 컨테이너 `/data/statistics`로 마운트
+  - API에 `STATISTICS_MAJOR_INDUSTRY_FILE`, `STATISTICS_EMPLOYMENT_FILE`, `STATISTICS_ADMISSION_FILE`, `STATISTICS_STUDENT_POPULATION_FILE`을 절대경로(`/data/statistics/*.xlsx`)로 주입
   - `-EnableDbMigration` 사용 시:
     - `-SourceDbDumpPath`가 있으면 해당 dump를 사용
     - 없으면 `mysqldump`로 소스 DB를 로컬에서 dump 생성
@@ -448,6 +454,9 @@
     - `curl -I https://epoly-kopo.web.app/mypage/index.jsp` -> `302 Location: https://epoly-kopo.web.app/mypage/new_main/?login_required=Y...` (IP로 변경되지 않음)
     - `POST https://epoly-kopo.web.app/tutor/content-recommend/lessons` -> `200` + 추천 JSON 응답 확인
     - `GET https://epoly-kopo.web.app/actuator/health` -> `200`, `{\"status\":\"UP\"}`
+  - 통계 파일 반영 검증:
+    - 반영 전 `GET https://epoly-kopo.web.app/statistics/api/internal/employment/top?top=3` -> `500` (`통계 파일을 찾을 수 없습니다`)
+    - 반영 후 동일 호출 -> `200` + 학과별 취업률 JSON 응답
   - CI 복구 검증:
     - GitHub Actions `Firebase vmproxy + Hosting 배포` 실패 원인(`Directory 'public' for Hosting does not exist`) 확인
     - `tools/gcp/firebase-proxy-deploy/public/index.html` 추가 후 워크플로 재실행 기준으로 동일 오류 재발 방지

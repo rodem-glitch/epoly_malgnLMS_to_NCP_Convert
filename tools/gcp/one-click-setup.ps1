@@ -18,6 +18,16 @@ param(
     [string]$QdrantCollection = "video_summary_vectors_gemini",
     [string]$GoogleApiKey = "",
     [string]$GeminiApiKey = "",
+    [string]$KosisConsumerKey = "",
+    [string]$KosisConsumerSecret = "",
+    [string]$Work24AuthKey = "",
+    [string]$JobkoreaApiKey = "",
+    [string]$JobkoreaOemCode = "",
+    [string]$StatisticsAiApiKey = "",
+    [string]$KollusAccessToken = "",
+    [string]$KollusSecurityKey = "",
+    [string]$KollusChannelKey = "",
+    [string]$KollusClientUserId = "contentsummary",
     [string]$LetsEncryptEmail = "",
     [switch]$EnableDbMigration,
     [string]$SourceDbDumpPath = "",
@@ -47,6 +57,16 @@ $script:DbRootPassword = $DbRootPassword
 $script:QdrantApiKey = $QdrantApiKey
 $script:GoogleApiKey = $GoogleApiKey
 $script:GeminiApiKey = $GeminiApiKey
+$script:KosisConsumerKey = $KosisConsumerKey
+$script:KosisConsumerSecret = $KosisConsumerSecret
+$script:Work24AuthKey = $Work24AuthKey
+$script:JobkoreaApiKey = $JobkoreaApiKey
+$script:JobkoreaOemCode = $JobkoreaOemCode
+$script:StatisticsAiApiKey = $StatisticsAiApiKey
+$script:KollusAccessToken = $KollusAccessToken
+$script:KollusSecurityKey = $KollusSecurityKey
+$script:KollusChannelKey = $KollusChannelKey
+$script:KollusClientUserId = $KollusClientUserId
 $script:LetsEncryptEmail = $LetsEncryptEmail
 $script:EnableDbMigration = [bool]$EnableDbMigration
 $script:SourceDbDumpPath = $SourceDbDumpPath
@@ -899,6 +919,7 @@ function Prepare-StackBundle {
     $legacyDir = Join-Path $stackDir "legacy"
     $legacyPublicDir = Join-Path $legacyDir "public_html"
     $legacySrcDir = Join-Path $legacyDir "src"
+    $statisticsDir = Join-Path $stackDir "statistics_data"
     New-Item -Path $stackDir -ItemType Directory -Force | Out-Null
     New-Item -Path $appDir -ItemType Directory -Force | Out-Null
     New-Item -Path $nginxDir -ItemType Directory -Force | Out-Null
@@ -919,15 +940,20 @@ function Prepare-StackBundle {
         }
     }
     if ([string]::IsNullOrWhiteSpace($script:GeminiApiKey)) { $script:GeminiApiKey = $script:GoogleApiKey }
+    if ([string]::IsNullOrWhiteSpace($script:StatisticsAiApiKey)) { $script:StatisticsAiApiKey = $script:GoogleApiKey }
+    if ([string]::IsNullOrWhiteSpace($script:KollusClientUserId)) { $script:KollusClientUserId = "contentsummary" }
     if ([string]::IsNullOrWhiteSpace($script:LetsEncryptEmail)) { $script:LetsEncryptEmail = "admin@$ApiDomain" }
 
     $legacyPublicSource = Join-Path $script:RepoRoot "public_html"
     $legacySrcSource = Join-Path $script:RepoRoot "src"
+    $statisticsSource = Join-Path $script:RepoRoot "통계"
     if ($script:DryRun) {
         New-Item -Path (Join-Path $legacyPublicDir "WEB-INF") -ItemType Directory -Force | Out-Null
         New-Item -Path $legacySrcDir -ItemType Directory -Force | Out-Null
+        New-Item -Path $statisticsDir -ItemType Directory -Force | Out-Null
+        Set-Content -Path (Join-Path $statisticsDir "입시율관리.xlsx") -Value "dryrun" -Encoding ASCII
         Set-Content -Path (Join-Path $legacyPublicDir "index.jsp") -Value "<% out.print(""dryrun""); %>" -Encoding ASCII
-        Write-Info "DryRun: 레거시 웹앱 복사 생략(더미 파일 생성)"
+        Write-Info "DryRun: 레거시 웹앱/통계 폴더 복사 생략(더미 파일 생성)"
     } else {
         if (-not (Test-Path $legacyPublicSource)) {
             throw "레거시 웹 루트를 찾지 못했습니다: $legacyPublicSource"
@@ -935,12 +961,17 @@ function Prepare-StackBundle {
         if (-not (Test-Path $legacySrcSource)) {
             throw "레거시 Java 소스 폴더를 찾지 못했습니다: $legacySrcSource"
         }
+        if (-not (Test-Path $statisticsSource)) {
+            throw "통계 폴더를 찾지 못했습니다: $statisticsSource"
+        }
 
         New-Item -Path $legacyPublicDir -ItemType Directory -Force | Out-Null
         New-Item -Path $legacySrcDir -ItemType Directory -Force | Out-Null
+        New-Item -Path $statisticsDir -ItemType Directory -Force | Out-Null
         Copy-Item -Path (Join-Path $legacyPublicSource "*") -Destination $legacyPublicDir -Recurse -Force
         Copy-Item -Path (Join-Path $legacySrcSource "*") -Destination $legacySrcDir -Recurse -Force
-        Write-Info "레거시 웹앱(public_html + src) 번들 복사 완료"
+        Copy-Item -Path (Join-Path $statisticsSource "*") -Destination $statisticsDir -Recurse -Force
+        Write-Info "레거시 웹앱(public_html + src) + 통계 폴더 번들 복사 완료"
     }
 
     $importFlag = "false"
@@ -976,6 +1007,16 @@ function Prepare-StackBundle {
         "QDRANT_COLLECTION=$QdrantCollection"
         "GOOGLE_API_KEY=$script:GoogleApiKey"
         "GEMINI_API_KEY=$script:GeminiApiKey"
+        "KOSIS_CONSUMER_KEY=$script:KosisConsumerKey"
+        "KOSIS_CONSUMER_SECRET=$script:KosisConsumerSecret"
+        "WORK24_AUTH_KEY=$script:Work24AuthKey"
+        "JOBKOREA_API_KEY=$script:JobkoreaApiKey"
+        "JOBKOREA_OEM_CODE=$script:JobkoreaOemCode"
+        "STATISTICS_AI_API_KEY=$script:StatisticsAiApiKey"
+        "KOLLUS_ACCESS_TOKEN=$script:KollusAccessToken"
+        "KOLLUS_SECURITY_KEY=$script:KollusSecurityKey"
+        "KOLLUS_CHANNEL_KEY=$script:KollusChannelKey"
+        "KOLLUS_CLIENT_USER_ID=$script:KollusClientUserId"
         "API_DOMAIN=$ApiDomain"
         "LETSENCRYPT_EMAIL=$script:LetsEncryptEmail"
         "DB_IMPORT_ON_DEPLOY=$importFlag"

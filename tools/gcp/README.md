@@ -16,6 +16,7 @@
 - `polytech-lms-api` JAR 빌드
 - VM에 Docker 스택(MySQL/Qdrant/Spring API/Resin JSP) 배포
 - 레거시 `public_html` + `src`를 VM 번들에 포함하고, VM용 `resin-web.xml`을 자동 생성
+- 저장소 루트 `통계/` 폴더를 VM 번들에 포함하고 API 컨테이너 `/data/statistics`로 마운트
 - (옵션) 기존 DB dump 자동 import
 - Nginx 리버스 프록시 설정
   - 기본 화면(`/`, `/mypage/*`, `/member/*`, `/tutor_lms/*`)은 Resin

@@ -177,6 +177,7 @@ sync_stack_files() {
 prepare_legacy_permissions() {
   local webinf_dir="${STACK_TARGET}/legacy/public_html/WEB-INF"
   local work_dir="${webinf_dir}/work"
+  local log_dir="${STACK_TARGET}/legacy/public_html/data/log"
 
   if [[ ! -d "${webinf_dir}" ]]; then
     return
@@ -186,6 +187,44 @@ prepare_legacy_permissions() {
   # 이 디렉터리에 쓰기 권한이 없으면 첫 요청부터 500이 발생하므로 배포 시 권한을 선제 보정합니다.
   mkdir -p "${work_dir}"
   chmod -R a+rwX "${work_dir}"
+
+  # 왜: 레거시 공통 로그(Malgn.errorLog)가 /data/log를 기준으로 동작하므로
+  # 경로가 없으면 추천/로그인 흐름의 예외 로그 기록 시점에 추가 예외가 발생합니다.
+  mkdir -p "${log_dir}"
+  chmod -R a+rwX "${log_dir}"
+}
+
+apply_kollus_tls_truststore_fix() {
+  if ! docker ps --format '{{.Names}}' | grep -qx "lms-resin"; then
+    log "lms-resin 컨테이너가 없어 Kollus TLS 보정을 건너뜁니다."
+    return
+  fi
+
+  # 왜: Resin(Java 8u74) 기본 truststore에는 Kollus 인증서 체인(Thawte G1/G2)이 누락되어
+  # 교수자 채널 API에서 PKIX 에러가 발생할 수 있습니다. 배포 시 truststore를 자동 보정합니다.
+  log "Kollus TLS 인증서 체인을 Resin truststore에 반영합니다."
+  openssl s_client -showcerts -servername api.kr.kollus.com -connect api.kr.kollus.com:443 </dev/null 2>/tmp/kollus-sclient.err > /tmp/kollus-chain.txt
+  awk '/BEGIN CERTIFICATE/{flag=1;f=sprintf("/tmp/kollus-cert-%d.pem",++i)} flag{print > f} /END CERTIFICATE/{flag=0}' /tmp/kollus-chain.txt
+
+  if [[ ! -f /tmp/kollus-cert-2.pem || ! -f /tmp/kollus-cert-3.pem ]]; then
+    log "Kollus 인증서 체인 추출에 실패했습니다."
+    exit 1
+  fi
+
+  docker cp /tmp/kollus-cert-2.pem lms-resin:/tmp/kollus-thawte-g1.pem
+  docker cp /tmp/kollus-cert-3.pem lms-resin:/tmp/kollus-digicert-g2.pem
+
+  docker exec lms-resin sh -lc '
+    CACERTS="/usr/java/jdk1.8.0_74/jre/lib/security/cacerts"
+    keytool -list -keystore "$CACERTS" -storepass changeit -alias kollus-thawte-g1 >/dev/null 2>&1 || \
+      keytool -importcert -noprompt -trustcacerts -alias kollus-thawte-g1 -file /tmp/kollus-thawte-g1.pem -keystore "$CACERTS" -storepass changeit
+    keytool -list -keystore "$CACERTS" -storepass changeit -alias kollus-digicert-g2 >/dev/null 2>&1 || \
+      keytool -importcert -noprompt -trustcacerts -alias kollus-digicert-g2 -file /tmp/kollus-digicert-g2.pem -keystore "$CACERTS" -storepass changeit
+  '
+
+  docker restart lms-resin >/dev/null
+  sleep 3
+  log "Kollus TLS 인증서 보정이 완료되었습니다."
 }
 
 main() {
@@ -204,6 +243,7 @@ main() {
     start_stack
     import_db_if_requested
   fi
+  apply_kollus_tls_truststore_fix
   configure_nginx
   try_issue_certificate
   log "배포가 완료되었습니다."

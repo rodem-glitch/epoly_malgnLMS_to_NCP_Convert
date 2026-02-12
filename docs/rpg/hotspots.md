@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 10:00
+최근 자동 갱신: 2026-02-12 11:35
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -89,7 +89,12 @@
   - 프록시 모드에서 로그인 리다이렉트 `Location` 헤더가 IP로 내려오면 프론트 주소가 다시 깨지므로, 함수에서 `Location: http://34.64.207.10/...`을 `https://epoly-kopo.web.app/...`로 치환하는 로직을 유지해야 합니다.
   - Firebase Hosting 경유에서는 일반 쿠키가 안정적으로 전달되지 않을 수 있어, 레거시 로그인 쿠키(`MLMS*`, `JSESSIONID`)를 `__session` 번들로 브리지하는 로직(`tools/gcp/firebase-proxy-deploy/functions/index.js`)을 유지해야 합니다.
   - `tools/gcp/firebase-proxy-deploy/functions/index.js`에서 프록시 구현을 `fetch`로 되돌리면 쿠키 전달이 다시 누락될 수 있습니다. 저수준 HTTP 프록시 + `__session` 복원 경로를 기본으로 유지합니다.
+  - `tutor_lms/app/index.html` 응답이 `charset=US-ASCII`로 내려오면 브라우저 탭 제목 한글이 깨질 수 있습니다. 프록시/NGINX에서 `text/html; charset=utf-8` 교정 로직을 유지해야 합니다.
   - 신규메인 추천 JSP(`public_html/mypage/new_main/reco_video_list.jsp`)는 `POLYTECH_LMS_API_BASE` 미설정 시 침묵 실패(빈 목록)로 보이기 쉽습니다. 운영 `lms-resin`에 `POLYTECH_LMS_API_BASE=http://api:8081` 주입 여부를 먼저 확인해야 합니다.
+  - 추천 API가 500일 때는 DB/Qdrant보다 먼저 `lms-api` 로그의 Gemini 403을 확인해야 합니다. 현재 키는 `virtualclass-2ee22` 프로젝트 키를 사용하므로, `generativelanguage.googleapis.com` 비활성화 시 즉시 추천이 전체 실패합니다.
+  - `Malgn.errorLog`는 `/var/resin/webapps/ROOT/data/log` 경로가 없으면 추가 예외를 발생시켜 원인 로그를 가립니다. 배포 시 `public_html/data/log` 생성/권한 보정을 반드시 유지해야 합니다.
+  - 통계 대시보드는 엑셀 파일 의존(`통계/*.xlsx`)이 있어, API 컨테이너에 `/data/statistics` 마운트와 `STATISTICS_*_FILE` 절대경로 주입이 없으면 `/statistics/api/internal/*`가 즉시 500으로 실패합니다.
+  - `one-click-setup.ps1` 배포 번들에 `statistics_data` 복사가 누락되면 운영에서 통계만 부분 장애가 나므로, 배포 후 `GET /statistics/api/internal/employment/top`를 스모크 테스트에 포함해야 합니다.
   - 실제 실행 시 민감정보(DB 비밀번호, Qdrant API 키)가 `tools/gcp/generated/setup-summary.txt`와 `tools/gcp/generated/stack/.env`에 기록됩니다.
   - `tools/gcp/generated/`는 `.gitignore` 처리되어 있으므로, 스크립트 실행 전후에 `git status`로 민감파일이 추적되지 않는지 확인합니다.
   - `tools/gcp/templates/deploy-stack.sh.tpl`은 VM에서 Docker/Nginx/Certbot을 한 번에 설치하므로, 기존 운영 VM에 재실행하면 설정이 덮어써질 수 있습니다(신규 VM 기준 사용 권장).

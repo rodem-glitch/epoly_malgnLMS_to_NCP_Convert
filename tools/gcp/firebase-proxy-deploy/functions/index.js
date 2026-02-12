@@ -164,6 +164,20 @@ exports.vmproxy = onRequest(
               if (lower === "set-cookie" || lower === "transfer-encoding" || lower === "content-length") return;
               if (value === undefined) return;
 
+              if (lower === "content-type" && typeof value === "string") {
+                // 왜: 레거시 정적 HTML이 US-ASCII로 내려오면 브라우저 탭 제목 한글이 깨질 수 있어
+                // web.app 경유 응답에서는 UTF-8을 명시해 인코딩 깨짐을 방지합니다.
+                if (value.toLowerCase().startsWith("text/html")) {
+                  const rewrittenType = value.replace(/charset=us-ascii/i, "charset=utf-8");
+                  if (!/charset=/i.test(rewrittenType)) {
+                    res.setHeader("content-type", `${rewrittenType}; charset=utf-8`);
+                  } else {
+                    res.setHeader("content-type", rewrittenType);
+                  }
+                  return;
+                }
+              }
+
               if (lower === "location" && typeof value === "string") {
                 const rewritten = value.replace(/^https?:\/\/34\.64\.207\.10(?::\d+)?/i, `https://${incomingHost}`);
                 res.setHeader("location", rewritten);
