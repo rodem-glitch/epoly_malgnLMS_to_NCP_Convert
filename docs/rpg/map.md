@@ -1,6 +1,6 @@
 ﻿# RPG-라이트: 저장소 지도 (`map.md`)
 
-최근 갱신: 2026-02-11
+최근 갱신: 2026-02-19
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
@@ -91,6 +91,11 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
 | 담당과목/수강생추가 화면용 학생 상세 조회(API 단일 책임) | `public_html/tutor_lms/api/student_detail.jsp` | `src/dao/UserDao.java`(`TB_USER`), `src/dao/UserDeptDao.java`(`TB_USER_DEPT`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER`) | (React API 응답 JSON) | 상세 API는 데이터 조회만 수행. 개인정보 로그는 기존 `public_html/tutor_lms/api/privacy_log.jsp`(가려진 정보 보기) 경로를 그대로 사용 |
+
+## 최근 작업(교수자 문제은행 공개/비공개)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 문제은행 공개/비공개 저장 + 조회/출제 권한 통일 | `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`, `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp` | `src/dao/QuestionDao.java`(`LM_QUESTION.open_yn/manager_id/site_id/status`) | (React API 응답 JSON) | 비관리자는 `내 문제 OR 공개문제`만 조회/출제 가능, 수정/삭제는 작성자만 허용. DDL: `public_html/ddl_question_open_yn.sql` |
 
 ## 최근 작업(학사 성적 연동/다운로드)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |

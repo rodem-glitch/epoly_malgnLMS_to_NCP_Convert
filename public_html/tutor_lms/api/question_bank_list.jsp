@@ -25,9 +25,9 @@ lm.setFields("a.*, c.category_nm");
 lm.addWhere("a.site_id = " + siteId);
 lm.addWhere("a.status = 1");
 
-// 교수자는 본인 문제만 조회
+// 교수자는 본인 문제 + 공개된 문제를 조회
 if(!isAdmin) {
-	lm.addWhere("a.manager_id = " + userId);
+	lm.addWhere("(a.manager_id = " + userId + " OR a.open_yn = 'Y')");
 }
 
 // 카테고리 필터

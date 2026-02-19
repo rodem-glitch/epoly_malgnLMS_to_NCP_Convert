@@ -1,6 +1,6 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-11
+최근 갱신: 2026-02-19
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
@@ -694,6 +694,29 @@
 - 확인(근거):
   - 코드 경로 확인: `src/dao/CourseUserDao.java`, `src/dao/CourseProgressDao.java`, `public_html/tutor_lms/api/course_evaluation_update.jsp`, `public_html/tutor_lms/api/attendance_course_summary.jsp`, `public_html/tutor_lms/api/attendance_absence_apply.jsp`, `public_html/tutor_lms/api/progress_students.jsp`, `public_html/tutor_lms/api/completion_list.jsp`
   - 수동 출석 변경 후 판정 재계산 호출 확인: `CourseProgressDao.attendUser()` 내부 `courseUser.completeUser(...)`
+- 최근 갱신: 2026-02-19
+
+### FLOW-2005: 교수자 문제은행 공개/비공개 + 시험 템플릿 문제 선택 권한
+- 사용자 동작(의도):
+  - 교수가 문제를 등록할 때 공개/비공개를 정하고, 다른 교수 문제를 사용할 때는 공개된 문제만 조회/선택하고 싶음
+- 진입점:
+  - 문제 목록/등록/수정/삭제: `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`
+  - 시험 템플릿 등록/수정(문제 선택 검증): `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp`
+- 처리(핵심):
+  - 문제 등록 시 `open_yn`을 저장하고, 파라미터가 없으면 기본 `Y`(공개)로 저장
+  - 문제 목록은 비관리자 기준 `내 문제 OR 공개문제(open_yn='Y')`만 조회
+  - 문제 수정/삭제는 작성자(`manager_id=user_id`) 또는 관리자만 허용(공개문제라도 타인 수정/삭제 불가)
+  - 시험 템플릿 등록/수정에서 `question_ids`를 검증할 때도 동일 규칙(`내 문제 OR 공개문제`)으로 재검증해, 직접 ID 입력 우회를 차단
+  - 우회/누락 추적을 위해 템플릿 검증 로그에 `visibility_checked=Y`를 남김
+- DB:
+  - 문제은행: `src/dao/QuestionDao.java` → `LM_QUESTION` (`open_yn`, `manager_id`, `site_id`, `status`)
+  - DDL: `public_html/ddl_question_open_yn.sql` (`LM_QUESTION.open_yn CHAR(1) DEFAULT 'Y'`)
+- 출력:
+  - 문제 목록/템플릿 API 응답 포맷은 기존 유지(`rst_code`, `rst_message`, `rst_data`)
+  - 권한 미충족/우회 선택 시 기존 실패 코드(`4030`, `1003`)로 명확히 차단
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`, `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp`
+  - 정적 검증: `rg -n "open_yn|visibility_checked"`로 목록/저장/출제 검증 경로 반영 확인
 - 최근 갱신: 2026-02-19
 
 ### FLOW-4010: 학사(정규) 평가기준 저장 시 성적결과 즉시 반영 + 성적 CSV 다운로드

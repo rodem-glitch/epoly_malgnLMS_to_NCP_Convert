@@ -67,6 +67,12 @@
   - `public_html/tutor_lms/api/student_detail.jsp`는 `user_id`만 필수이며, 상세 조회 API 자체는 개인정보 로그를 남기지 않습니다(과도한 로그 방지).
   - `course_id`가 있을 때 권한은 수강생 목록과 동일 기준(주강사/과정담당자/개설자/관리자)으로 검사합니다. 목록 API와 권한식이 달라지면 “목록은 보이는데 상세는 403” 회귀가 발생합니다.
   - 개인정보 접근 이력은 기존 `public_html/tutor_lms/api/privacy_log.jsp`(가려진 정보 보기/다운로드) 경로를 기준으로 운영합니다.
+- 교수자 LMS 문제은행 공개/비공개(주의):
+  - `LM_QUESTION.open_yn`은 조회/출제 권한과 직접 연결됩니다. 비관리자 조회/선택 조건은 반드시 `manager_id = user_id OR open_yn = 'Y'`를 같이 유지해야 합니다.
+  - 시험 템플릿(`exam_template_insert/modify`)은 문제 목록 화면과 별개 경로라서, `question_ids` 재검증에서 같은 공개 조건을 빼면 URL/요청 우회로 비공개 문제가 출제될 수 있습니다.
+  - 공개(`open_yn='Y'`)는 “조회/출제 허용” 의미이고, 수정/삭제 권한까지 열어주면 안 됩니다. 수정/삭제는 작성자 또는 관리자만 허용해야 데이터 오염을 막을 수 있습니다.
+  - 신규 컬럼이 없는 DB에서는 `Unknown column 'open_yn'`이 발생하므로 배포 전에 `public_html/ddl_question_open_yn.sql` 적용 여부를 먼저 확인해야 합니다.
+  - 관련 코드: `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`, `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp`
 - 학사(정규) 커리큘럼 차시 수강기간 vs 과제 `보기`(주의):
   - 차시 수강기간은 동영상/시험은 기존대로 차단하지만, 과제는 차시 기간 밖이어도 `보기` 이동을 허용합니다(사용성 이슈로 예외).
   - 서버에서도 동일 예외가 적용되므로, “차시 기간 밖 과제 차단”이 필요해지면 이 정책부터 재검토해야 합니다.
