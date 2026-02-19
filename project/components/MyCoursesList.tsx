@@ -844,12 +844,12 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center justify-center">
                         <button
-                          className="flex items-center gap-1 px-4 py-1.5 text-xs text-blue-700 bg-blue-50 rounded hover:bg-blue-100 transition-colors disabled:opacity-60"
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs text-blue-700 bg-blue-50 rounded hover:bg-blue-100 transition-colors disabled:opacity-60"
                           title="과목 관리"
                           onClick={() => void handleSelectCourse(course)}
                           disabled={resolvingCourseId === course.id}
                         >
-                          <Settings className="w-4 h-4" />
+                          <Settings className="w-3.5 h-3.5" />
                           <span>{resolvingCourseId === course.id ? '연동 중...' : '관리'}</span>
                         </button>
                       </div>

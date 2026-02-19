@@ -15,6 +15,7 @@ import {
   Upload,
   Edit,
   Trash2,
+  Copy,
   ChevronDown,
   ChevronRight,
   Play,
@@ -467,7 +468,48 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
         <div className="flex-1 min-w-0">
           {/* 강좌 정보 헤더 (스크롤과 함께 이동) */}
           <div className="mb-6">
-            <h2 className="text-gray-900 mb-2">{course.subjectName}</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-gray-900">{course.subjectName}</h2>
+              {course.sourceType === 'prism' && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setActiveTab('info-basic')}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                    title="과목 정보 수정"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>수정</span>
+                  </button>
+                  <button
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 transition-colors"
+                    title="과목 복사"
+                    onClick={() => {
+                      if (confirm(`"${course.subjectName}" 과목을 복사하시겠습니까?`)) {
+                        // TODO: 백엔드 API 연동 — tutorLmsApi.copyCourse({ courseId: course.mappedCourseId })
+                        alert('과목 복사가 요청되었습니다.\n(백엔드 연동 후 실제 복사됩니다.)');
+                      }
+                    }}
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>복사</span>
+                  </button>
+                  <button
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors"
+                    title="과목 삭제"
+                    onClick={() => {
+                      if (confirm(`"${course.subjectName}" 과목을 정말 삭제하시겠습니까?\n\n⚠ 삭제된 과목은 복구할 수 없습니다.`)) {
+                        // TODO: 백엔드 API 연동 — tutorLmsApi.deleteCourse({ courseId: course.mappedCourseId })
+                        alert('과목 삭제가 요청되었습니다.\n(백엔드 연동 후 실제 삭제됩니다.)');
+                        onBack();
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>삭제</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span>과정ID: {course.courseId}</span>
               <span className="text-gray-300">·</span>
