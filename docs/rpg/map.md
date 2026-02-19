@@ -5,10 +5,10 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 20:41
+최근 자동 갱신: 2026-02-19 11:56
 
-- JSP 총합(전체): 1227
-- JSP(public_html): 1226 (sysop: 715, api: 18)
+- JSP 총합(전체): 1228
+- JSP(public_html): 1227 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 178
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 106
@@ -75,6 +75,11 @@
 | 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
 | 과제 > 피드백 관리: 학생 제출물(제목/내용/첨부) 모달 확인 추가 | `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `project/components/HomeworkSubmissionDetailModal.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | “제출물 보기” 버튼으로 제출 본문/첨부파일을 모달에서 확인(파일은 `CL_FILE(module='homework_{homework_id}', module_id=course_user_id)` 기반) |
+
+## 최근 작업(교수자 수강생 상세 조회)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 담당과목/수강생추가 화면용 학생 상세 조회(API 단일 책임) | `public_html/tutor_lms/api/student_detail.jsp` | `src/dao/UserDao.java`(`TB_USER`), `src/dao/UserDeptDao.java`(`TB_USER_DEPT`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER`) | (React API 응답 JSON) | 상세 API는 데이터 조회만 수행. 개인정보 로그는 기존 `public_html/tutor_lms/api/privacy_log.jsp`(가려진 정보 보기) 경로를 그대로 사용 |
 
 ## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |

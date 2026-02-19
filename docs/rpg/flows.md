@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 20:41
+최근 자동 갱신: 2026-02-19 11:56
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -250,6 +250,30 @@
 - 확인(근거):
   - 코드 반영 위치 확인: `public_html/tutor_lms/api/course_list_combined.jsp`, `public_html/tutor_lms/api/course_resolve.jsp`
   - 로컬 확인 경로: `http://localhost:8080/tutor_lms` 담당과목 > 학사 탭, 그리고 `/tutor_lms/api/course_list_combined.jsp?tab=haksa`
+- 최근 갱신: 2026-02-19
+
+### FLOW-2003: 교수자 LMS 수강생/학습자 상세 조회(API 단일 책임)
+- 사용자 동작(의도): 담당과목(수강생 탭) 또는 개설 단계(수강생 추가)에서 학생 1명을 눌렀을 때 상세 정보를 확인
+- 진입점: `public_html/tutor_lms/api/student_detail.jsp`
+- 처리(핵심):
+  - 입력값 검증: `user_id` 필수
+  - `course_id`가 있으면 과목 존재 여부 확인 후 권한을 수강생 목록 API와 동일 기준으로 검증
+    - 주강사(`LM_COURSE_TUTOR.type='major'`) 또는
+    - 과정담당자(`LM_COURSE_MANAGER`) 또는
+    - 개설자(`LM_COURSE.manager_id`) 또는
+    - 관리자(S/A)
+  - 상세 데이터는 `TB_USER` + `TB_USER_DEPT` + `LM_COURSE_USER(선택 조인)`로 구성
+  - 부서 경로(`dept_path`)를 `UserDeptDao.getTreeNames`로 계산
+  - 상세 API는 데이터 조회만 담당하고, 개인정보 로그는 기존 `privacy_log.jsp` 경로에서 별도로 기록
+- DB:
+  - 학습자 기본정보: `src/dao/UserDao.java` → `TB_USER`
+  - 부서/학과 정보: `src/dao/UserDeptDao.java` → `TB_USER_DEPT`
+  - 과목 수강 상태: `src/dao/CourseUserDao.java` → `LM_COURSE_USER` (`status NOT IN (-1, -4)`)
+- 출력:
+  - JSON: `rst_data`(학생 상세)
+- 확인(근거):
+  - 정적 확인: `public_html/tutor_lms/api/student_detail.jsp`에서 입력검증/권한검증/조회 순서 확인
+  - 호출 경로 기준: `/tutor_lms/api/student_detail.jsp?course_id={courseId}&user_id={userId}`
 - 최근 갱신: 2026-02-19
 
 ### FLOW-3001: 교수자 통계 > 산업별 통계(산업분포 분석)
