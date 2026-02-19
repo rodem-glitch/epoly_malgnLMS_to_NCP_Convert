@@ -2240,6 +2240,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
   const [loadingHomeworks, setLoadingHomeworks] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'unsubmitted' | 'need_feedback' | 'done'>('all');
 
   const toBool = (value: any) =>
     value === true || value === 1 || value === '1' || value === 'Y' || value === 'true';
@@ -2494,6 +2495,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
             setSelectedCourseUserId(null);
             setTempScore('0');
             setFeedbackText('');
+            setStatusFilter('all');
           }}
           disabled={loadingHomeworks || homeworks.length === 0}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
@@ -2529,8 +2531,32 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
               <div className="bg-gray-50 px-4 py-3 rounded-t-lg border border-b-0 border-gray-200">
                 <h4 className="text-gray-900">수강생 목록 ({students.length}명)</h4>
               </div>
+              {/* 필터 버튼 */}
+              <div className="flex gap-2 px-4 py-2.5 border border-b-0 border-gray-200 bg-white">
+                {[
+                  { key: 'all' as const, label: '전체', count: summary.total, bg: 'bg-gray-100 text-gray-700', activeBg: 'bg-gray-700 text-white' },
+                  { key: 'unsubmitted' as const, label: '미제출', count: summary.total - summary.needFeedback - summary.doneFeedback, bg: 'bg-red-50 text-red-600', activeBg: 'bg-red-600 text-white' },
+                  { key: 'need_feedback' as const, label: '피드백 필요', count: summary.needFeedback, bg: 'bg-orange-50 text-orange-600', activeBg: 'bg-orange-500 text-white' },
+                  { key: 'done' as const, label: '피드백 완료', count: summary.doneFeedback, bg: 'bg-green-50 text-green-600', activeBg: 'bg-green-600 text-white' },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setStatusFilter(f.key)}
+                    className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+                      statusFilter === f.key ? f.activeBg : `${f.bg} hover:opacity-80`
+                    }`}
+                  >
+                    {f.label} ({f.count})
+                  </button>
+                ))}
+              </div>
               <div className="border border-gray-200 rounded-b-lg divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
-                {students.map((student: any) => {
+                {students.filter((s: any) => {
+                  if (statusFilter === 'unsubmitted') return !s.submitted;
+                  if (statusFilter === 'need_feedback') return s.submitted && !s.confirm;
+                  if (statusFilter === 'done') return s.confirm;
+                  return true;
+                }).map((student: any) => {
                   const isSelected = selectedCourseUserId === student.courseUserId;
                   const badge = !student.submitted
                     ? { label: '미제출', className: 'bg-red-100 text-red-700' }
