@@ -5,10 +5,10 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 16:05
+최근 자동 갱신: 2026-02-19 16:55
 
-- JSP 총합(전체): 1240
-- JSP(public_html): 1239 (sysop: 715, api: 18)
+- JSP 총합(전체): 1245
+- JSP(public_html): 1244 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 181
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 106
@@ -103,6 +103,12 @@
 |---|---|---|---|---|
 | 차시관리 > 콘텐츠 라이브러리 추천 탭에서 동영상 시간/인정시간 자동세팅 복구 | `POST public_html/tutor_lms/api/content_recommend.jsp`, `POST public_html/tutor_lms/api/kollus_lesson_upsert.jsp` | `src/dao/LessonDao.java` / `LM_LESSON`, `src/dao/KollusMediaDao.java` / `TB_KOLLUS_MEDIA`, `TB_KOLLUS_TRANSCRIPT(duration_seconds)` | `project/components/ContentLibraryModal.tsx` | `lessonId`가 숫자(`LM_LESSON.id`)로 들어오는 추천 데이터는 `start_url(media key)`로 정규화하고, DB 메타가 비면 `TB_KOLLUS_TRANSCRIPT` 시간을 분 단위로 보강. 업서트 단계에서도 `total_time` 미전달 시 전사시간으로 1회 보강해 인정시간 기본값 누락을 방지 |
 | 콘텐츠 라이브러리 추천 탭 자연어 검색 정렬(학생 검색형) | `POST public_html/tutor_lms/api/content_recommend.jsp` → `POST /tutor/content-recommend/lessons` | `TB_RECO_CONTENT` (`title`, `summary`, `keywords`, `lesson_id`) | `polytech-lms-api/src/main/java/kr/polytech/lms/tutorcontentrecommend/service/TutorContentRecommendService.java`, `project/components/courseManagement/CurriculumTab.tsx`, `project/components/CurriculumEditor.tsx`, `project/components/courseManagement/WeeklyContentModal.tsx`, `project/components/courseManagement/EditContentModal.tsx` | 교수자 추천은 `courseName`만 질의로 사용(차시명/설명 제외)하고, 내부는 `키워드 DB 검색 + RETRIEVAL_QUERY 벡터검색 + 제목 매칭 재정렬` 구조를 유지. 학사/비정규 경로 모두 `recommendContext.courseName` 전달 강제, 프록시(`content_recommend.jsp`)는 `request_context` 로그로 유입 확인 |
+
+## 최근 작업(교수자 차시관리 일괄등록/학사영상관리)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
+|---|---|---|---|---|
+| 비정규 차시 일괄등록 + 더블클릭/중복요청 안정화 + 수정/삭제 키 보강 | `POST public_html/tutor_lms/api/curriculum_lesson_bulk_add.jsp`, `POST public_html/tutor_lms/api/curriculum_lesson_add.jsp`, `POST public_html/tutor_lms/api/curriculum_lesson_update.jsp`, `POST public_html/tutor_lms/api/curriculum_lesson_delete.jsp` | `src/dao/CourseLessonDao.java` / `LM_COURSE_LESSON`, `src/dao/LessonDao.java` / `LM_LESSON` | `project/api/tutorLmsApi.ts` | 대량 등록은 `lessons_json` 배열로 insert/update를 함께 처리(재실행 안전). 단건 추가는 중복/재활성화를 성공 응답으로 통일해 더블클릭 시 실패 오인 방지 |
+| 비정규 수강생 자동승인 + 학사 영상 검토/수정/삭제 API | `GET public_html/tutor_lms/api/course_students_list.jsp`, `POST public_html/tutor_lms/api/course_students_auto_approve.jsp`, `GET public_html/tutor_lms/api/haksa_video_list.jsp`, `POST public_html/tutor_lms/api/haksa_video_update.jsp`, `POST public_html/tutor_lms/api/haksa_video_delete.jsp`, `POST public_html/tutor_lms/api/haksa_curriculum_update.jsp` | `src/dao/CourseUserDao.java` / `LM_COURSE_USER`, `src/dao/PolyCourseSettingDao.java` / `LM_POLY_COURSE_SETTING`, `src/dao/CourseLessonDao.java` / `LM_COURSE_LESSON`, `src/dao/LessonDao.java` / `LM_LESSON` | `project/api/tutorLmsApi.ts` | 학사 업데이트는 `sessionNo`(주차 내 차시)와 DB `chapter`(전체 순번)를 분리해 "차시 몰림" 회귀를 차단. 확인 근거: `cd project && npm run build` 성공 |
 
 ## 최근 작업(교수자 통계/산업별 통계)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |

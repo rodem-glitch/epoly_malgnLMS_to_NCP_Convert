@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 16:05
+최근 자동 갱신: 2026-02-19 16:55
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -274,6 +274,52 @@
 - 확인(근거):
   - 정적 확인: `public_html/tutor_lms/api/student_detail.jsp`에서 입력검증/권한검증/조회 순서 확인
   - 호출 경로 기준: `/tutor_lms/api/student_detail.jsp?course_id={courseId}&user_id={userId}`
+- 최근 갱신: 2026-02-19
+
+### FLOW-2011: 비정규 차시 일괄등록 + 단건 수정/삭제 안정화
+- 사용자 동작(의도): 비정규 과정 차시를 1건씩 반복 등록하지 않고, 1~15차시 구성을 한 번에 반영하거나 재반영
+- 진입점:
+  - 대량 등록: `public_html/tutor_lms/api/curriculum_lesson_bulk_add.jsp`
+  - 단건 추가/수정/삭제: `public_html/tutor_lms/api/curriculum_lesson_add.jsp`, `public_html/tutor_lms/api/curriculum_lesson_update.jsp`, `public_html/tutor_lms/api/curriculum_lesson_delete.jsp`
+- 처리(핵심):
+  - `curriculum_lesson_bulk_add.jsp`는 `lessons_json` 배열을 순회하며 `LM_COURSE_LESSON`을 insert/update 동시 처리(재실행 시 update)
+  - 단건 추가는 동일 레슨 중복/더블클릭을 에러가 아닌 성공 응답으로 처리(`rst_exists_yn`)
+  - 과거 숨김(status=0) 레슨은 PK 충돌 대신 재활성화(update)로 복구
+  - 수정/삭제 API는 `site_id` 범위를 강제하고, `source_chapter/source_section_id`, `chapter/section_id` 보조키로 대상 행을 좁힐 수 있음
+- DB:
+  - 차시: `src/dao/CourseLessonDao.java` → `LM_COURSE_LESSON` (PK: `course_id + lesson_id`)
+  - 레슨: `src/dao/LessonDao.java` → `LM_LESSON` (`complete_time`, 외부링크 레슨 생성)
+- 출력:
+  - JSON: `rst_inserted`, `rst_updated`, `rst_failed`, `rst_failed_indexes`(bulk)
+  - JSON: `rst_exists_yn`, `rst_reactivated_yn`(단건 add)
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/curriculum_lesson_bulk_add.jsp`, `public_html/tutor_lms/api/curriculum_lesson_add.jsp`, `public_html/tutor_lms/api/curriculum_lesson_update.jsp`, `public_html/tutor_lms/api/curriculum_lesson_delete.jsp`
+  - React API 연결 확인: `project/api/tutorLmsApi.ts`
+- 최근 갱신: 2026-02-19
+
+### FLOW-2012: 비정규 자동승인 + 학사 영상 검토/수정/삭제
+- 사용자 동작(의도):
+  - 비정규 과정에서 승인대기 학생을 즉시 승인해 영상 시청 불가를 방지
+  - 학사 연동 영상을 교수자가 목록 검토 후 항목 단위 수정/삭제
+- 진입점:
+  - 자동승인: `public_html/tutor_lms/api/course_students_list.jsp`, `public_html/tutor_lms/api/course_students_auto_approve.jsp`
+  - 학사 영상 검토/수정/삭제: `public_html/tutor_lms/api/haksa_video_list.jsp`, `public_html/tutor_lms/api/haksa_video_update.jsp`, `public_html/tutor_lms/api/haksa_video_delete.jsp`
+  - 학사 목차 동기화(차시 몰림 수정): `public_html/tutor_lms/api/haksa_curriculum_update.jsp`
+- 처리(핵심):
+  - 비정규(`course_type='A'`)는 조회 시 `LM_COURSE_USER.status IN (0,2)`를 `1`로 자동승인
+  - 학사 영상 API는 `curriculum_json`에서 `type=video`만 추출/수정/삭제
+  - 학사 목차 동기화에서 `sessionNo`(주차 내 번호)와 `chapterNo`(전체 순번)를 분리 저장
+  - `LM_COURSE_LESSON` 동기화 존재 체크를 `course_id+lesson_id` 기준으로 바꿔 chapter 변경 시 PK 충돌 삽입 실패를 방지
+- DB:
+  - 자동승인: `src/dao/CourseUserDao.java` → `LM_COURSE_USER.status/change_date`
+  - 학사 설정: `src/dao/PolyCourseSettingDao.java` → `LM_POLY_COURSE_SETTING.curriculum_json`
+  - 학사 영상 동기화: `src/dao/CourseLessonDao.java` / `LM_COURSE_LESSON`, `src/dao/LessonDao.java` / `LM_LESSON`
+- 출력:
+  - 자동승인 JSON: `rst_approved`
+  - 학사 영상 JSON: `content_id`, `week_number`, `session_no`, `chapter_no`, `lesson_id` 등
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/course_students_list.jsp`, `public_html/tutor_lms/api/course_students_auto_approve.jsp`, `public_html/tutor_lms/api/haksa_video_list.jsp`, `public_html/tutor_lms/api/haksa_video_update.jsp`, `public_html/tutor_lms/api/haksa_video_delete.jsp`, `public_html/tutor_lms/api/haksa_curriculum_update.jsp`
+  - 빌드 확인: `cd project && npm run build` 성공
 - 최근 갱신: 2026-02-19
 
 ### FLOW-3001: 교수자 통계 > 산업별 통계(산업분포 분석)

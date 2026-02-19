@@ -19,6 +19,11 @@ if(0 == courseId || 0 == lessonId) {
 	return;
 }
 
+int chapter = m.ri("chapter");
+int sectionId = m.ri("section_id");
+boolean hasChapter = !"".equals(m.rs("chapter"));
+boolean hasSectionId = !"".equals(m.rs("section_id"));
+
 CourseTutorDao courseTutor = new CourseTutorDao();
 CourseLessonDao courseLesson = new CourseLessonDao();
 
@@ -31,13 +36,31 @@ if(!isAdmin) {
 	}
 }
 
+String where =
+	"course_id = " + courseId
+	+ " AND lesson_id = " + lessonId
+	+ " AND site_id = " + siteId
+	+ " AND status = 1";
+if(hasChapter) where += " AND chapter = " + chapter;
+if(hasSectionId) where += " AND section_id = " + sectionId;
+
+if(0 >= courseLesson.findCount(where)) {
+	result.put("rst_code", "4040");
+	result.put("rst_message", "삭제할 레슨이 없습니다.");
+	result.print();
+	return;
+}
+
 courseLesson.item("status", -1);
-if(!courseLesson.update("course_id = " + courseId + " AND lesson_id = " + lessonId + " AND status = 1")) {
+if(!courseLesson.update(where)) {
+	m.log("curriculum_lesson_delete", "delete_failed course_id=" + courseId + ", lesson_id=" + lessonId + ", chapter=" + chapter + ", section_id=" + sectionId + ", user_id=" + userId);
 	result.put("rst_code", "2000");
 	result.put("rst_message", "레슨 제거 중 오류가 발생했습니다.");
 	result.print();
 	return;
 }
+
+m.log("curriculum_lesson_delete", "delete_ok course_id=" + courseId + ", lesson_id=" + lessonId + ", chapter=" + chapter + ", section_id=" + sectionId + ", user_id=" + userId);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "성공");

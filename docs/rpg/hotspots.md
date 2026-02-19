@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 16:05
+최근 자동 갱신: 2026-02-19 16:55
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -71,6 +71,18 @@
   - 차시 수강기간은 동영상/시험은 기존대로 차단하지만, 과제는 차시 기간 밖이어도 `보기` 이동을 허용합니다(사용성 이슈로 예외).
   - 서버에서도 동일 예외가 적용되므로, “차시 기간 밖 과제 차단”이 필요해지면 이 정책부터 재검토해야 합니다.
   - 관련 코드: `public_html/html/classroom/index.html`, `public_html/classroom/haksa_module.jsp`
+- 학사(정규) 커리큘럼 동영상 동기화(주의):
+  - `LM_COURSE_LESSON` PK는 `course_id + lesson_id`라서, 존재 체크를 `chapter`까지 묶으면 chapter 변경 시 insert가 PK 충돌로 실패할 수 있습니다.
+  - 학사 JSON의 `sessionNo`는 주차마다 반복될 수 있습니다. DB `chapter`는 전체 순번(`chapterNo`)으로 따로 관리해야 “한 차시에 몰림” 회귀를 막을 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/haksa_curriculum_update.jsp`
+- 비정규 자동승인(주의):
+  - 비정규(`course_type='A'`)에서 `LM_COURSE_USER.status=0/2`가 남으면 영상 재생/진도 계산 경로(`status IN (1,3)`)에서 제외되어 학습 불가가 발생할 수 있습니다.
+  - 자동승인은 과정유형 `A`로 제한해 정규 승인정책과 섞이지 않게 유지해야 합니다.
+  - 관련 코드: `public_html/tutor_lms/api/course_students_list.jsp`, `public_html/tutor_lms/api/course_students_auto_approve.jsp`
+- 교수자 차시 대량등록(주의):
+  - 대량 반영은 재실행 시 update 중심(멱등)으로 처리해야 중복/PK 충돌 없이 운영 가능합니다.
+  - 외부 링크 레슨 자동생성에서 필수값 누락 항목은 실패 인덱스를 응답으로 노출해, 조용히 건너뛰는 fallback을 만들지 않도록 유지해야 합니다.
+  - 관련 코드: `public_html/tutor_lms/api/curriculum_lesson_bulk_add.jsp`
 - 학사(정규) 평가기준/성적연동(주의):
   - 평가항목 구성은 `weights.attendance/midterm/final/assignment/etc/participation` 6개 키와 합계 100을 강제합니다. 키 누락/합계 불일치면 저장이 차단됩니다.
   - `eval_json.cutoffs`(A+~D)가 잘못 저장되면 성적 조회/저장/다운로드가 모두 실패할 수 있으므로 저장 API에서 즉시 검증해야 합니다.
