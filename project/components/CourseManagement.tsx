@@ -2649,7 +2649,50 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2">피드백</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm text-gray-700">피드백</label>
+                      </div>
+
+                      {/* 피드백 빠른 템플릿 */}
+                      {(() => {
+                        const FB_STORAGE_KEY = 'feedback-templates';
+                        const DEFAULT_TEMPLATES = [
+                          { label: '우수', text: '과제를 매우 훌륭하게 수행하였습니다. 우수한 성과입니다.' },
+                          { label: '양호', text: '전반적으로 잘 작성하였으나, 일부 보완이 필요합니다.' },
+                          { label: '보완필요', text: '과제 내용이 부족합니다. 요구사항을 다시 확인하고 보완해 주세요.' },
+                          { label: '재제출', text: '과제 기준에 미달합니다. 수정 후 재제출 바랍니다.' },
+                          { label: '형식오류', text: '제출 파일 형식 또는 양식이 올바르지 않습니다. 확인 후 다시 제출해 주세요.' },
+                        ];
+                        let templates: { label: string; text: string }[];
+                        try {
+                          const stored = localStorage.getItem(FB_STORAGE_KEY);
+                          templates = stored ? JSON.parse(stored) : DEFAULT_TEMPLATES;
+                          if (!Array.isArray(templates) || templates.length === 0) templates = DEFAULT_TEMPLATES;
+                        } catch {
+                          templates = DEFAULT_TEMPLATES;
+                        }
+                        return (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {templates.map((tpl, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setFeedbackText((prev: string) => {
+                                    if (!prev.trim()) return tpl.text;
+                                    return prev + '\n' + tpl.text;
+                                  });
+                                }}
+                                className="px-2.5 py-1 text-xs rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                                title={tpl.text}
+                              >
+                                {tpl.label}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
                       <textarea
                         value={feedbackText}
                         onChange={(e) => setFeedbackText(e.target.value)}

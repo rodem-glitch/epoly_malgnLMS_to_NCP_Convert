@@ -12,6 +12,7 @@ import { CreateSubjectWizard } from './components/CreateSubjectWizard';
 import { StatisticsPage } from './components/StatisticsPage';
 import { AssignmentManagePage } from './components/AssignmentManagePage';
 import { AssignmentTemplateTab } from './components/AssignmentTemplateTab';
+import { FeedbackTemplateTab } from './components/FeedbackTemplateTab';
 import { QnaManagePage } from './components/QnaManagePage';
 import type { CourseManagementTabId } from './components/CourseManagement';
 
@@ -22,6 +23,7 @@ const MENU_IDS = [
   'assignment-manage',
   'assignment-submissions',
   'assignment-templates',
+  'feedback-templates',
   'qna-manage',
   'create-course',
   'content-all',
@@ -122,7 +124,7 @@ export default function App() {
   const isExamSubMenu = activeMenu === 'exam-categories' || activeMenu === 'exam-questions' || activeMenu === 'exam-management';
 
   // 과제 통합관리 하위 메뉴 여부 확인
-  const isAssignmentSubMenu = activeMenu === 'assignment-manage' || activeMenu === 'assignment-submissions' || activeMenu === 'assignment-templates';
+  const isAssignmentSubMenu = activeMenu === 'assignment-manage' || activeMenu === 'assignment-submissions' || activeMenu === 'assignment-templates' || activeMenu === 'feedback-templates';
 
   const syncHash = useCallback((route: RouteState, replace = false) => {
     // 왜: 서버 라우팅 없이도 뒤로가기/직접 주소 접근이 되도록 해시를 동기화합니다.
@@ -144,7 +146,7 @@ export default function App() {
     if (route.menu === 'exam-categories' || route.menu === 'exam-questions' || route.menu === 'exam-management') {
       setExamMenuExpanded(true);
     }
-    if (route.menu === 'assignment-manage' || route.menu === 'assignment-submissions' || route.menu === 'assignment-templates') {
+    if (route.menu === 'assignment-manage' || route.menu === 'assignment-submissions' || route.menu === 'assignment-templates' || route.menu === 'feedback-templates') {
       setAssignmentMenuExpanded(true);
     }
     if (options?.syncHash !== false) {
@@ -434,6 +436,17 @@ export default function App() {
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                     <span>과제 템플릿</span>
                   </button>
+                  <button
+                    onClick={() => applyMenu('feedback-templates')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'feedback-templates'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>피드백 템플릿</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -543,6 +556,10 @@ export default function App() {
                 <p className="text-gray-600">과제 템플릿을 관리하고 여러 강의에 동시 업로드합니다.</p>
               </div>
               <AssignmentTemplateTab />
+            </div>
+          ) : activeMenu === 'feedback-templates' ? (
+            <div className="space-y-6" key={refreshKey}>
+              <FeedbackTemplateTab />
             </div>
           ) : activeMenu === 'qna-manage' ? (
             <QnaManagePage
