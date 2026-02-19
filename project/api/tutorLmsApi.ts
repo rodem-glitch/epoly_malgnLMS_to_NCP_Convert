@@ -504,9 +504,11 @@ export type HaksaCourseKey = {
 export type HaksaEvalSettings = {
   weights: {
     attendance: number;
-    exam: number;
+    midterm: number;
+    final: number;
     assignment: number;
     etc: number;
+    participation: number;
   };
   cutoffs: {
     A: number;
@@ -1130,6 +1132,7 @@ export const tutorLmsApi = {
     courseId: number;
     assignProgress: number;
     assignExam: number;
+    assignFinal: number;
     assignHomework: number;
     assignForum: number;
     assignEtc: number;
@@ -1146,6 +1149,8 @@ export const tutorLmsApi = {
 
     body.set('assign_progress', String(payload.assignProgress));
     body.set('assign_exam', String(payload.assignExam));
+    // TODO: 백엔드에 assign_final 컬럼 추가 후 활성화
+    body.set('assign_final', String(payload.assignFinal));
     body.set('assign_homework', String(payload.assignHomework));
     body.set('assign_forum', String(payload.assignForum));
     body.set('assign_etc', String(payload.assignEtc));

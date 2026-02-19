@@ -3841,12 +3841,13 @@ function GradesTab({ courseId }: { courseId: number }) {
   const scoreWeights = {
     progress: toNum(getCourseValue('assign_progress'), 0),
     exam: toNum(getCourseValue('assign_exam'), 0),
+    final: toNum(getCourseValue('assign_final'), 0),
     homework: toNum(getCourseValue('assign_homework'), 0),
-    forum: toNum(getCourseValue('assign_forum'), 0),
     etc: toNum(getCourseValue('assign_etc'), 0),
+    forum: toNum(getCourseValue('assign_forum'), 0),
   };
   const scoreWeightSum =
-    scoreWeights.progress + scoreWeights.exam + scoreWeights.homework + scoreWeights.forum + scoreWeights.etc;
+    scoreWeights.progress + scoreWeights.exam + scoreWeights.final + scoreWeights.homework + scoreWeights.etc + scoreWeights.forum;
 
   const handleRecalc = () => {
     void (async () => {
@@ -3874,7 +3875,7 @@ function GradesTab({ courseId }: { courseId: number }) {
     const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const filename = `course_${courseId}_grades_${ymd}.csv`;
 
-    const headers = ['No', 'course_user_id', '학번', '이름', '진도율(%)', '시험', '과제', '기타', '총점', '상태'];
+    const headers = ['No', 'course_user_id', '학번', '이름', '출석', '중간', '기말', '과제', '기타', '참여도', '총점', '상태'];
     const rows = grades.map((g, index) => ([
       index + 1,
       g.courseUserId ?? '',
@@ -3882,8 +3883,10 @@ function GradesTab({ courseId }: { courseId: number }) {
       g.name ?? '',
       Math.round(toNum(g.progressRatio, 0)),
       toNum(g.examScore, 0),
+      toNum((g as any).finalScore, 0),
       toNum(g.homeworkScore, 0),
       toNum(g.etcScore, 0),
+      toNum((g as any).forumScore, 0),
       toNum(g.totalScore, 0),
       g.statusLabel ?? '',
     ]));
@@ -3919,8 +3922,8 @@ function GradesTab({ courseId }: { courseId: number }) {
         <div className="mb-3 text-sm">
           <div className="text-gray-700 mb-1">배점 비율</div>
           <div className="text-gray-600">
-            진도 {scoreWeights.progress} / 시험 {scoreWeights.exam} / 과제 {scoreWeights.homework}
-            {scoreWeights.forum > 0 ? ` / 토론 ${scoreWeights.forum}` : ''} / 기타 {scoreWeights.etc}
+            출석 {scoreWeights.progress} / 중간 {scoreWeights.exam} / 기말 {scoreWeights.final} / 과제 {scoreWeights.homework}
+             / 기타 {scoreWeights.etc} / 참여도 {scoreWeights.forum}
             {scoreWeightSum > 0 ? ` (합계 ${scoreWeightSum})` : ''}
           </div>
         </div>
@@ -3958,10 +3961,12 @@ function GradesTab({ courseId }: { courseId: number }) {
               <tr>
                 <th className="px-4 py-3 text-left text-sm text-gray-700">이름</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">학번</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">진도율</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">시험</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">출석</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">중간</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">기말</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">과제</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">기타</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">참여도</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">총점</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">결과</th>
               </tr>
@@ -3972,11 +3977,13 @@ function GradesTab({ courseId }: { courseId: number }) {
                   <td className="px-4 py-4 text-sm text-gray-900">{grade.name}</td>
                   <td className="px-4 py-4 text-center text-sm text-gray-600">{grade.studentId}</td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">
-                    {Math.round(grade.progressRatio * 10) / 10}%
+                    {Math.round(grade.progressRatio * 10) / 10}
                   </td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">{grade.examScore}</td>
+                  <td className="px-4 py-4 text-center text-sm text-gray-900">{(grade as any).finalScore ?? 0}</td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">{grade.homeworkScore}</td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">{grade.etcScore}</td>
+                  <td className="px-4 py-4 text-center text-sm text-gray-900">{(grade as any).forumScore ?? 0}</td>
                   <td className="px-4 py-4 text-center">
                     <span className="inline-flex px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
                       {Math.round(grade.totalScore * 100) / 100}
@@ -3992,7 +3999,7 @@ function GradesTab({ courseId }: { courseId: number }) {
 
               {grades.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                  <td colSpan={10} className="px-4 py-10 text-center text-gray-500">
                     성적 데이터가 없습니다.
                   </td>
                 </tr>

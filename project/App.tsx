@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GraduationCap, BookOpen, FolderPlus, Compass, Library, ChevronDown, ChevronRight, Heart, RefreshCw, ClipboardList, BookPlus, BarChart3, ClipboardCheck, MessageSquare } from 'lucide-react';
+import { GraduationCap, BookOpen, FolderPlus, Compass, Library, ChevronDown, ChevronRight, Heart, RefreshCw, ClipboardList, BookPlus, BarChart3, ClipboardCheck, MessageSquare, UserCheck } from 'lucide-react';
 import { CreateCourseForm } from './components/CreateCourseForm';
 import { MyCoursesList } from './components/MyCoursesList';
 import { CourseExplorer } from './components/CourseExplorer';
@@ -14,6 +14,7 @@ import { AssignmentManagePage } from './components/AssignmentManagePage';
 import { AssignmentTemplateTab } from './components/AssignmentTemplateTab';
 import { FeedbackTemplateTab } from './components/FeedbackTemplateTab';
 import { QnaManagePage } from './components/QnaManagePage';
+import { AttendanceManagePage } from './components/AttendanceManagePage';
 import type { CourseManagementTabId } from './components/CourseManagement';
 
 const MENU_IDS = [
@@ -31,6 +32,7 @@ const MENU_IDS = [
   'exam-categories',
   'exam-questions',
   'exam-management',
+  'attendance-manage',
   'subject-create',
   'statistics',
 ] as const;
@@ -336,6 +338,17 @@ export default function App() {
             <div className="mt-3 mb-1 border-t border-border pt-3">
               <span className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">학습 관리</span>
             </div>
+            <button
+              onClick={() => applyMenu('attendance-manage')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+                activeMenu === 'attendance-manage'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-sidebar-foreground hover:bg-muted'
+              }`}
+            >
+              <UserCheck className="w-5 h-5" />
+              <span>출석 관리</span>
+            </button>
             <div>
               <button
                 onClick={handleExamMenuClick}
@@ -591,6 +604,8 @@ export default function App() {
             />
           ) : activeMenu === 'statistics' ? (
             <StatisticsPage key={refreshKey} />
+          ) : activeMenu === 'attendance-manage' ? (
+            <AttendanceManagePage key={refreshKey} />
           ) : (
             <div className="bg-card rounded-xl border-2 border-dashed border-border p-16 text-center">
               <div className="text-muted-foreground">

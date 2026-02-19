@@ -678,10 +678,11 @@ function EvaluationTab({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    assignProgress: 100,
-    assignExam: 0,
-    assignHomework: 0,
-    assignForum: 0,
+    assignProgress: 10,
+    assignExam: 30,
+    assignFinal: 30,
+    assignHomework: 20,
+    assignForum: 10,
     assignEtc: 0,
 
     limitTotalScore: 60,
@@ -700,10 +701,11 @@ function EvaluationTab({
     // 왜: DB 값을 그대로 가져와서, 사용자가 “현재 설정”을 보고 수정할 수 있어야 합니다.
     if (!detail) return;
     setForm({
-      assignProgress: getInt(detail, 'assign_progress', 100),
-      assignExam: getInt(detail, 'assign_exam', 0),
-      assignHomework: getInt(detail, 'assign_homework', 0),
-      assignForum: getInt(detail, 'assign_forum', 0),
+      assignProgress: getInt(detail, 'assign_progress', 10),
+      assignExam: getInt(detail, 'assign_exam', 30),
+      assignFinal: getInt(detail, 'assign_final', 30),
+      assignHomework: getInt(detail, 'assign_homework', 20),
+      assignForum: getInt(detail, 'assign_forum', 10),
       assignEtc: getInt(detail, 'assign_etc', 0),
 
       limitTotalScore: getInt(detail, 'limit_total_score', 60),
@@ -719,8 +721,8 @@ function EvaluationTab({
   }, [detail]);
 
   const totalAssignScore = useMemo(
-    () => form.assignProgress + form.assignExam + form.assignHomework + form.assignForum + form.assignEtc,
-    [form.assignEtc, form.assignExam, form.assignForum, form.assignHomework, form.assignProgress],
+    () => form.assignProgress + form.assignExam + form.assignFinal + form.assignHomework + form.assignForum + form.assignEtc,
+    [form.assignEtc, form.assignExam, form.assignFinal, form.assignForum, form.assignHomework, form.assignProgress],
   );
   const passEnabled = form.passYn === 'Y';
 
@@ -738,6 +740,7 @@ function EvaluationTab({
         courseId,
         assignProgress: clamp0to100(form.assignProgress),
         assignExam: clamp0to100(form.assignExam),
+        assignFinal: clamp0to100(form.assignFinal),
         assignHomework: clamp0to100(form.assignHomework),
         assignForum: clamp0to100(form.assignForum),
         assignEtc: clamp0to100(form.assignEtc),
@@ -791,9 +794,9 @@ function EvaluationTab({
           </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm text-gray-700 mb-2">출석(진도)</label>
+            <label className="block text-sm text-gray-700 mb-2">출석</label>
             <input
               type="number"
               value={form.assignProgress}
@@ -802,11 +805,20 @@ function EvaluationTab({
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-700 mb-2">시험</label>
+            <label className="block text-sm text-gray-700 mb-2">중간</label>
             <input
               type="number"
               value={form.assignExam}
               onChange={(e) => setForm((prev) => ({ ...prev, assignExam: toInt(e.target.value, 0) }))}
+              className={numberInputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-2">기말</label>
+            <input
+              type="number"
+              value={form.assignFinal}
+              onChange={(e) => setForm((prev) => ({ ...prev, assignFinal: toInt(e.target.value, 0) }))}
               className={numberInputClass}
             />
           </div>
@@ -820,20 +832,20 @@ function EvaluationTab({
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-700 mb-2">토론</label>
-            <input
-              type="number"
-              value={form.assignForum}
-              onChange={(e) => setForm((prev) => ({ ...prev, assignForum: toInt(e.target.value, 0) }))}
-              className={numberInputClass}
-            />
-          </div>
-          <div>
             <label className="block text-sm text-gray-700 mb-2">기타</label>
             <input
               type="number"
               value={form.assignEtc}
               onChange={(e) => setForm((prev) => ({ ...prev, assignEtc: toInt(e.target.value, 0) }))}
+              className={numberInputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-2">참여도</label>
+            <input
+              type="number"
+              value={form.assignForum}
+              onChange={(e) => setForm((prev) => ({ ...prev, assignForum: toInt(e.target.value, 0) }))}
               className={numberInputClass}
             />
           </div>
@@ -1335,10 +1347,12 @@ function HaksaEvaluationTab({ course }: { course: any }) {
   
   // 배점 비율
   const [weights, setWeights] = useState({
-    attendance: 20,
-    exam: 40,
-    assignment: 30,
-    etc: 10,
+    attendance: 10,
+    midterm: 30,
+    final: 30,
+    assignment: 20,
+    etc: 0,
+    participation: 10,
   });
 
   // 성적 컷오프 (A+~D 및 F)
@@ -1377,7 +1391,16 @@ function HaksaEvaluationTab({ course }: { course: any }) {
           try {
             const parsed = JSON.parse(raw) as HaksaEvalSettings;
             if (!cancelled) {
-              setWeights(parsed.weights);
+              // 왜: 기존 데이터(exam 필드)와 새 데이터(midterm/final 필드)를 모두 지원합니다.
+              const w = parsed.weights || {} as any;
+              setWeights({
+                attendance: toInt(w.attendance, 10),
+                midterm: toInt(w.midterm ?? w.exam, 30),
+                final: toInt(w.final, 30),
+                assignment: toInt(w.assignment, 20),
+                etc: toInt(w.etc, 0),
+                participation: toInt(w.participation, 10),
+              });
               // 왜: 기존 데이터에 + 등급이 없을 수 있으므로 기본값 설정
               const c = parsed.cutoffs || {};
               setCutoffs({
@@ -1407,7 +1430,16 @@ function HaksaEvaluationTab({ course }: { course: any }) {
                 cutoffs: JSON.parse(savedCutoffs),
               } as HaksaEvalSettings;
               if (!cancelled) {
-                setWeights(next.weights);
+                // 왜: 기존 데이터(exam 필드)와 새 데이터(midterm/final 필드)를 모두 지원합니다.
+                const w2 = next.weights || {} as any;
+                setWeights({
+                  attendance: toInt(w2.attendance, 10),
+                  midterm: toInt(w2.midterm ?? w2.exam, 30),
+                  final: toInt(w2.final, 30),
+                  assignment: toInt(w2.assignment, 20),
+                  etc: toInt(w2.etc, 0),
+                  participation: toInt(w2.participation, 10),
+                });
                 // 왜: 기존 데이터에 + 등급이 없을 수 있으므로 기본값 설정
                 const c = next.cutoffs || {};
                 setCutoffs({
@@ -1444,7 +1476,7 @@ function HaksaEvaluationTab({ course }: { course: any }) {
     };
   }, [haksaKey, courseId]);
 
-  const totalWeight = weights.attendance + weights.exam + weights.assignment + weights.etc;
+  const totalWeight = weights.attendance + weights.midterm + weights.final + weights.assignment + weights.etc + weights.participation;
 
   const handleSave = () => {
     if (!haksaKey) {
@@ -1511,7 +1543,7 @@ function HaksaEvaluationTab({ course }: { course: any }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm text-gray-700 mb-2">출석</label>
             <input
@@ -1524,11 +1556,22 @@ function HaksaEvaluationTab({ course }: { course: any }) {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-700 mb-2">시험</label>
+            <label className="block text-sm text-gray-700 mb-2">중간</label>
             <input
               type="number"
-              value={weights.exam}
-              onChange={(e) => setWeights(prev => ({ ...prev, exam: toInt(e.target.value, 0) }))}
+              value={weights.midterm}
+              onChange={(e) => setWeights(prev => ({ ...prev, midterm: toInt(e.target.value, 0) }))}
+              className={numberInputClass}
+              min={0}
+              max={100}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-2">기말</label>
+            <input
+              type="number"
+              value={weights.final}
+              onChange={(e) => setWeights(prev => ({ ...prev, final: toInt(e.target.value, 0) }))}
               className={numberInputClass}
               min={0}
               max={100}
@@ -1551,6 +1594,17 @@ function HaksaEvaluationTab({ course }: { course: any }) {
               type="number"
               value={weights.etc}
               onChange={(e) => setWeights(prev => ({ ...prev, etc: toInt(e.target.value, 0) }))}
+              className={numberInputClass}
+              min={0}
+              max={100}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-2">참여도</label>
+            <input
+              type="number"
+              value={weights.participation}
+              onChange={(e) => setWeights(prev => ({ ...prev, participation: toInt(e.target.value, 0) }))}
               className={numberInputClass}
               min={0}
               max={100}
