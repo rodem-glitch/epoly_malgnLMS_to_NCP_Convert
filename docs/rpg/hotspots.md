@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 11:56
+최근 자동 갱신: 2026-02-19 12:14
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -37,6 +37,11 @@
   - 교수자 과제 제출 첨부는 `TB_FILE`이 아니라 `CL_FILE`에 저장되는 흐름이 있습니다(과제 모듈).
   - 다운로드 링크는 `/classroom/download_cl.jsp?id=...&ek=...`를 사용하며, `ek`는 보통 `m.encrypt(id)` 또는 `m.encrypt(id + yyyyMMdd)` 패턴입니다.
   - 관련 코드: `public_html/tutor_lms/api/homework_user_submission.jsp`, `public_html/tutor_lms/api/homework_submit_cancel.jsp`, `public_html/classroom/download_cl.jsp`
+- 교수자 LMS 과제(과제 자체 첨부파일) 운영 주의:
+  - 과제 자체 첨부는 `LM_HOMEWORK.homework_file` 경로를 사용하고, 다운로드는 `/main/download_file.jsp?file=...&ek=...` 규칙을 따릅니다.
+  - `download_file.jsp`의 `ek`는 날짜(`yyyyMMdd`) 기반이라, 오래 보관한 URL은 다음날 무효가 될 수 있습니다(목록에서 매번 재생성된 URL 사용 필요).
+  - 파일만 삭제는 `homework_modify.jsp`의 `delete_homework_file_yn=Y`로 처리하고, 새 파일이 함께 오면 기존 파일을 먼저 정리한 뒤 교체합니다.
+  - 과제 삭제 시에는 과목 배치만 제거되는 경우가 있어, 첨부 물리 삭제는 “해당 과제가 더 이상 어떤 과목에도 연결되지 않았을 때”만 수행해야 안전합니다.
 - 교수자 LMS 수강생 상세 조회(개인정보) 주의:
   - `public_html/tutor_lms/api/student_detail.jsp`는 `user_id`만 필수이며, 상세 조회 API 자체는 개인정보 로그를 남기지 않습니다(과도한 로그 방지).
   - `course_id`가 있을 때 권한은 수강생 목록과 동일 기준(주강사/과정담당자/개설자/관리자)으로 검사합니다. 목록 API와 권한식이 달라지면 “목록은 보이는데 상세는 403” 회귀가 발생합니다.

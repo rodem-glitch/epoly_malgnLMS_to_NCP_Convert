@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 11:56
+최근 자동 갱신: 2026-02-19 12:14
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -409,6 +409,32 @@
   - React에서 “제출물 보기” 버튼 클릭 시 API 호출 및 모달 렌더링 코드 확인(`CourseManagement.tsx`)
   - 로컬 빌드: `cd project && npm run build` 성공(산출물 `public_html/tutor_lms/app/assets/*` 갱신)
 - 최근 갱신: 2026-02-10
+
+### FLOW-4004: 교수자 LMS > 과제 관리(교수자 첨부파일 확인/다운로드/삭제/재업로드)
+- 사용자 동작(의도): 과제 부여 시 교수자가 올린 첨부파일을 과제 관리에서 확인하고, 다운로드/파일삭제/재업로드까지 수행
+- 진입점:
+  - 목록 API: `public_html/tutor_lms/api/homework_list.jsp`
+  - 수정 API: `public_html/tutor_lms/api/homework_modify.jsp`
+  - 삭제 API: `public_html/tutor_lms/api/homework_delete.jsp`
+  - 다운로드 엔드포인트: `public_html/main/download_file.jsp`
+- 처리(핵심):
+  - `homework_list.jsp`에서 `LM_HOMEWORK.homework_file`을 함께 조회하고, 다운로드용 `homework_file_conv/homework_file_ek/homework_file_download_url`을 응답에 포함
+  - `homework_modify.jsp`는 `delete_homework_file_yn=Y`를 받으면 첨부파일만 삭제(파일시스템+DB 컬럼 비움)
+  - `homework_modify.jsp`에 새 파일(`homework_file`)이 오면 기존 파일을 정리하고 새 파일로 교체(재업로드)
+  - `homework_delete.jsp`는 과제가 다른 과목에서 더 이상 참조되지 않을 때(`LM_COURSE_MODULE` 0건) 과제 상태 `-1` 처리와 함께 첨부파일 물리 삭제
+  - 다운로드는 `download_file.jsp`의 기존 보안 규칙(`ek = encrypt(file + yyyyMMdd)`)을 그대로 사용
+- DB:
+  - 과제 본문/첨부: `src/dao/HomeworkDao.java` → `LM_HOMEWORK` (`homework_file`, `status`)
+  - 과목 배치: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE`
+  - 제출내역 보호(삭제 차단): `src/dao/HomeworkUserDao.java` → `LM_HOMEWORK_USER`
+- 출력:
+  - `homework_list.jsp` JSON: 기존 과제 목록 + `homework_file_*` 다운로드 메타
+  - `homework_modify.jsp` JSON: 기존 성공코드 유지(`0000`)
+  - `homework_delete.jsp` JSON: 기존 성공코드 유지(`0000`)
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_list.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_delete.jsp`, `public_html/main/download_file.jsp`
+  - 로컬 호출 확인: 비로그인 상태에서 각 API가 `4010` JSON을 반환(컴파일/라우팅 정상)
+- 최근 갱신: 2026-02-19
 
 ### FLOW-4002: 교수자 LMS > 차시관리 > 추천 탭 동영상 추가 시 시간/인정시간 자동 세팅
 - 사용자 동작(의도): 교수자가 차시관리의 콘텐츠 라이브러리 `추천` 탭에서 동영상을 추가할 때, 목록 시간 표시와 인정시간 기본값이 자동으로 들어가야 함

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 11:56
+최근 자동 갱신: 2026-02-19 12:14
 
 - JSP 총합(전체): 1228
 - JSP(public_html): 1227 (sysop: 715, api: 18)
@@ -75,6 +75,7 @@
 | 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
 | 과제 > 피드백 관리: 학생 제출물(제목/내용/첨부) 모달 확인 추가 | `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `project/components/HomeworkSubmissionDetailModal.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | “제출물 보기” 버튼으로 제출 본문/첨부파일을 모달에서 확인(파일은 `CL_FILE(module='homework_{homework_id}', module_id=course_user_id)` 기반) |
+| 담당과목 > 과제관리: 교수자 첨부파일 확인/다운로드/삭제/재업로드 백엔드 보강 | `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `POST public_html/tutor_lms/api/homework_delete.jsp`, `GET public_html/main/download_file.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.homework_file`), `src/dao/CourseModuleDao.java` | (React API 응답 JSON) | 목록 API에 `homework_file_*`(conv/ek/download_url) 추가, 수정 API에 `delete_homework_file_yn` 지원, 과제 최종 삭제 시 물리 파일 정리 |
 
 ## 최근 작업(교수자 수강생 상세 조회)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |

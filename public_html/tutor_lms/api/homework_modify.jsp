@@ -27,6 +27,7 @@ f.addElement("dueTime", null, "hname:'마감 시간', required:'Y'");
 f.addElement("totalScore", 100, "hname:'배점', required:'Y', option:'number'");
 f.addElement("onoff_type", "N", "hname:'온오프라인구분'");
 f.addElement("homework_file", null, "hname:'첨부파일'");
+f.addElement("delete_homework_file_yn", "N", "hname:'첨부파일삭제여부'");
 
 if(!f.validate()) {
 	result.put("rst_code", "1000");
@@ -82,6 +83,9 @@ String title = f.get("title").trim();
 String content = f.get("description");
 int assignScore = Math.max(0, f.getInt("totalScore"));
 String onoffType = !"".equals(f.get("onoff_type")) ? f.get("onoff_type") : hinfo.s("onoff_type");
+boolean deleteHomeworkFile = "Y".equals(f.get("delete_homework_file_yn"));
+boolean hasNewHomeworkFile = null != f.getFileName("homework_file");
+String oldHomeworkFile = hinfo.s("homework_file");
 
 if(-1 < content.indexOf("<img") && -1 < content.indexOf("data:image/") && -1 < content.indexOf("base64")) {
 	result.put("rst_code", "1101");
@@ -124,17 +128,31 @@ if(m.parseLong(startDateTime) > m.parseLong(endDateTime)) {
 }
 
 m.log("tutor_homework", "modify course_id=" + courseId + ", homework_id=" + homeworkId + ", start=" + startDateTime + ", end=" + endDateTime + ", user_id=" + userId);
+m.log(
+	"tutor_homework",
+	"modify_file course_id=" + courseId + ", homework_id=" + homeworkId + ", delete_file=" + (deleteHomeworkFile ? "Y" : "N")
+	+ ", has_new_file=" + (hasNewHomeworkFile ? "Y" : "N") + ", user_id=" + userId
+);
 
 //과제 수정
 homework.item("homework_nm", title);
 homework.item("onoff_type", onoffType);
 homework.item("content", content);
-if(null != f.getFileName("homework_file")) {
+boolean oldFileDeleted = false;
+if(deleteHomeworkFile) {
+	// 왜: "파일만 삭제" 요구가 있어, 수정 요청에서 명시적으로 첨부를 비울 수 있어야 합니다.
+	homework.item("homework_file", "");
+	if(!"".equals(oldHomeworkFile)) {
+		m.delFileRoot(m.getUploadPath(oldHomeworkFile));
+		oldFileDeleted = true;
+	}
+}
+if(hasNewHomeworkFile) {
 	File f1 = f.saveFile("homework_file");
 	if(f1 != null) {
 		homework.item("homework_file", f.getFileName("homework_file"));
 		// 왜: 새 파일로 교체되면 기존 파일은 정리해 저장소를 지킵니다.
-		if(!"".equals(hinfo.s("homework_file"))) m.delFileRoot(m.getUploadPath(hinfo.s("homework_file")));
+		if(!oldFileDeleted && !"".equals(oldHomeworkFile)) m.delFileRoot(m.getUploadPath(oldHomeworkFile));
 	}
 }
 // 왜: 일부 환경(DB 스키마)에는 LM_HOMEWORK에 mod_date 컬럼이 없어 UPDATE가 통째로 실패합니다.
