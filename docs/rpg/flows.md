@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 13:38
+최근 자동 갱신: 2026-02-19 13:59
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -477,6 +477,32 @@
 - 확인(근거):
   - 코드 확인: `src/dao/HomeworkDao.java`, `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`, `public_html/classroom/file_upload.jsp`
   - 로컬 호출 확인: 비로그인 상태에서 `homework_insert.jsp`가 `4010` JSON 반환(라우팅/컴파일 정상)
+- 최근 갱신: 2026-02-19
+
+### FLOW-4007: 교수자 LMS > 과제 > 피드백 템플릿(조회/저장/삭제)
+- 사용자 동작(의도): 교수자가 과제 피드백에서 자주 쓰는 문구를 템플릿으로 저장하고, 필요할 때 빠르게 불러와 재사용
+- 진입점:
+  - 조회 API: `public_html/tutor_lms/api/homework_feedback_template_list.jsp`
+  - 저장 API: `public_html/tutor_lms/api/homework_feedback_template_save.jsp`
+  - 삭제 API: `public_html/tutor_lms/api/homework_feedback_template_delete.jsp`
+- 처리(핵심):
+  - 세 API 모두 `tutor_lms/api/init.jsp`를 통해 로그인/교수자 권한을 먼저 검사
+  - 과목 존재(`LM_COURSE`) + 담당교수(`LM_COURSE_TUTOR.type='major'`) 권한을 재검증해 타 과목 접근을 차단
+  - 템플릿 저장은 단건 생성/수정 방식(`id` 유무)으로 처리하며, 서버에서 개수 제한은 두지 않음
+  - 템플릿 본문은 필수/길이 제한(2000자)과 base64 이미지 차단 검증을 수행
+  - 삭제는 물리 삭제가 아니라 `status=-1` 소프트 삭제
+  - 운영 추적을 위해 `tutor_homework_feedback_template` 로그에 시작/권한실패/성공 이벤트를 남김
+- DB:
+  - DAO: `src/dao/HomeworkFeedbackTemplateDao.java`
+  - 테이블: `LM_HOMEWORK_FEEDBACK_TEMPLATE` (`site_id`, `course_id`, `manager_id`, `sort`, `content`, `status`, `reg_date`, `mod_date`)
+  - DDL: `public_html/ddl_homework_feedback_template.sql`
+- 출력:
+  - 조회: `rst_data` 템플릿 목록(`id/sort/content/content_preview/...`)
+  - 저장: `rst_data` 저장된 템플릿 ID
+  - 삭제: `rst_data` 삭제된 템플릿 ID
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_feedback_template_list.jsp`, `public_html/tutor_lms/api/homework_feedback_template_save.jsp`, `public_html/tutor_lms/api/homework_feedback_template_delete.jsp`, `src/dao/HomeworkFeedbackTemplateDao.java`
+  - 정적 흐름 확인: 기존 과제 피드백 저장 API(`homework_feedback_update.jsp`)와 분리되어 템플릿 CRUD만 담당함
 - 최근 갱신: 2026-02-19
 
 ### FLOW-4002: 교수자 LMS > 차시관리 > 추천 탭 동영상 추가 시 시간/인정시간 자동 세팅

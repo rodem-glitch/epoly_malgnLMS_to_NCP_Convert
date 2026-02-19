@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 13:38
+최근 자동 갱신: 2026-02-19 13:59
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -46,6 +46,11 @@
   - 다중 등록은 부분 성공을 허용합니다. 응답의 `rst_success_courses`, `rst_failed_courses`, `rst_invalid_tokens`를 함께 확인하지 않으면 운영자가 “일부 과목 누락”을 놓칠 수 있습니다.
   - 학생 제출 첨부는 `public_html/classroom/file_upload.jsp`에서 최종 차단되므로, 허용 파일형식 옵션(`submit_file_ext_mode`, `submit_file_exts`)을 프론트 검증만으로 믿으면 안 됩니다.
   - 허용 파일형식 옵션은 과제 단위(`LM_HOMEWORK`) 설정입니다. 다중 강의에 연결된 동일 과제는 설정도 공유되므로, 한 강의에서 바꾸면 연결 강의 모두에 즉시 반영됩니다.
+- 교수자 LMS 과제 피드백 템플릿 운영 주의:
+  - 템플릿 API는 `LM_HOMEWORK_FEEDBACK_TEMPLATE`에 과목/교수자별로 저장하며, 서버 개수 제한은 없습니다(요구사항상 “5개”는 예시).
+  - 조회/저장/삭제 API 모두 과목 존재 + 담당교수(`LM_COURSE_TUTOR.type='major'`) 권한을 함께 확인하므로, 프론트에서 `course_id`를 잘못 보내면 `403/404`가 발생할 수 있습니다.
+  - 저장 API는 base64 이미지 본문을 차단합니다. 에디터에서 이미지가 data URI로 들어오면 템플릿 저장이 거절되므로, 텍스트 중심 템플릿으로 운영해야 합니다.
+  - 관련 코드: `public_html/tutor_lms/api/homework_feedback_template_list.jsp`, `public_html/tutor_lms/api/homework_feedback_template_save.jsp`, `public_html/tutor_lms/api/homework_feedback_template_delete.jsp`, `src/dao/HomeworkFeedbackTemplateDao.java`
 - 교수자 LMS 수강생 상세 조회(개인정보) 주의:
   - `public_html/tutor_lms/api/student_detail.jsp`는 `user_id`만 필수이며, 상세 조회 API 자체는 개인정보 로그를 남기지 않습니다(과도한 로그 방지).
   - `course_id`가 있을 때 권한은 수강생 목록과 동일 기준(주강사/과정담당자/개설자/관리자)으로 검사합니다. 목록 API와 권한식이 달라지면 “목록은 보이는데 상세는 403” 회귀가 발생합니다.
