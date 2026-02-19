@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 12:14
+최근 자동 갱신: 2026-02-19 12:25
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -434,6 +434,27 @@
 - 확인(근거):
   - 코드 확인: `public_html/tutor_lms/api/homework_list.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_delete.jsp`, `public_html/main/download_file.jsp`
   - 로컬 호출 확인: 비로그인 상태에서 각 API가 `4010` JSON을 반환(컴파일/라우팅 정상)
+- 최근 갱신: 2026-02-19
+
+### FLOW-4005: 교수자 LMS > 과제 관리(동일 과제 다중 강의 동시 등록)
+- 사용자 동작(의도): 교수자가 동일한 과제를 여러 강의에 한 번에 등록
+- 진입점: `public_html/tutor_lms/api/homework_insert.jsp`
+- 처리(핵심):
+  - 입력: 단일 `course_id`와 복수 `course_ids`(쉼표 구분)를 함께 지원
+  - `course_id/course_ids`를 합쳐 중복 제거 후, 과목별로 권한/존재 여부를 개별 검증
+  - 권한/존재 검증 통과 과목만 `validCourseIds`로 분리
+  - 과제 본문(`LM_HOMEWORK`)은 1건 생성 후, 과목 배치(`LM_COURSE_MODULE`)를 유효 과목 수만큼 반복 생성
+  - 일부 과목 실패 시에도 성공 과목은 반영하고, 실패 과목은 `rst_failed_courses`로 반환(부분 성공)
+  - 전 과목 배치 실패면 과제 상태를 `-1`로 되돌리고 업로드 파일도 정리
+- DB:
+  - 과제 본문: `src/dao/HomeworkDao.java` → `LM_HOMEWORK`
+  - 과목 배치: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE`
+  - 권한 체크: `src/dao/CourseTutorDao.java` → `LM_COURSE_TUTOR` (`type='major'`)
+- 출력:
+  - JSON: `rst_data`(homework_id), `rst_inserted_course_count`, `rst_success_courses`, `rst_failed_courses`, `rst_invalid_tokens`
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_insert.jsp` (course_ids 파싱/과목별 검증/부분성공 응답)
+  - 로컬 호출 확인: 비로그인 상태에서 `4010` JSON 반환(컴파일/라우팅 정상)
 - 최근 갱신: 2026-02-19
 
 ### FLOW-4002: 교수자 LMS > 차시관리 > 추천 탭 동영상 추가 시 시간/인정시간 자동 세팅

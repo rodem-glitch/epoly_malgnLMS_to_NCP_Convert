@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-12
+최근 갱신: 2026-02-19
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 12:14
+최근 자동 갱신: 2026-02-19 12:25
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -42,6 +42,8 @@
   - `download_file.jsp`의 `ek`는 날짜(`yyyyMMdd`) 기반이라, 오래 보관한 URL은 다음날 무효가 될 수 있습니다(목록에서 매번 재생성된 URL 사용 필요).
   - 파일만 삭제는 `homework_modify.jsp`의 `delete_homework_file_yn=Y`로 처리하고, 새 파일이 함께 오면 기존 파일을 먼저 정리한 뒤 교체합니다.
   - 과제 삭제 시에는 과목 배치만 제거되는 경우가 있어, 첨부 물리 삭제는 “해당 과제가 더 이상 어떤 과목에도 연결되지 않았을 때”만 수행해야 안전합니다.
+  - `homework_insert.jsp` 다중 등록(`course_ids`)은 과제 본문(`LM_HOMEWORK`) 1건을 여러 과목 배치(`LM_COURSE_MODULE`)로 연결합니다. 즉, 같은 과제 ID를 공유하므로 한 강의에서 과제 본문/첨부를 수정하면 연결된 다른 강의에도 반영됩니다.
+  - 다중 등록은 부분 성공을 허용합니다. 응답의 `rst_success_courses`, `rst_failed_courses`, `rst_invalid_tokens`를 함께 확인하지 않으면 운영자가 “일부 과목 누락”을 놓칠 수 있습니다.
 - 교수자 LMS 수강생 상세 조회(개인정보) 주의:
   - `public_html/tutor_lms/api/student_detail.jsp`는 `user_id`만 필수이며, 상세 조회 API 자체는 개인정보 로그를 남기지 않습니다(과도한 로그 방지).
   - `course_id`가 있을 때 권한은 수강생 목록과 동일 기준(주강사/과정담당자/개설자/관리자)으로 검사합니다. 목록 API와 권한식이 달라지면 “목록은 보이는데 상세는 403” 회귀가 발생합니다.
