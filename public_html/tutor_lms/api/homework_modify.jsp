@@ -28,6 +28,8 @@ f.addElement("totalScore", 100, "hname:'배점', required:'Y', option:'number'")
 f.addElement("onoff_type", "N", "hname:'온오프라인구분'");
 f.addElement("homework_file", null, "hname:'첨부파일'");
 f.addElement("delete_homework_file_yn", "N", "hname:'첨부파일삭제여부'");
+f.addElement("submit_file_ext_mode", null, "hname:'제출첨부허용형식모드'");
+f.addElement("submit_file_exts", null, "hname:'제출첨부허용확장자'");
 
 if(!f.validate()) {
 	result.put("rst_code", "1000");
@@ -87,6 +89,42 @@ boolean deleteHomeworkFile = "Y".equals(f.get("delete_homework_file_yn"));
 boolean hasNewHomeworkFile = null != f.getFileName("homework_file");
 String oldHomeworkFile = hinfo.s("homework_file");
 
+// 왜: 구버전 프론트(필드 미전송)와 호환하려고, 허용 형식 옵션은 값이 왔을 때만 변경합니다.
+String currentSubmitFileExtMode = homework.normalizeSubmitFileExtMode(hinfo.s("submit_file_ext_mode"));
+if("".equals(currentSubmitFileExtMode)) currentSubmitFileExtMode = "ALL";
+String currentSubmitFileExts = homework.normalizeSubmitFileExts(hinfo.s("submit_file_exts"));
+String submitFileExtModeInput = f.get("submit_file_ext_mode");
+if(null == submitFileExtModeInput) submitFileExtModeInput = "";
+String submitFileExtMode = currentSubmitFileExtMode;
+String submitFileExts = currentSubmitFileExts;
+if(!"".equals(submitFileExtModeInput)) {
+	submitFileExtMode = homework.normalizeSubmitFileExtMode(submitFileExtModeInput);
+	if("".equals(submitFileExtMode)) {
+		result.put("rst_code", "1104");
+		result.put("rst_message", "허용 파일 형식 옵션이 올바르지 않습니다.");
+		result.print();
+		return;
+	}
+	if("CUSTOM".equals(submitFileExtMode)) {
+		submitFileExts = homework.normalizeSubmitFileExts(f.get("submit_file_exts"));
+		if("".equals(submitFileExts)) {
+			result.put("rst_code", "1105");
+			result.put("rst_message", "직접입력 모드에서는 허용 확장자를 1개 이상 입력해야 합니다.");
+			result.print();
+			return;
+		}
+	} else {
+		submitFileExts = "";
+	}
+}
+String resolvedSubmitAllowExt = homework.resolveSubmitFileExts(submitFileExtMode, submitFileExts);
+if("".equals(resolvedSubmitAllowExt)) {
+	result.put("rst_code", "1106");
+	result.put("rst_message", "허용 확장자 설정을 확인해 주세요.");
+	result.print();
+	return;
+}
+
 if(-1 < content.indexOf("<img") && -1 < content.indexOf("data:image/") && -1 < content.indexOf("base64")) {
 	result.put("rst_code", "1101");
 	result.put("rst_message", "이미지는 첨부파일로 업로드해 주세요.");
@@ -131,13 +169,17 @@ m.log("tutor_homework", "modify course_id=" + courseId + ", homework_id=" + home
 m.log(
 	"tutor_homework",
 	"modify_file course_id=" + courseId + ", homework_id=" + homeworkId + ", delete_file=" + (deleteHomeworkFile ? "Y" : "N")
-	+ ", has_new_file=" + (hasNewHomeworkFile ? "Y" : "N") + ", user_id=" + userId
+	+ ", has_new_file=" + (hasNewHomeworkFile ? "Y" : "N")
+	+ ", submit_ext_mode=" + submitFileExtMode + ", submit_ext_cnt=" + resolvedSubmitAllowExt.split("\\|").length
+	+ ", user_id=" + userId
 );
 
 //과제 수정
 homework.item("homework_nm", title);
 homework.item("onoff_type", onoffType);
 homework.item("content", content);
+homework.item("submit_file_ext_mode", submitFileExtMode);
+homework.item("submit_file_exts", "CUSTOM".equals(submitFileExtMode) ? submitFileExts : "");
 boolean oldFileDeleted = false;
 if(deleteHomeworkFile) {
 	// 왜: "파일만 삭제" 요구가 있어, 수정 요청에서 명시적으로 첨부를 비울 수 있어야 합니다.

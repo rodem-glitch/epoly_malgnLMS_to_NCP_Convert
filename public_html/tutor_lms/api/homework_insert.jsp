@@ -30,6 +30,8 @@ f.addElement("homework_file", null, "hname:'첨부파일'");
 
 //선택값
 f.addElement("onoff_type", "N", "hname:'온오프라인구분'"); //왜: 과제는 기본적으로 온라인 제출을 가정합니다.
+f.addElement("submit_file_ext_mode", "ALL", "hname:'제출첨부허용형식모드'"); //ALL/DOC/IMAGE/ARCHIVE/AUDIO/CUSTOM
+f.addElement("submit_file_exts", null, "hname:'제출첨부허용확장자'");
 
 if(!f.validate()) {
 	result.put("rst_code", "1000");
@@ -114,6 +116,32 @@ String title = f.get("title").trim();
 String content = f.get("description");
 int assignScore = Math.max(0, f.getInt("totalScore"));
 String onoffType = !"".equals(f.get("onoff_type")) ? f.get("onoff_type") : "N";
+String submitFileExtModeInput = f.get("submit_file_ext_mode");
+if(null == submitFileExtModeInput) submitFileExtModeInput = "";
+String submitFileExtMode = homework.normalizeSubmitFileExtMode("".equals(submitFileExtModeInput) ? "ALL" : submitFileExtModeInput);
+if("".equals(submitFileExtMode)) {
+	result.put("rst_code", "1104");
+	result.put("rst_message", "허용 파일 형식 옵션이 올바르지 않습니다.");
+	result.print();
+	return;
+}
+String submitFileExts = "";
+if("CUSTOM".equals(submitFileExtMode)) {
+	submitFileExts = homework.normalizeSubmitFileExts(f.get("submit_file_exts"));
+	if("".equals(submitFileExts)) {
+		result.put("rst_code", "1105");
+		result.put("rst_message", "직접입력 모드에서는 허용 확장자를 1개 이상 입력해야 합니다.");
+		result.print();
+		return;
+	}
+}
+String resolvedSubmitAllowExt = homework.resolveSubmitFileExts(submitFileExtMode, submitFileExts);
+if("".equals(resolvedSubmitAllowExt)) {
+	result.put("rst_code", "1106");
+	result.put("rst_message", "허용 확장자 설정을 확인해 주세요.");
+	result.print();
+	return;
+}
 
 //왜: base64 이미지는 DB에 누적되면 용량 폭증/오류가 나기 쉽습니다.
 if(-1 < content.indexOf("<img") && -1 < content.indexOf("data:image/") && -1 < content.indexOf("base64")) {
@@ -157,7 +185,9 @@ if(m.parseLong(startDateTime) > m.parseLong(endDateTime)) {
 m.log(
 	"tutor_homework",
 	"insert_multi requested=" + targetCourseIdSet.size() + ", valid=" + validCourseIds.size()
-	+ ", start=" + startDateTime + ", end=" + endDateTime + ", user_id=" + userId
+	+ ", start=" + startDateTime + ", end=" + endDateTime
+	+ ", submit_ext_mode=" + submitFileExtMode + ", submit_ext_cnt=" + resolvedSubmitAllowExt.split("\\|").length
+	+ ", user_id=" + userId
 );
 
 //과제(LM_HOMEWORK) 생성
@@ -168,6 +198,8 @@ homework.item("onoff_type", onoffType);
 homework.item("category_id", 0);
 homework.item("homework_nm", title);
 homework.item("content", content);
+homework.item("submit_file_ext_mode", submitFileExtMode);
+homework.item("submit_file_exts", "CUSTOM".equals(submitFileExtMode) ? submitFileExts : "");
 homework.item("manager_id", userId);
 homework.item("reg_date", m.time("yyyyMMddHHmmss"));
 homework.item("status", 1);

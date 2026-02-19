@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 12:25
+최근 자동 갱신: 2026-02-19 13:38
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -455,6 +455,28 @@
 - 확인(근거):
   - 코드 확인: `public_html/tutor_lms/api/homework_insert.jsp` (course_ids 파싱/과목별 검증/부분성공 응답)
   - 로컬 호출 확인: 비로그인 상태에서 `4010` JSON 반환(컴파일/라우팅 정상)
+- 최근 갱신: 2026-02-19
+
+### FLOW-4006: 교수자 LMS > 과제 관리(제출첨부 허용 파일형식 옵션)
+- 사용자 동작(의도): 교수자가 과제별로 학생 제출 첨부파일 허용 형식(프리셋/직접입력)을 선택
+- 진입점:
+  - 교수자 등록/수정/조회 API: `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`
+  - 학생 실제 업로드 저장 API: `public_html/classroom/file_upload.jsp`
+- 처리(핵심):
+  - 과제 저장 시 `submit_file_ext_mode`(ALL/DOC/IMAGE/ARCHIVE/AUDIO/CUSTOM), `submit_file_exts`를 검증/정규화해 `LM_HOMEWORK`에 저장
+  - `CUSTOM` 모드는 기본 화이트리스트(레거시 업로드 허용 확장자 집합) 내부 값만 저장
+  - 과제 목록 조회에서 허용 모드/확장자(`submit_file_*`)를 함께 반환해 수정 모달 초기값으로 사용
+  - 학생 업로드(`file_upload.jsp`)는 `md=homework_{id}` / `md=homework_task_{tid}`를 해석해 과제 설정을 조회하고, 서버 `f.addElement(... allow:'...')`로 최종 차단
+  - 설정이 비정상(잘못된 모드/빈 custom)인 경우 업로드를 성공 처리하지 않고 즉시 오류 반환
+- DB:
+  - `src/dao/HomeworkDao.java` → `LM_HOMEWORK.submit_file_ext_mode`, `LM_HOMEWORK.submit_file_exts`
+  - DDL: `public_html/ddl_homework_submit_file_ext.sql`
+- 출력:
+  - 교수자 API JSON: `submit_file_ext_mode`, `submit_file_exts`, `submit_file_allow_ext`, `submit_file_allow_ext_conv`
+  - 업로드 API JSON: 기존 `{"success":true/false}` 포맷 유지
+- 확인(근거):
+  - 코드 확인: `src/dao/HomeworkDao.java`, `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`, `public_html/classroom/file_upload.jsp`
+  - 로컬 호출 확인: 비로그인 상태에서 `homework_insert.jsp`가 `4010` JSON 반환(라우팅/컴파일 정상)
 - 최근 갱신: 2026-02-19
 
 ### FLOW-4002: 교수자 LMS > 차시관리 > 추천 탭 동영상 추가 시 시간/인정시간 자동 세팅

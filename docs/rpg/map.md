@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 12:25
+최근 자동 갱신: 2026-02-19 13:38
 
 - JSP 총합(전체): 1228
 - JSP(public_html): 1227 (sysop: 715, api: 18)
@@ -77,6 +77,7 @@
 | 과제 > 피드백 관리: 학생 제출물(제목/내용/첨부) 모달 확인 추가 | `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `project/components/HomeworkSubmissionDetailModal.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | “제출물 보기” 버튼으로 제출 본문/첨부파일을 모달에서 확인(파일은 `CL_FILE(module='homework_{homework_id}', module_id=course_user_id)` 기반) |
 | 담당과목 > 과제관리: 교수자 첨부파일 확인/다운로드/삭제/재업로드 백엔드 보강 | `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `POST public_html/tutor_lms/api/homework_delete.jsp`, `GET public_html/main/download_file.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.homework_file`), `src/dao/CourseModuleDao.java` | (React API 응답 JSON) | 목록 API에 `homework_file_*`(conv/ek/download_url) 추가, 수정 API에 `delete_homework_file_yn` 지원, 과제 최종 삭제 시 물리 파일 정리 |
 | 담당과목 > 과제관리: 동일 과제 다중 강의 동시 등록 | `POST public_html/tutor_lms/api/homework_insert.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK`), `src/dao/CourseModuleDao.java`(`LM_COURSE_MODULE`) | (React API 응답 JSON) | `course_id`(단일) + `course_ids`(복수, 쉼표) 동시 지원. 과목별 권한/존재 검증 후 가능한 강의에만 배치하고 실패 과목 목록(`rst_failed_courses`) 반환 |
+| 담당과목 > 과제관리: 과제별 제출첨부 허용 파일형식 옵션 | `POST public_html/tutor_lms/api/homework_insert.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/classroom/file_upload.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.submit_file_ext_mode/submit_file_exts`) | `public_html/ddl_homework_submit_file_ext.sql` | 과제별 프리셋/직접입력 확장자 저장 후 학생 제출 업로드에서 서버 강제 검증(우회 업로드 차단) |
 
 ## 최근 작업(교수자 수강생 상세 조회)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |

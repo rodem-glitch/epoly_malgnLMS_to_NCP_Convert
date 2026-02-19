@@ -11,10 +11,56 @@ if("".equals(mid)) { m.jsAlert("기본키는 반드시 지정해야 합니다.")
 //객체
 BoardDao board = new BoardDao();
 ClFileDao file = new ClFileDao();
+HomeworkDao homework = new HomeworkDao();
+HomeworkTaskDao homeworkTask = new HomeworkTaskDao();
 
 //변수
-String allowExt = "jpg|jpeg|gif|png|pdf|hwp|txt|doc|docx|xls|xlsx|ppt|pptx|zip|alz|7z|rar|egg|mp3"; //file.allowExt;
+String allowExt = homework.defaultSubmitFileExt;
 int maxPostSize = 100; //Config.getInt("maxPostSize");
+String submitFileExtMode = "";
+String submitFileExts = "";
+int homeworkId = 0;
+int homeworkTaskId = 0;
+
+// 왜: 과제 제출 첨부는 과제별 허용 형식 옵션을 서버에서 강제해야 우회 업로드를 막을 수 있습니다.
+if(md.matches("^homework_[0-9]+$")) {
+	homeworkId = m.parseInt(md.substring(9));
+} else if(md.matches("^homework_task_[0-9]+$")) {
+	homeworkTaskId = m.parseInt(md.substring(14));
+	DataSet tinfo = homeworkTask.find("id = " + homeworkTaskId + " AND site_id = " + siteId + " AND status = 1");
+	if(!tinfo.next()) {
+		out.print("{\"success\":false, \"error\":\"추가 과제 정보를 찾을 수 없습니다.\", \"reset\":true}");
+		return;
+	}
+	homeworkId = tinfo.i("homework_id");
+}
+
+if(homeworkId > 0) {
+	DataSet hinfo = homework.find("id = " + homeworkId + " AND site_id = " + siteId + " AND status != -1");
+	if(!hinfo.next()) {
+		out.print("{\"success\":false, \"error\":\"과제 정보를 찾을 수 없습니다.\", \"reset\":true}");
+		return;
+	}
+
+	submitFileExtMode = homework.normalizeSubmitFileExtMode(hinfo.s("submit_file_ext_mode"));
+	if("".equals(submitFileExtMode)) {
+		out.print("{\"success\":false, \"error\":\"과제 허용 파일 형식 설정이 올바르지 않습니다.\", \"reset\":true}");
+		return;
+	}
+	submitFileExts = homework.normalizeSubmitFileExts(hinfo.s("submit_file_exts"));
+	allowExt = homework.resolveSubmitFileExts(submitFileExtMode, submitFileExts);
+	if("".equals(allowExt)) {
+		out.print("{\"success\":false, \"error\":\"과제 허용 확장자 설정을 확인해 주세요.\", \"reset\":true}");
+		return;
+	}
+
+	m.log(
+		"homework_upload",
+		"resolve module=" + md + ", homework_id=" + homeworkId + ", task_id=" + homeworkTaskId
+		+ ", mode=" + submitFileExtMode + ", ext_cnt=" + allowExt.split("\\|").length
+		+ ", user_id=" + userId + ", site_id=" + siteId
+	);
+}
 
 //폼체크
 f.addElement("filename", "", "hname:'파일', required:'Y', allow:'" + allowExt + "'");

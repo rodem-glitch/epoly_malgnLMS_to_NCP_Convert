@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 12:25
+최근 자동 갱신: 2026-02-19 13:38
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -44,6 +44,8 @@
   - 과제 삭제 시에는 과목 배치만 제거되는 경우가 있어, 첨부 물리 삭제는 “해당 과제가 더 이상 어떤 과목에도 연결되지 않았을 때”만 수행해야 안전합니다.
   - `homework_insert.jsp` 다중 등록(`course_ids`)은 과제 본문(`LM_HOMEWORK`) 1건을 여러 과목 배치(`LM_COURSE_MODULE`)로 연결합니다. 즉, 같은 과제 ID를 공유하므로 한 강의에서 과제 본문/첨부를 수정하면 연결된 다른 강의에도 반영됩니다.
   - 다중 등록은 부분 성공을 허용합니다. 응답의 `rst_success_courses`, `rst_failed_courses`, `rst_invalid_tokens`를 함께 확인하지 않으면 운영자가 “일부 과목 누락”을 놓칠 수 있습니다.
+  - 학생 제출 첨부는 `public_html/classroom/file_upload.jsp`에서 최종 차단되므로, 허용 파일형식 옵션(`submit_file_ext_mode`, `submit_file_exts`)을 프론트 검증만으로 믿으면 안 됩니다.
+  - 허용 파일형식 옵션은 과제 단위(`LM_HOMEWORK`) 설정입니다. 다중 강의에 연결된 동일 과제는 설정도 공유되므로, 한 강의에서 바꾸면 연결 강의 모두에 즉시 반영됩니다.
 - 교수자 LMS 수강생 상세 조회(개인정보) 주의:
   - `public_html/tutor_lms/api/student_detail.jsp`는 `user_id`만 필수이며, 상세 조회 API 자체는 개인정보 로그를 남기지 않습니다(과도한 로그 방지).
   - `course_id`가 있을 때 권한은 수강생 목록과 동일 기준(주강사/과정담당자/개설자/관리자)으로 검사합니다. 목록 API와 권한식이 달라지면 “목록은 보이는데 상세는 403” 회귀가 발생합니다.
