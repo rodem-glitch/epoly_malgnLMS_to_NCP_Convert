@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 13:59
+최근 자동 갱신: 2026-02-19 14:20
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -396,19 +396,19 @@
   - 과목 권한: 관리자가 아니면 `LM_COURSE_TUTOR(type='major')`(주강사)만 조회 허용
   - 과제가 과목에 배치된 건인지 `LM_COURSE_MODULE(module='homework')`로 확인
   - 제출 본문: `LM_HOMEWORK_USER(subject/content/submit_yn/reg_date)` 조회(레코드가 없으면 빈값 반환)
-  - 첨부파일: `CL_FILE(module='homework_{homework_id}', module_id={course_user_id})` 목록을 배열로 내려줌
+  - 첨부파일: 학생 제출 파일(`CL_FILE.module='homework_{homework_id}'`)과 교수자 피드백 파일(`CL_FILE.module='homework_feedback_{homework_id}'`)을 각각 배열로 내려줌
 - DB:
   - 과제 배치: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE` (`course_id`, `module`, `module_id`, `status`)
   - 제출 본문: `src/dao/HomeworkUserDao.java` → `LM_HOMEWORK_USER` (`homework_id`, `course_user_id`, `subject`, `content`, `submit_yn`, `reg_date`, `status`)
-  - 첨부파일: `src/dao/ClFileDao.java` → `CL_FILE` (`module`, `module_id`, `filename`, `status`)
+  - 첨부파일: `src/dao/ClFileDao.java` → `CL_FILE` (`module`, `module_id`, `site_id`, `filename`, `status`)
 - 출력:
-  - JSON: 제출 제목/내용 + 파일 목록(`download_url=/classroom/download_cl.jsp?id=...&ek=...`)
+  - JSON: 제출 제목/내용 + 학생 제출 파일(`files`) + 교수자 피드백 파일(`feedback_files`) 목록
   - React 모달: `project/components/HomeworkSubmissionDetailModal.tsx` (Dialog/ScrollArea)
   - 표시 규칙: 제출 제목/내용은 HTML 태그가 있으면 제거 후 “텍스트만” 표시(`<p>` 등 태그가 화면에 노출되지 않도록)
 - 확인(근거):
-  - React에서 “제출물 보기” 버튼 클릭 시 API 호출 및 모달 렌더링 코드 확인(`CourseManagement.tsx`)
-  - 로컬 빌드: `cd project && npm run build` 성공(산출물 `public_html/tutor_lms/app/assets/*` 갱신)
-- 최근 갱신: 2026-02-10
+  - API 코드 확인: `public_html/tutor_lms/api/homework_user_submission.jsp`에서 `feedback_files` 추가 반환 및 `site_id` 조건 확인
+  - 정적 흐름 확인: `/classroom/download_cl.jsp`의 `ek` 규칙(`encrypt(id)` 허용)과 응답 링크 패턴 일치 확인
+- 최근 갱신: 2026-02-19
 
 ### FLOW-4004: 교수자 LMS > 과제 관리(교수자 첨부파일 확인/다운로드/삭제/재업로드)
 - 사용자 동작(의도): 과제 부여 시 교수자가 올린 첨부파일을 과제 관리에서 확인하고, 다운로드/파일삭제/재업로드까지 수행
@@ -503,6 +503,32 @@
 - 확인(근거):
   - 코드 확인: `public_html/tutor_lms/api/homework_feedback_template_list.jsp`, `public_html/tutor_lms/api/homework_feedback_template_save.jsp`, `public_html/tutor_lms/api/homework_feedback_template_delete.jsp`, `src/dao/HomeworkFeedbackTemplateDao.java`
   - 정적 흐름 확인: 기존 과제 피드백 저장 API(`homework_feedback_update.jsp`)와 분리되어 템플릿 CRUD만 담당함
+- 최근 갱신: 2026-02-19
+
+### FLOW-4008: 교수자 LMS > 과제 > 피드백 파일 첨부(업로드/목록/삭제)
+- 사용자 동작(의도): 교수자가 학생 과제 피드백 시 첨삭 파일(문서/PDF 등)을 업로드하고, 목록 확인/삭제까지 수행
+- 진입점:
+  - 업로드 API: `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`
+  - 목록 API: `public_html/tutor_lms/api/homework_feedback_file_list.jsp`
+  - 삭제 API: `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`
+- 처리(핵심):
+  - 세 API 모두 `tutor_lms/api/init.jsp`를 통해 로그인/교수자 권한을 먼저 검사
+  - 과목 권한: 관리자가 아니면 `LM_COURSE_TUTOR(type='major')`만 허용
+  - 과제-과목 연결은 `LM_COURSE_MODULE(module='homework') + LM_HOMEWORK(site_id/status)` 조인으로 검증
+  - 수강자 범위는 `LM_COURSE_USER(id/course_id/site_id/status in (1,3))`로 검증
+  - 업로드는 `multipart/form-data`에서 `Form(f)` 우선 파싱, 확장자/용량(100MB) 검증 후 `CL_FILE(module='homework_feedback_{homework_id}', module_id=course_user_id)`에 저장
+  - 목록/삭제/상세 조회 모두 `site_id` 조건을 포함해 멀티사이트 교차 조회를 방지
+  - 운영 추적을 위해 `tutor_homework_feedback_file` 로그에 시작/권한실패/성공 이벤트를 남김
+- DB:
+  - 첨부파일 저장: `src/dao/ClFileDao.java` → `CL_FILE` (`module`, `module_id`, `site_id`, `filename`, `realname`, `filesize`, `status`, `reg_date`)
+  - 과목/수강 검증: `src/dao/CourseModuleDao.java`, `src/dao/HomeworkDao.java`, `src/dao/CourseUserDao.java`, `src/dao/CourseTutorDao.java`
+- 출력:
+  - 업로드: `rst_data` 단건 파일 메타(`id`, `filename`, `download_url`, `ek`)
+  - 목록: `rst_data` 파일 배열
+  - 삭제: `rst_data` 삭제된 `file_id`
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`
+  - 연계 확인: `public_html/tutor_lms/api/homework_user_submission.jsp`의 `feedback_files` 반환과 `/classroom/download_cl.jsp` 링크 규칙 일치 확인
 - 최근 갱신: 2026-02-19
 
 ### FLOW-4002: 교수자 LMS > 차시관리 > 추천 탭 동영상 추가 시 시간/인정시간 자동 세팅

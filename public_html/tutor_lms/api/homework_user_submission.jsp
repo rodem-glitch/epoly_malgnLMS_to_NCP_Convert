@@ -87,7 +87,7 @@ if(info.next()) {
 //왜: Json.put에 DataSet을 그대로 중첩하면(Hashtable 안에 DataSet) 직렬화가 깨질 수 있어,
 //     파일 목록은 "배열(리스트)" 형태로 평탄화해서 내려줍니다.
 ArrayList<Hashtable<String, Object>> fileRows = new ArrayList<Hashtable<String, Object>>();
-DataSet files = file.find("module = 'homework_" + homeworkId + "' AND module_id = " + courseUserId + " AND status = 1", "*", "id ASC");
+DataSet files = file.find("module = 'homework_" + homeworkId + "' AND module_id = " + courseUserId + " AND site_id = " + siteId + " AND status = 1", "*", "id ASC");
 while(files.next()) {
 	Hashtable<String, Object> row = new Hashtable<String, Object>();
 	String fileId = files.s("id");
@@ -99,6 +99,22 @@ while(files.next()) {
 	fileRows.add(row);
 }
 data.put("files", fileRows);
+
+//첨부파일: 교수자 피드백 파일
+//왜: 제출물 확인 모달에서 학생 제출파일과 피드백 첨부파일을 함께 봐야, 첨삭본 전달 여부를 바로 확인할 수 있습니다.
+ArrayList<Hashtable<String, Object>> feedbackFileRows = new ArrayList<Hashtable<String, Object>>();
+DataSet feedbackFiles = file.find("module = 'homework_feedback_" + homeworkId + "' AND module_id = " + courseUserId + " AND site_id = " + siteId + " AND status = 1", "*", "id ASC");
+while(feedbackFiles.next()) {
+	Hashtable<String, Object> row = new Hashtable<String, Object>();
+	String fileId = feedbackFiles.s("id");
+	String ek = m.encrypt(fileId);
+	row.put("id", feedbackFiles.i("id"));
+	row.put("filename", feedbackFiles.s("filename"));
+	row.put("ek", ek);
+	row.put("download_url", "/classroom/download_cl.jsp?id=" + fileId + "&ek=" + ek);
+	feedbackFileRows.add(row);
+}
+data.put("feedback_files", feedbackFileRows);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "성공");

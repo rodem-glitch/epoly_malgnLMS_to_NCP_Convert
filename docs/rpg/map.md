@@ -5,10 +5,10 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 13:59
+최근 자동 갱신: 2026-02-19 14:20
 
-- JSP 총합(전체): 1231
-- JSP(public_html): 1230 (sysop: 715, api: 18)
+- JSP 총합(전체): 1234
+- JSP(public_html): 1233 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 179
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 106
@@ -76,6 +76,7 @@
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
 | 과제 > 피드백 관리: 학생 제출물(제목/내용/첨부) 모달 확인 추가 | `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `project/components/HomeworkSubmissionDetailModal.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | “제출물 보기” 버튼으로 제출 본문/첨부파일을 모달에서 확인(파일은 `CL_FILE(module='homework_{homework_id}', module_id=course_user_id)` 기반) |
 | 과제 > 피드백 관리: 교수자 피드백 템플릿(조회/저장/삭제) 백엔드 추가 | `GET public_html/tutor_lms/api/homework_feedback_template_list.jsp`, `POST public_html/tutor_lms/api/homework_feedback_template_save.jsp`, `POST public_html/tutor_lms/api/homework_feedback_template_delete.jsp` | `src/dao/HomeworkFeedbackTemplateDao.java` (`LM_HOMEWORK_FEEDBACK_TEMPLATE`) | `public_html/ddl_homework_feedback_template.sql` | 과목/교수자별 템플릿 CRUD 제공. 서버 개수 제한 없음(프론트에서 필요한 개수만 조회) |
+| 과제 > 피드백 관리: 교수자 피드백 첨부파일(업로드/목록/삭제) 백엔드 추가 | `POST public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `GET public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `POST public_html/tutor_lms/api/homework_feedback_file_delete.jsp`, `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `src/dao/ClFileDao.java`(`CL_FILE`), `src/dao/CourseTutorDao.java`, `src/dao/CourseModuleDao.java`, `src/dao/HomeworkDao.java`, `src/dao/CourseUserDao.java` | (React API 응답 JSON) | 피드백 파일은 `CL_FILE(module='homework_feedback_{homework_id}', module_id=course_user_id)`로 저장. 제출 상세 API에 `feedback_files` 배열을 포함해 정규/비정규 공통 조회 |
 | 담당과목 > 과제관리: 교수자 첨부파일 확인/다운로드/삭제/재업로드 백엔드 보강 | `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `POST public_html/tutor_lms/api/homework_delete.jsp`, `GET public_html/main/download_file.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.homework_file`), `src/dao/CourseModuleDao.java` | (React API 응답 JSON) | 목록 API에 `homework_file_*`(conv/ek/download_url) 추가, 수정 API에 `delete_homework_file_yn` 지원, 과제 최종 삭제 시 물리 파일 정리 |
 | 담당과목 > 과제관리: 동일 과제 다중 강의 동시 등록 | `POST public_html/tutor_lms/api/homework_insert.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK`), `src/dao/CourseModuleDao.java`(`LM_COURSE_MODULE`) | (React API 응답 JSON) | `course_id`(단일) + `course_ids`(복수, 쉼표) 동시 지원. 과목별 권한/존재 검증 후 가능한 강의에만 배치하고 실패 과목 목록(`rst_failed_courses`) 반환 |
 | 담당과목 > 과제관리: 과제별 제출첨부 허용 파일형식 옵션 | `POST public_html/tutor_lms/api/homework_insert.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/classroom/file_upload.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.submit_file_ext_mode/submit_file_exts`) | `public_html/ddl_homework_submit_file_ext.sql` | 과제별 프리셋/직접입력 확장자 저장 후 학생 제출 업로드에서 서버 강제 검증(우회 업로드 차단) |
