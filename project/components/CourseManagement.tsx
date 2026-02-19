@@ -2224,6 +2224,10 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
 
   const [tempScore, setTempScore] = useState<string>('0');
   const [feedbackText, setFeedbackText] = useState<string>('');
+  // 왜: 교수자가 첨삭 파일을 첨부할 수 있도록 파일 목록을 관리합니다.
+  // TODO: 백엔드 API 연동 후 실제 파일 업로드 활성화
+  const [feedbackFiles, setFeedbackFiles] = useState<File[]>([]);
+  const feedbackFileInputRef = useRef<HTMLInputElement>(null);
 
   // 왜: 학생 제출물(제목/내용/첨부파일)을 모달로 확인할 수 있어야 합니다.
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
@@ -2331,6 +2335,8 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
     const student = students.find((s: any) => s.courseUserId === courseUserId);
     setTempScore(String(student?.markingScore ?? 0));
     setFeedbackText(String(student?.feedback ?? ''));
+    // 왜: 학생이 바뀌면 이전 학생용 첨부파일을 초기화해야 혼선이 없습니다.
+    setFeedbackFiles([]);
   };
 
   const handleOpenSubmissionModal = () => {
@@ -2700,6 +2706,64 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                         rows={6}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       />
+
+                      {/* 왜: 교수자가 첨삭한 파일을 첨부하여 학생에게 전달할 수 있도록 합니다. */}
+                      {/* TODO: 백엔드 API 연동 후 실제 파일 업로드 활성화 */}
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-700">첨부파일</span>
+                          <button
+                            type="button"
+                            onClick={() => feedbackFileInputRef.current?.click()}
+                            className="px-3 py-1 text-xs border border-blue-200 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                          >
+                            + 파일 선택
+                          </button>
+                          <input
+                            ref={feedbackFileInputRef}
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              const newFiles = Array.from(e.target.files || []);
+                              if (newFiles.length > 0) {
+                                setFeedbackFiles((prev) => [...prev, ...newFiles]);
+                              }
+                              // 왜: 같은 파일을 다시 선택할 수 있도록 value를 초기화합니다.
+                              e.target.value = '';
+                            }}
+                          />
+                        </div>
+                        {feedbackFiles.length > 0 && (
+                          <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                            {feedbackFiles.map((file, idx) => (
+                              <div key={`${file.name}-${idx}`} className="flex items-center justify-between px-3 py-2">
+                                <div className="flex items-center gap-2 text-sm text-gray-700 truncate">
+                                  <Paperclip className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate">{file.name}</span>
+                                  <span className="text-xs text-gray-400 flex-shrink-0">
+                                    ({(file.size / 1024).toFixed(0)}KB)
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setFeedbackFiles((prev) => prev.filter((_, i) => i !== idx))}
+                                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                                  title="삭제"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {feedbackFiles.length === 0 && (
+                          <div className="text-xs text-gray-400 pl-6">
+                            첨삭 파일이 있으면 선택해 주세요. (선택사항)
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                       <div className="flex justify-end gap-2">
