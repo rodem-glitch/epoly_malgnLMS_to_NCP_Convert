@@ -11,6 +11,7 @@ import { ExamManagementPage } from './components/ExamManagementPage';
 import { CreateSubjectWizard } from './components/CreateSubjectWizard';
 import { StatisticsPage } from './components/StatisticsPage';
 import { AssignmentManagePage } from './components/AssignmentManagePage';
+import { AssignmentTemplateTab } from './components/AssignmentTemplateTab';
 import { QnaManagePage } from './components/QnaManagePage';
 import type { CourseManagementTabId } from './components/CourseManagement';
 
@@ -19,6 +20,8 @@ const MENU_IDS = [
   'explore',
   'courses',
   'assignment-manage',
+  'assignment-submissions',
+  'assignment-templates',
   'qna-manage',
   'create-course',
   'content-all',
@@ -108,6 +111,7 @@ export default function App() {
   });
   const [contentLibraryExpanded, setContentLibraryExpanded] = useState(false);
   const [examMenuExpanded, setExamMenuExpanded] = useState(false);
+  const [assignmentMenuExpanded, setAssignmentMenuExpanded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // 컴포넌트 재렌더링용 키
   const activeMenu = routeState.menu;
 
@@ -116,6 +120,9 @@ export default function App() {
   
   // 시험관리 하위 메뉴 여부 확인
   const isExamSubMenu = activeMenu === 'exam-categories' || activeMenu === 'exam-questions' || activeMenu === 'exam-management';
+
+  // 과제 통합관리 하위 메뉴 여부 확인
+  const isAssignmentSubMenu = activeMenu === 'assignment-manage' || activeMenu === 'assignment-submissions' || activeMenu === 'assignment-templates';
 
   const syncHash = useCallback((route: RouteState, replace = false) => {
     // 왜: 서버 라우팅 없이도 뒤로가기/직접 주소 접근이 되도록 해시를 동기화합니다.
@@ -136,6 +143,9 @@ export default function App() {
     }
     if (route.menu === 'exam-categories' || route.menu === 'exam-questions' || route.menu === 'exam-management') {
       setExamMenuExpanded(true);
+    }
+    if (route.menu === 'assignment-manage' || route.menu === 'assignment-submissions' || route.menu === 'assignment-templates') {
+      setAssignmentMenuExpanded(true);
     }
     if (options?.syncHash !== false) {
       syncHash(route, options?.replaceHash);
@@ -191,6 +201,10 @@ export default function App() {
 
   const handleExamMenuClick = () => {
     setExamMenuExpanded((prev) => !prev);
+  };
+
+  const handleAssignmentMenuClick = () => {
+    setAssignmentMenuExpanded((prev) => !prev);
   };
 
   // 현재 화면 새로고침
@@ -377,17 +391,52 @@ export default function App() {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => applyMenu('assignment-manage')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-                activeMenu === 'assignment-manage'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-sidebar-foreground hover:bg-muted'
-              }`}
-            >
-              <ClipboardCheck className="w-5 h-5" />
-              <span>과제 통합관리</span>
-            </button>
+            <div>
+              <button
+                onClick={handleAssignmentMenuClick}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-left ${
+                  isAssignmentSubMenu
+                    ? 'bg-blue-600 text-white'
+                    : 'text-sidebar-foreground hover:bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <ClipboardCheck className="w-5 h-5" />
+                  <span>과제 통합관리</span>
+                </div>
+                {assignmentMenuExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+              {assignmentMenuExpanded && (
+                <div className="ml-4 mt-1 flex flex-col gap-1">
+                  <button
+                    onClick={() => applyMenu('assignment-submissions')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'assignment-submissions'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>제출 현황</span>
+                  </button>
+                  <button
+                    onClick={() => applyMenu('assignment-templates')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'assignment-templates'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>과제 템플릿</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => applyMenu('qna-manage')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
@@ -482,11 +531,19 @@ export default function App() {
               routeParams={routeState.params}
               onRouteChange={handleCoursesRouteChange}
             />
-          ) : activeMenu === 'assignment-manage' ? (
+          ) : activeMenu === 'assignment-manage' || activeMenu === 'assignment-submissions' ? (
             <AssignmentManagePage
               key={refreshKey}
               onOpenCourse={handleOpenCourseFromDashboard}
             />
+          ) : activeMenu === 'assignment-templates' ? (
+            <div className="space-y-6" key={refreshKey}>
+              <div>
+                <h1 className="text-gray-900 mb-1">과제 템플릿</h1>
+                <p className="text-gray-600">과제 템플릿을 관리하고 여러 강의에 동시 업로드합니다.</p>
+              </div>
+              <AssignmentTemplateTab />
+            </div>
           ) : activeMenu === 'qna-manage' ? (
             <QnaManagePage
               key={refreshKey}

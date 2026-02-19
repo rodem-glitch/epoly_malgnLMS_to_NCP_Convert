@@ -91,7 +91,7 @@ export function AssignmentManagePage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-gray-900 mb-1">과제 통합관리</h1>
+        <h1 className="text-gray-900 mb-1">제출 현황</h1>
         <p className="text-gray-600">모든 과목의 과제 제출을 한 곳에서 확인합니다.</p>
       </div>
 
