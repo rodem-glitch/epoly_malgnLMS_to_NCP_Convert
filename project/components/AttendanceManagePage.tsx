@@ -286,7 +286,7 @@ export function AttendanceManagePage() {
   return (
     <div className="space-y-5">
       {/* ===== 페이지 헤더 + 과목 드롭다운 (상단 고정) ===== */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div>
         <div className="flex flex-wrap items-end gap-4">
           {/* 제목 */}
           <div className="mr-auto">

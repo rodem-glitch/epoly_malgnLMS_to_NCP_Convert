@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GraduationCap, BookOpen, FolderPlus, Compass, Library, ChevronDown, ChevronRight, Heart, RefreshCw, ClipboardList, BookPlus, BarChart3, ClipboardCheck, MessageSquare, UserCheck } from 'lucide-react';
+import { GraduationCap, BookOpen, FolderPlus, Compass, Library, ChevronDown, ChevronRight, Heart, RefreshCw, ClipboardList, BookPlus, BarChart3, ClipboardCheck, MessageSquare, UserCheck, Video } from 'lucide-react';
 import { CreateCourseForm } from './components/CreateCourseForm';
 import { MyCoursesList } from './components/MyCoursesList';
 import { CourseExplorer } from './components/CourseExplorer';
@@ -15,6 +15,7 @@ import { AssignmentTemplateTab } from './components/AssignmentTemplateTab';
 import { FeedbackTemplateTab } from './components/FeedbackTemplateTab';
 import { QnaManagePage } from './components/QnaManagePage';
 import { AttendanceManagePage } from './components/AttendanceManagePage';
+import { VideoGroupManagePage } from './components/VideoGroupManagePage';
 import type { CourseManagementTabId } from './components/CourseManagement';
 
 const MENU_IDS = [
@@ -33,6 +34,7 @@ const MENU_IDS = [
   'exam-questions',
   'exam-management',
   'attendance-manage',
+  'video-group-manage',
   'subject-create',
   'statistics',
 ] as const;
@@ -349,6 +351,17 @@ export default function App() {
               <UserCheck className="w-5 h-5" />
               <span>출석 관리</span>
             </button>
+            <button
+              onClick={() => applyMenu('video-group-manage')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+                activeMenu === 'video-group-manage'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-sidebar-foreground hover:bg-muted'
+              }`}
+            >
+              <Video className="w-5 h-5" />
+              <span>동영상그룹관리</span>
+            </button>
             <div>
               <button
                 onClick={handleExamMenuClick}
@@ -606,6 +619,8 @@ export default function App() {
             <StatisticsPage key={refreshKey} />
           ) : activeMenu === 'attendance-manage' ? (
             <AttendanceManagePage key={refreshKey} />
+          ) : activeMenu === 'video-group-manage' ? (
+            <VideoGroupManagePage key={refreshKey} />
           ) : (
             <div className="bg-card rounded-xl border-2 border-dashed border-border p-16 text-center">
               <div className="text-muted-foreground">
