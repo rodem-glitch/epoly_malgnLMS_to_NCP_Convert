@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, Info, Plus, Search, Trash2 } from 'lucide-react';
+import { Download, Info, Plus, Search, Trash2, X } from 'lucide-react';
 import { tutorLmsApi, TutorCourseStudentRow, HaksaCourseStudentRow } from '../../api/tutorLmsApi';
 import { downloadCsv } from '../../utils/csv';
 
@@ -85,6 +85,288 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
   const [addLoading, setAddLoading] = useState(false);
   const [addErrorMessage, setAddErrorMessage] = useState<string | null>(null);
   const [selectedLearners, setSelectedLearners] = useState<LearnerRow[]>([]);
+
+  // 수강생 상세 팝업 상태
+  const [selectedStudent, setSelectedStudent] = useState<TutorCourseStudentRow | HaksaCourseStudentRow | null>(null);
+  const [showStudentDetail, setShowStudentDetail] = useState(false);
+
+  const openStudentDetail = (student: TutorCourseStudentRow | HaksaCourseStudentRow) => {
+    setSelectedStudent(student);
+    setShowStudentDetail(true);
+  };
+
+  const closeStudentDetail = () => {
+    setShowStudentDetail(false);
+    setSelectedStudent(null);
+  };
+
+  // 왜: 학사/프리즘 수강생 구분을 위해 'course_user_id' 유무로 판별합니다.
+  const renderStudentDetailModal = () => {
+    if (!showStudentDetail || !selectedStudent) return null;
+
+    const isPrism = 'course_user_id' in selectedStudent;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeStudentDetail}>
+        <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">수강생 정보</h3>
+            <button
+              onClick={closeStudentDetail}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              aria-label="닫기"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="px-6 py-5 space-y-4 overflow-y-auto">
+            {isPrism ? (
+              /* ===== 프리즘 수강생 상세 ===== */
+              (() => {
+                const s = selectedStudent as TutorCourseStudentRow;
+                const progress = Number(s.progress ?? s.progress_ratio ?? 0);
+                return (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">학번(ID)</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {isMasked ? maskStudentId(s.student_id || s.login_id) : (s.student_id || s.login_id || '-')}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">이름</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {isMasked ? maskName(s.name) : (s.name || '-')}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-500 mb-1">이메일</label>
+                      <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                        {isMasked ? maskEmail(s.email) : (s.email || '-')}
+                      </div>
+                    </div>
+                    <div className="border-t border-gray-100 pt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">학습 현황</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">진도율</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900 flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Math.max(0, Math.min(100, progress))}%` }} />
+                            </div>
+                            <span>{Math.round(progress)}%</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">총점</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {s.total_score != null ? `${s.total_score}점` : '-'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">수료여부</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm">
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                            s.complete_yn === 'Y' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {s.complete_yn === 'Y' ? '수료' : '미수료'}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">수료상태</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {s.complete_status || '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">수료번호</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {s.complete_no || '-'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">수강 시작일</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {s.start_date || '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">수강 종료일</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {s.end_date || '-'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              /* ===== 학사 수강생 상세 ===== */
+              (() => {
+                const s = selectedStudent as HaksaCourseStudentRow;
+                const visibleLabel = s.visible === 'Y' ? '정상' : s.visible === 'N' ? '폐강' : s.visible || '-';
+                const genderLabel = s.gender === 'M' ? '남' : s.gender === 'F' ? '여' : s.gender || '-';
+                return (
+                  <div className="space-y-4">
+                    {/* 기본 정보 */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">학번</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {isMasked ? maskStudentId(s.student_id) : (s.student_id || '-')}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">이름(한글)</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {isMasked ? maskName(s.name) : (s.name || '-')}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">이름(영문)</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {isMasked ? maskName(s.eng_name) : (s.eng_name || '-')}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">신분구분</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {s.user_type || '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-500 mb-1">성별</label>
+                        <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                          {genderLabel}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 연락처 */}
+                    <div className="border-t border-gray-100 pt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">연락처</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">이메일</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {isMasked ? maskEmail(s.email) : (s.email || '-')}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">휴대폰</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {isMasked ? maskPhone(s.mobile) : (s.mobile || '-')}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">전화번호</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {isMasked ? maskPhone(s.phone) : (s.phone || '-')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 소속 정보 */}
+                    <div className="border-t border-gray-100 pt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">소속 정보</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">캠퍼스</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {s.campus_name || '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">캠퍼스 코드</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900 font-mono">
+                            {s.campus_code || '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">기관명</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {s.institution_name || '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">기관 코드</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900 font-mono">
+                            {s.institution_code || '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">학과/전공</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {s.dept_name || '-'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">학과/전공 코드</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900 font-mono">
+                            {s.dept_code || '-'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 상태 */}
+                    <div className="border-t border-gray-100 pt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">상태</h4>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">수강상태</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                              s.visible === 'Y' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                              {visibleLabel}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">사용여부</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                              s.use_yn === 'Y' ? 'bg-green-100 text-green-700' : s.use_yn === 'N' ? 'bg-gray-100 text-gray-600' : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {s.use_yn === 'Y' ? '사용' : s.use_yn === 'N' ? '미사용' : s.use_yn || '-'}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">상태</label>
+                          <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-900">
+                            {s.state || '-'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
+          </div>
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+            <button
+              onClick={closeStudentDetail}
+              className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const refresh = async (nextKeyword?: string) => {
     setLoading(true);
@@ -726,7 +1008,7 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
                   student.visible === 'Y' ? '정상' : student.visible === 'N' ? '폐강' : student.visible || '-';
 
                 return (
-                  <tr key={`${student.student_id}-${index}`} className="hover:bg-gray-50 transition-colors">
+                  <tr key={`${student.student_id}-${index}`} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => openStudentDetail(student)}>
                     <td className="px-4 py-4 text-sm text-gray-900">{index + 1}</td>
                     <td className="px-4 py-4 text-sm text-gray-900">
                       {isMasked ? maskStudentId(student.student_id) : student.student_id || '-'}
@@ -755,6 +1037,7 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
           </table>
         </div>
         {renderPrivacyModal(doHaksaDownloadCsv)}
+        {renderStudentDetailModal()}
       </div>
     );
   }
@@ -837,7 +1120,7 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
               const progress = Number(student.progress ?? student.progress_ratio ?? 0);
 
               return (
-                <tr key={student.course_user_id || `${student.user_id}-${index}`} className="hover:bg-gray-50 transition-colors">
+                <tr key={student.course_user_id || `${student.user_id}-${index}`} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => openStudentDetail(student)}>
                   <td className="px-4 py-4 text-sm text-gray-900">{index + 1}</td>
                   <td className="px-4 py-4 text-sm text-gray-900">
                     {isMasked ? maskStudentId(student.student_id) : student.student_id || '-'}
@@ -861,7 +1144,7 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
                   </td>
                   <td className="px-4 py-4 text-center">
                     <button
-                      onClick={() => handleRemoveStudent(Number(student.user_id), student.name)}
+                      onClick={(e) => { e.stopPropagation(); handleRemoveStudent(Number(student.user_id), student.name); }}
                       className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -883,6 +1166,7 @@ export function StudentsTab({ courseId, course }: { courseId: number; course?: S
       </div>
       {renderPrivacyModal(doDownloadCsv)}
       {renderAddModal()}
+      {renderStudentDetailModal()}
     </div>
   );
 }
