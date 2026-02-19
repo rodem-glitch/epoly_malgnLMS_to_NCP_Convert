@@ -1,4 +1,18 @@
-<%@ page pageEncoding="utf-8" %><%@ include file="init.jsp" %><%
+<%@ page pageEncoding="utf-8" %><%@ include file="init.jsp" %><%!
+private String getHaksaOpenTermLabel(String openTerm) {
+	// 왜: 학사 open_term은 코드(10/11/20/21/30/1)로 내려오므로,
+	//     담당과목 화면 기간 표시는 사람이 읽는 학기명으로 변환해야 합니다.
+	if("10".equals(openTerm) || "1".equals(openTerm)) return "1학기";
+	if("11".equals(openTerm)) return "여름학기";
+	if("20".equals(openTerm) || "2".equals(openTerm)) return "2학기";
+	if("21".equals(openTerm)) return "겨울학기";
+	if("30".equals(openTerm)) return "기타";
+	if("".equals(openTerm)) return "";
+	// 왜: 미정의 코드가 들어오면 숨기지 않고 원본을 그대로 노출해
+	//     운영 데이터 이상을 확인할 수 있게 합니다.
+	return openTerm;
+}
+%><%
 
 //왜 필요한가:
 //- 담당과목 화면에서 "학사 탭"과 "프리즘 탭"을 분리하여 보여주기 위함입니다.
@@ -366,7 +380,9 @@ else if("haksa".equals(tab)) {
             resultList.put("program_nm_conv", !"".equals(deptName) ? deptName : "-");
             resultList.put("course_type_conv", !"".equals(category) ? category : "-");
             resultList.put("onoff_type_conv", "학사");
-            resultList.put("period_conv", !"".equals(openYear) ? (openYear + "-" + openTerm + "학기") : "-");
+            String openTermLabel = getHaksaOpenTermLabel(openTerm);
+            resultList.put("haksa_open_term_conv", openTermLabel);
+            resultList.put("period_conv", (!"".equals(openYear) && !"".equals(openTermLabel)) ? (openYear + "-" + openTermLabel) : "-");
             resultList.put("status_label", "Y".equals(visible) ? "학습기간" : "종료");
 
             // 왜: 교수자는 본인 매핑된 학사 과목만 보이도록 필터링합니다.
@@ -576,7 +592,9 @@ else if("haksa".equals(tab)) {
         resultList.put("program_nm_conv", !"".equals(deptName) ? deptName : "-");
         resultList.put("course_type_conv", !"".equals(category) ? category : "-");
         resultList.put("onoff_type_conv", "학사");
-        resultList.put("period_conv", !"".equals(openYear) ? (openYear + "-" + openTerm + "학기") : "-");
+        String openTermLabel = getHaksaOpenTermLabel(openTerm);
+        resultList.put("haksa_open_term_conv", openTermLabel);
+        resultList.put("period_conv", (!"".equals(openYear) && !"".equals(openTermLabel)) ? (openYear + "-" + openTermLabel) : "-");
         resultList.put("status_label", "Y".equals(visible) ? "학습기간" : "종료");
         // 왜: 미러 테이블(LM_POLY_STUDENT)에서 과목별 학생 수를 계산해 같이 내려줍니다.
         resultList.put("student_cnt", resultList.i("student_cnt"));

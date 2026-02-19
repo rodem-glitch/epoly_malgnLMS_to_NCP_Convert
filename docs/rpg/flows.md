@@ -231,6 +231,27 @@
   - 로컬 응답 확인: `curl /tutor_lms/index.jsp`가 `top.location.replace('/member/login.jsp?returl=...')`를 반환하고, `curl /member/login.jsp?returl=%2Ftutor_lms%2Findex.jsp`가 `302 -> /mypage/new_main/?login_required=Y&returl=%2Ftutor_lms%2Findex.jsp`를 반환함
 - 최근 갱신: 2026-02-10
 
+### FLOW-2002: 교수자 담당과목(학사 탭) 학기 코드 표시 변환
+- 사용자 동작(의도): 교수자 `담당과목` 학사 탭에서 `10학기/20학기` 같은 코드형 학기 대신 사람이 읽는 학기명으로 확인
+- 진입점:
+  - 목록 API: `public_html/tutor_lms/api/course_list_combined.jsp`
+  - 단건 조회 API(딥링크/직접열기): `public_html/tutor_lms/api/course_resolve.jsp`
+- 처리(핵심):
+  - `open_term` 원본 코드는 저장/조회 키(`course_code/open_year/open_term/bunban_code/group_code`)로 계속 유지
+  - 표시 전용 변환 함수(`getHaksaOpenTermLabel`)를 추가해 `period_conv`만 학기명으로 변환
+  - 매핑 기준: `10/1=1학기`, `11=여름학기`, `20/2=2학기`, `21=겨울학기`, `30=기타`
+  - 미정의 코드는 숨기지 않고 원본값 그대로 노출해 데이터 이상을 확인 가능하게 유지
+- DB:
+  - 기존 동일: `LM_POLY_COURSE`(`open_year`, `open_term` 등) 및 연계 키 컬럼
+  - `open_term` DB 원본값은 변경하지 않음
+- 출력:
+  - 목록/단건 JSON의 `period_conv`가 `YYYY-학기명` 형식으로 반환
+  - 보조 표시 필드 `haksa_open_term_conv` 추가
+- 확인(근거):
+  - 코드 반영 위치 확인: `public_html/tutor_lms/api/course_list_combined.jsp`, `public_html/tutor_lms/api/course_resolve.jsp`
+  - 로컬 확인 경로: `http://localhost:8080/tutor_lms` 담당과목 > 학사 탭, 그리고 `/tutor_lms/api/course_list_combined.jsp?tab=haksa`
+- 최근 갱신: 2026-02-19
+
 ### FLOW-3001: 교수자 통계 > 산업별 통계(산업분포 분석)
 - 사용자 동작(의도): 교수자 통계 화면에서 캠퍼스/행정구역/연도를 선택해 “행정구역(종사자) vs 캠퍼스(학생)” 산업 분포를 비교
 - 진입점:

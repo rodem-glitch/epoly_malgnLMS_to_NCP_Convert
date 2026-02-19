@@ -1,4 +1,16 @@
-<%@ page pageEncoding="utf-8" %><%@ include file="init.jsp" %><%
+<%@ page pageEncoding="utf-8" %><%@ include file="init.jsp" %><%!
+private String getHaksaOpenTermLabel(String openTerm) {
+	// 왜: 학사 open_term은 코드값이므로, 화면 표시(period_conv)는 학기명으로 변환합니다.
+	if("10".equals(openTerm) || "1".equals(openTerm)) return "1학기";
+	if("11".equals(openTerm)) return "여름학기";
+	if("20".equals(openTerm) || "2".equals(openTerm)) return "2학기";
+	if("21".equals(openTerm)) return "겨울학기";
+	if("30".equals(openTerm)) return "기타";
+	if("".equals(openTerm)) return "";
+	// 왜: 정의되지 않은 코드는 원본 그대로 보여서 데이터 이상을 확인할 수 있게 합니다.
+	return openTerm;
+}
+%><%
 
 //왜 필요한가:
 //- 대시보드 딥링크는 "담당과목 목록에서 찾아서 열기" 방식이라
@@ -252,7 +264,9 @@ if("prism".equals(actualSourceType)) {
 	resultList.put("program_nm_conv", !"".equals(deptName) ? deptName : "-");
 	resultList.put("course_type_conv", !"".equals(category) ? category : "-");
 	resultList.put("onoff_type_conv", "학사");
-	resultList.put("period_conv", !"".equals(openYear) ? (openYear + "-" + openTerm + "학기") : "-");
+	String openTermLabel = getHaksaOpenTermLabel(openTerm);
+	resultList.put("haksa_open_term_conv", openTermLabel);
+	resultList.put("period_conv", (!"".equals(openYear) && !"".equals(openTermLabel)) ? (openYear + "-" + openTermLabel) : "-");
 	resultList.put("status_label", "Y".equals(visible) ? "학습기간" : "종료");
 	resultList.put("student_cnt",
 		polyStudent.getOneInt(
