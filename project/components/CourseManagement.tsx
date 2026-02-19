@@ -23,6 +23,7 @@ import {
   BookOpen,
   Printer,
   Paperclip,
+  AlertTriangle,
 } from 'lucide-react';
 import { SessionEditModal } from './SessionEditModal';
 import { CourseInfoTab } from './CourseInfoTabs';
@@ -2488,9 +2489,55 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
     doneFeedback: students.filter((s: any) => s.confirm).length,
   };
 
+  // 왜: 학생 간 과제 유사도 분석 결과를 표시하기 위한 상태입니다.
+  // TODO: 백엔드 API 연동 후 실제 데이터로 전환
+  type SimilarityResult = {
+    studentAId: number;
+    studentAName: string;
+    studentBId: number;
+    studentBName: string;
+    titleScore: number;
+    contentScore: number;
+    fileScore: number;
+    totalScore: number;
+  };
+  const [similarityData, setSimilarityData] = useState<SimilarityResult[]>([]);
+  const [similarityLoading, setSimilarityLoading] = useState(false);
+  const [similarityAnalyzed, setSimilarityAnalyzed] = useState(false);
+
+  // 왜: 선택된 학생과 관련된 유사도 결과만 필터링합니다.
+  const studentSimilarities = selectedCourseUserId
+    ? similarityData.filter(
+        (r) => r.studentAId === selectedCourseUserId || r.studentBId === selectedCourseUserId
+      )
+    : [];
+
+  // 왜: 유사도 임계치 이상인 학생 ID를 빠르게 조회하기 위한 Set입니다.
+  const flaggedStudentIds = new Set<number>();
+  similarityData.forEach((r) => {
+    flaggedStudentIds.add(r.studentAId);
+    flaggedStudentIds.add(r.studentBId);
+  });
+
+  const handleAnalyzeSimilarity = () => {
+    if (!selectedHomeworkId) return;
+    setSimilarityLoading(true);
+    setSimilarityAnalyzed(false);
+
+    // TODO: 백엔드 API 연동 후 아래 mock을 실제 API 호출로 교체
+    // 예: tutorLmsApi.getHomeworkSimilarity({ courseId, homeworkId: selectedHomeworkId })
+    setTimeout(() => {
+      // 왜: 백엔드 미구현 상태이므로 빈 배열로 응답합니다.
+      //     백엔드 구현 후 실제 API 응답으로 교체합니다.
+      setSimilarityData([]);
+      setSimilarityLoading(false);
+      setSimilarityAnalyzed(true);
+    }, 800);
+  };
+
   return (
     <div className="space-y-4">
-      {/* 과제 선택 */}
+      {/* 과제 선택 + 유사도 분석 버튼 */}
       <div className="flex items-center gap-4">
         <label className="text-sm text-gray-700">과제 선택:</label>
         <select
@@ -2502,6 +2549,9 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
             setTempScore('0');
             setFeedbackText('');
             setStatusFilter('all');
+            // 왜: 과제가 바뀌면 이전 유사도 결과를 초기화해야 혼선이 없습니다.
+            setSimilarityData([]);
+            setSimilarityAnalyzed(false);
           }}
           disabled={loadingHomeworks || homeworks.length === 0}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
@@ -2513,6 +2563,22 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
             </option>
           ))}
         </select>
+        {/* 왜: 교수자가 원할 때 유사도 분석을 실행할 수 있도록 버튼을 배치합니다. */}
+        <button
+          type="button"
+          onClick={handleAnalyzeSimilarity}
+          disabled={!selectedHomeworkId || similarityLoading}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm border border-amber-300 bg-amber-50 text-amber-800 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          {similarityLoading ? '분석 중...' : '유사도 분석'}
+        </button>
+        {similarityAnalyzed && similarityData.length === 0 && (
+          <span className="text-xs text-green-600">✓ 유사 과제가 발견되지 않았습니다.</span>
+        )}
+        {similarityAnalyzed && similarityData.length > 0 && (
+          <span className="text-xs text-red-600">⚠ {similarityData.length}건의 유사 과제가 발견되었습니다.</span>
+        )}
       </div>
 
       {errorMessage && (
@@ -2586,9 +2652,18 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                           <div className="text-gray-900 mb-1">{student.name}</div>
                           <div className="text-sm text-gray-600">{student.studentId}</div>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs ${badge.className}`}>
-                          {badge.label}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className={`px-2 py-1 rounded text-xs ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                          {/* 왜: 유사도 임계치 이상인 학생에게 경고 뱃지를 표시합니다. */}
+                          {flaggedStudentIds.has(student.courseUserId) && (
+                            <span className="px-1.5 py-1 rounded text-xs bg-red-100 text-red-700 flex items-center gap-0.5" title="유사 과제 감지">
+                              <AlertTriangle className="w-3 h-3" />
+                              유사
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500">
                         <span>제출: {student.submittedAt}</span>
@@ -2799,6 +2874,67 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                         <br />- 오프라인 과제처럼 제출 기록이 없어도, 필요하면 점수 입력이 가능합니다.
                       </div>
                     </div>
+
+                    {/* 왜: 선택된 학생과 관련된 유사도 분석 결과를 상세하게 표시합니다. */}
+                    {/* TODO: 백엔드 API 연동 후 실제 데이터 표시 */}
+                    {similarityAnalyzed && (
+                      <div className="mt-4 border border-amber-200 rounded-lg overflow-hidden">
+                        <div className="bg-amber-50 px-4 py-2.5 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm font-medium text-amber-900">유사도 분석 결과</span>
+                        </div>
+                        {studentSimilarities.length > 0 ? (
+                          <div className="divide-y divide-amber-100">
+                            {studentSimilarities.map((sim, idx) => {
+                              // 왜: 선택된 학생 기준으로 비교 대상 학생 정보를 가져옵니다.
+                              const isA = sim.studentAId === selectedCourseUserId;
+                              const peerName = isA ? sim.studentBName : sim.studentAName;
+                              const peerId = isA ? sim.studentBId : sim.studentAId;
+                              const scoreColor =
+                                sim.totalScore >= 90
+                                  ? 'text-red-700 bg-red-50'
+                                  : sim.totalScore >= 70
+                                  ? 'text-orange-700 bg-orange-50'
+                                  : 'text-gray-700 bg-gray-50';
+
+                              return (
+                                <div key={idx} className="px-4 py-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-gray-900">
+                                      {peerName}
+                                      <span className="text-gray-400 ml-1">({peerId})</span>
+                                    </span>
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${scoreColor}`}>
+                                      유사도 {sim.totalScore}%
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-3 text-xs text-gray-500">
+                                    <span>제목: <span className="font-medium text-gray-700">{sim.titleScore}%</span></span>
+                                    <span>본문: <span className="font-medium text-gray-700">{sim.contentScore}%</span></span>
+                                    <span>파일: <span className="font-medium text-gray-700">{sim.fileScore}%</span></span>
+                                  </div>
+                                  {/* 왜: 가중치 정보를 표시하여 교수자가 판단 근거를 알 수 있게 합니다. */}
+                                  <div className="mt-1.5">
+                                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          sim.totalScore >= 90 ? 'bg-red-500' : sim.totalScore >= 70 ? 'bg-orange-400' : 'bg-gray-300'
+                                        }`}
+                                        style={{ width: `${sim.totalScore}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="px-4 py-4 text-sm text-gray-500 text-center">
+                            이 학생의 과제와 유사한 과제가 없습니다.
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* 추가 과제 목록 */}
                     {homeworkTasks.length > 0 && (
