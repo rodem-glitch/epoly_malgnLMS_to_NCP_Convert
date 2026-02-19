@@ -13,6 +13,8 @@ BoardDao board = new BoardDao();
 ClFileDao file = new ClFileDao();
 HomeworkDao homework = new HomeworkDao();
 HomeworkTaskDao homeworkTask = new HomeworkTaskDao();
+HomeworkUserDao homeworkUser = new HomeworkUserDao();
+HomeworkSimilarityResultDao homeworkSimilarity = new HomeworkSimilarityResultDao();
 
 //변수
 String allowExt = homework.defaultSubmitFileExt;
@@ -90,6 +92,35 @@ if(m.isPost()) {
 	file.item("reg_date", m.time("yyyyMMddHHmmss"));
 	file.item("status", 1);
 	file.insert();
+
+	// 왜: 과제 제출 첨부파일이 바뀌면 파일 유사도 점수도 바뀔 수 있으므로, 제출된 과제는 자동 재계산합니다.
+	if(md.matches("^homework_[0-9]+$")) {
+		int courseUserId = m.parseInt(mid);
+		if(0 < courseUserId) {
+			DataSet huinfo = homeworkUser.find(
+				"site_id = " + siteId + " AND homework_id = " + homeworkId + " AND course_user_id = " + courseUserId + " AND submit_yn = 'Y' AND status = 1"
+			);
+			if(huinfo.next()) {
+				Hashtable<String, Object> similarityOut = homeworkSimilarity.runIncrementalAnalysis(
+					siteId,
+					huinfo.i("course_id"),
+					homeworkId,
+					courseUserId,
+					userId,
+					70.0,
+					"AUTO_FILE"
+				);
+				if(!"Y".equals(similarityOut.get("success"))) {
+					m.log(
+						"homework_similarity",
+						"auto_file_failed course_id=" + huinfo.i("course_id") + ", homework_id=" + homeworkId + ", course_user_id=" + courseUserId + ", run_id=" + similarityOut.get("run_id")
+						+ ", pair_total=" + similarityOut.get("pair_total") + ", pair_saved=" + similarityOut.get("pair_saved")
+						+ ", user_id=" + userId + ", site_id=" + siteId + ", message=" + similarityOut.get("message")
+					);
+				}
+			}
+		}
+	}
 
 	//파일리사이징
 	try {

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 14:20
+최근 자동 갱신: 2026-02-19 14:53
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -529,6 +529,37 @@
 - 확인(근거):
   - 코드 확인: `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`
   - 연계 확인: `public_html/tutor_lms/api/homework_user_submission.jsp`의 `feedback_files` 반환과 `/classroom/download_cl.jsp` 링크 규칙 일치 확인
+- 최근 갱신: 2026-02-19
+
+### FLOW-4009: 교수자 LMS > 과제 > 제출물 일치율 분석(수동 실행 + 자동 갱신)
+- 사용자 동작(의도): 교수자가 과제 피드백 전에 학생 제출물 간 일치율을 확인하고, 제출/취소/첨부변경 시 결과가 자동으로 최신화되길 원함
+- 진입점:
+  - 수동 실행 API: `public_html/tutor_lms/api/homework_similarity_run.jsp` (POST)
+  - 목록 API: `public_html/tutor_lms/api/homework_similarity_list.jsp` (GET)
+  - 상세 API: `public_html/tutor_lms/api/homework_similarity_detail.jsp` (GET)
+  - 자동화 트리거:
+    - 학생 제출/수정: `public_html/classroom/homework_view.jsp`
+    - 학생 제출첨부 업로드: `public_html/classroom/file_upload.jsp` (`md=homework_{id}`)
+    - 교수자 제출취소: `public_html/tutor_lms/api/homework_submit_cancel.jsp`
+- 처리(핵심):
+  - 분석 대상은 `LM_HOMEWORK_USER.submit_yn='Y' AND status=1` 제출건만 사용
+  - 전처리(HTML 제거/공백 정리/소문자화) 후 제목/본문/첨부 토큰 기반 Jaccard 점수 계산
+  - 최종점수: `subject*0.2 + content*0.7 + file*0.1`
+  - 저장 임계치(`threshold_score`, 기본 70) 이상인 쌍만 결과 테이블에 저장
+  - 전체 수동 실행은 해당 과제 결과를 전량 재생성, 자동 실행은 변경된 `course_user_id` 관련 쌍만 증분 갱신
+  - 실행 이력(`RUN`)에는 시작/종료/상태/비교건수/저장건수를 남겨 운영 추적 가능하게 유지
+- DB:
+  - 실행 이력: `src/dao/HomeworkSimilarityRunDao.java` → `LM_HOMEWORK_SIMILARITY_RUN`
+  - 비교 결과: `src/dao/HomeworkSimilarityResultDao.java` → `LM_HOMEWORK_SIMILARITY_RESULT`
+  - DDL: `public_html/ddl_homework_similarity.sql`
+- 출력:
+  - 실행 API: `run_id`, `pair_total`, `pair_saved`, `message`
+  - 목록 API: 의심쌍 목록 + 최신 실행 이력(`rst_run`)
+  - 상세 API: 쌍 점수 + 좌/우 학생 제출본문/첨부파일 목록
+- 확인(근거):
+  - 코드 확인: `src/dao/HomeworkSimilarityRunDao.java`, `src/dao/HomeworkSimilarityResultDao.java`
+  - 연계 확인: `public_html/classroom/homework_view.jsp`, `public_html/classroom/file_upload.jsp`, `public_html/tutor_lms/api/homework_submit_cancel.jsp`에서 자동 호출 연결
+  - 실행 환경 확인: 로컬 `localhost:8080` 서버 미기동 상태로 HTTP 실호출 검증은 미수행(코드 정적 검증 기준)
 - 최근 갱신: 2026-02-19
 
 ### FLOW-4002: 교수자 LMS > 차시관리 > 추천 탭 동영상 추가 시 시간/인정시간 자동 세팅

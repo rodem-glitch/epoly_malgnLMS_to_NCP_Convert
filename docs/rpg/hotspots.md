@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 14:20
+최근 자동 갱신: 2026-02-19 14:53
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -57,6 +57,12 @@
   - `multipart/form-data` 업로드에서는 `m.ri()`만 쓰면 ID 파라미터가 비는 케이스가 있어 `Form(f)` 우선 파싱을 유지해야 합니다.
   - 제출 상세 API(`homework_user_submission.jsp`)가 `feedback_files`를 함께 내려주므로, 프론트에서 별도 목록 API를 쓰더라도 모달 상세 응답과 데이터 구조를 동일하게 유지해야 회귀를 줄일 수 있습니다.
   - 관련 코드: `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`, `public_html/tutor_lms/api/homework_user_submission.jsp`
+- 교수자 LMS 과제 제출물 일치율 분석 운영 주의:
+  - 결과 저장은 임계치(`threshold_score`, 기본 70) 이상 쌍만 수행합니다. 임계치가 너무 높으면 결과가 0건으로 보일 수 있으니, 목록 조회 API의 `min_score`와 함께 조정해서 확인해야 합니다.
+  - 수동 실행(`homework_similarity_run.jsp`)은 해당 과제 결과를 전량 재생성합니다. 실행 중 동시 제출/취소가 많으면 자동 증분 실행과 순서가 엇갈릴 수 있어 최신 `run_id` 기준으로 화면 표시하는 것이 안전합니다.
+  - 자동화는 `classroom/homework_view.jsp`(제출/수정), `classroom/file_upload.jsp`(제출첨부 업로드), `tutor_lms/api/homework_submit_cancel.jsp`(제출취소)에서 증분 실행됩니다. 이 중 하나라도 빠지면 일치율이 오래된 값으로 남을 수 있습니다.
+  - 첨부 유사도는 `CL_FILE(module='homework_{homework_id}')` 파일명 토큰 기반입니다. 파일 해시 비교가 아니므로 “파일명만 바꾼 동일 파일”은 완전 탐지가 어려운 점을 운영에 안내해야 합니다.
+  - 관련 코드: `public_html/ddl_homework_similarity.sql`, `src/dao/HomeworkSimilarityRunDao.java`, `src/dao/HomeworkSimilarityResultDao.java`, `public_html/tutor_lms/api/homework_similarity_run.jsp`, `public_html/tutor_lms/api/homework_similarity_list.jsp`, `public_html/tutor_lms/api/homework_similarity_detail.jsp`
 - 교수자 LMS 수강생 상세 조회(개인정보) 주의:
   - `public_html/tutor_lms/api/student_detail.jsp`는 `user_id`만 필수이며, 상세 조회 API 자체는 개인정보 로그를 남기지 않습니다(과도한 로그 방지).
   - `course_id`가 있을 때 권한은 수강생 목록과 동일 기준(주강사/과정담당자/개설자/관리자)으로 검사합니다. 목록 API와 권한식이 달라지면 “목록은 보이는데 상세는 403” 회귀가 발생합니다.

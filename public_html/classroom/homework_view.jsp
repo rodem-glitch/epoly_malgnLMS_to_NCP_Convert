@@ -9,6 +9,7 @@ HomeworkUserDao homeworkUser = new HomeworkUserDao();
 HomeworkTaskDao homeworkTask = new HomeworkTaskDao();
 CourseProgressDao courseProgress = new CourseProgressDao();
 ClFileDao file = new ClFileDao();
+HomeworkSimilarityResultDao homeworkSimilarity = new HomeworkSimilarityResultDao();
 
 //정보
 DataSet info = courseModule.query(
@@ -125,6 +126,25 @@ if(m.isPost() && f.validate()) {
 			m.jsAlert(_message.get("alert.common.error_modify")); return;
 		}
 		courseUser.updateTotalScore(cuid);					//총점 업데이트
+	}
+
+	// 왜: 학생 제출/수정 직후 유사도 결과를 자동 갱신해야 교수자가 최신 의심쌍을 확인할 수 있습니다.
+	Hashtable<String, Object> similarityOut = homeworkSimilarity.runIncrementalAnalysis(
+		siteId,
+		courseId,
+		id,
+		cuid,
+		userId,
+		70.0,
+		"AUTO_SUBMIT"
+	);
+	if(!"Y".equals(similarityOut.get("success"))) {
+		m.log(
+			"homework_similarity",
+			"auto_submit_failed course_id=" + courseId + ", homework_id=" + id + ", course_user_id=" + cuid + ", run_id=" + similarityOut.get("run_id")
+			+ ", pair_total=" + similarityOut.get("pair_total") + ", pair_saved=" + similarityOut.get("pair_saved")
+			+ ", user_id=" + userId + ", site_id=" + siteId + ", message=" + similarityOut.get("message")
+		);
 	}
 
 	m.jsAlert("제출이 완료되었습니다.");
