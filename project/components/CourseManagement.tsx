@@ -22,6 +22,7 @@ import {
   Plus,
   BookOpen,
   Printer,
+  Paperclip,
 } from 'lucide-react';
 import { SessionEditModal } from './SessionEditModal';
 import { CourseInfoTab } from './CourseInfoTabs';
@@ -1871,6 +1872,7 @@ const isHaksaCourse =
         totalScore: Number(row.assign_score ?? 100),
         submitted: Number(row.submitted_cnt ?? 0),
         total: Number(row.total_cnt ?? 0),
+        homeworkFile: row.homework_file || '',
       }));
       setHomeworks(mapped);
     } catch (e) {
@@ -1971,6 +1973,7 @@ const isHaksaCourse =
       dueDate: parsedEnd.date,
       dueTime: parsedEnd.time || '23:59',
       totalScore: homework.totalScore || 100,
+      existingFileName: homework.homeworkFile || '',
     });
     setShowEditModal(true);
   };
@@ -2087,6 +2090,15 @@ const isHaksaCourse =
                         <span className="w-24 text-gray-500">제출 현황</span>
                         <span className="text-gray-900">{assignment.submitted} / {assignment.total}명</span>
                       </div>
+                      {assignment.homeworkFile && (
+                        <div className="flex items-center">
+                          <span className="w-24 text-gray-500">첨부파일</span>
+                          <span className="flex items-center gap-1.5 text-blue-600">
+                            <Paperclip className="w-3.5 h-3.5" />
+                            <span className="truncate max-w-[200px]">{assignment.homeworkFile}</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   

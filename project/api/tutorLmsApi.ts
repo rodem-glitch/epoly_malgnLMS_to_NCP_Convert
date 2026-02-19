@@ -629,6 +629,7 @@ export type TutorHomeworkRow = {
   total_cnt?: number;
   submitted_cnt?: number;
   confirmed_cnt?: number;
+  homework_file?: string;
 };
 
 export type TutorHomeworkUserRow = {

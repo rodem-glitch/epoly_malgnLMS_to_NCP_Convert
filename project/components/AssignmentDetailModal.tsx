@@ -1,4 +1,4 @@
-import { X, Edit, Calendar, Award, Users, FileText, Clock } from 'lucide-react';
+import { X, Edit, Calendar, Award, Users, FileText, Clock, Paperclip, Download } from 'lucide-react';
 
 interface AssignmentDetailModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface AssignmentDetailModalProps {
     totalScore?: number;
     submitted?: number;
     total?: number;
+    homeworkFile?: string;
   } | null;
 }
 
@@ -122,6 +123,33 @@ export function AssignmentDetailModal({
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* 첨부파일 */}
+          <div>
+            <div className="flex items-center gap-2 text-gray-500 text-sm mb-2">
+              <Paperclip className="w-4 h-4" />
+              <span>첨부파일</span>
+            </div>
+            {assignment.homeworkFile ? (
+              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <Paperclip className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span className="flex-1 text-sm text-blue-900 font-medium truncate">
+                  {assignment.homeworkFile}
+                </span>
+                <a
+                  href={`/common/file/download.jsp?filename=${encodeURIComponent(assignment.homeworkFile)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  다운로드
+                </a>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">첨부파일 없음</p>
+            )}
           </div>
         </div>
 
