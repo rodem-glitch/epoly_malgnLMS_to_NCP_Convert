@@ -39,7 +39,7 @@ DataSet list = courseUser.query(
 	+ " , u.login_id, u.user_nm "
 	+ " , cu.start_date, cu.end_date, cu.progress_ratio, cu.total_score "
 	+ " , cu.complete_status, cu.complete_yn, cu.complete_no, cu.complete_date "
-	+ " , cu.close_yn, cu.close_date "
+	+ " , cu.close_yn, cu.close_date, cu.fail_reason "
 	+ " FROM " + courseUser.table + " cu "
 	+ " INNER JOIN " + user.table + " u ON u.id = cu.user_id AND u.status != -1 "
 	+ " WHERE cu.site_id = " + siteId + " AND cu.course_id = " + courseId + " AND cu.status IN (1,3) "
@@ -57,7 +57,11 @@ while(list.next()) {
 	if("Y".equals(list.s("close_yn"))) status = "종료";
 	else if("P".equals(list.s("complete_status"))) status = "합격";
 	else if("C".equals(list.s("complete_status"))) status = "수료";
-	else if("F".equals(list.s("complete_status"))) status = "미수료";
+	else if("F".equals(list.s("complete_status"))) {
+		// 왜: 정규과정에서 결석 기준으로 탈락한 경우는 운영 요청대로 "F"를 바로 보여줍니다.
+		if("R".equals(cinfo.s("course_type")) && "absence_f".equals(list.s("fail_reason"))) status = "F";
+		else status = "미수료";
+	}
 	else {
 		if(!"".equals(list.s("start_date")) && 0 > m.diffDate("D", list.s("start_date"), today)) status = "대기";
 		else if(!"".equals(list.s("end_date")) && 0 < m.diffDate("D", list.s("end_date"), today)) status = "학습종료";

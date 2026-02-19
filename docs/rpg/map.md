@@ -5,10 +5,10 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 15:45
+최근 자동 갱신: 2026-02-19 16:05
 
-- JSP 총합(전체): 1238
-- JSP(public_html): 1237 (sysop: 715, api: 18)
+- JSP 총합(전체): 1240
+- JSP(public_html): 1239 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 181
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 106
@@ -81,6 +81,11 @@
 | 담당과목 > 과제관리: 교수자 첨부파일 확인/다운로드/삭제/재업로드 백엔드 보강 | `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `POST public_html/tutor_lms/api/homework_delete.jsp`, `GET public_html/main/download_file.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.homework_file`), `src/dao/CourseModuleDao.java` | (React API 응답 JSON) | 목록 API에 `homework_file_*`(conv/ek/download_url) 추가, 수정 API에 `delete_homework_file_yn` 지원, 과제 최종 삭제 시 물리 파일 정리 |
 | 담당과목 > 과제관리: 동일 과제 다중 강의 동시 등록 | `POST public_html/tutor_lms/api/homework_insert.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK`), `src/dao/CourseModuleDao.java`(`LM_COURSE_MODULE`) | (React API 응답 JSON) | `course_id`(단일) + `course_ids`(복수, 쉼표) 동시 지원. 과목별 권한/존재 검증 후 가능한 강의에만 배치하고 실패 과목 목록(`rst_failed_courses`) 반환 |
 | 담당과목 > 과제관리: 과제별 제출첨부 허용 파일형식 옵션 | `POST public_html/tutor_lms/api/homework_insert.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/classroom/file_upload.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.submit_file_ext_mode/submit_file_exts`) | `public_html/ddl_homework_submit_file_ext.sql` | 과제별 프리셋/직접입력 확장자 저장 후 학생 제출 업로드에서 서버 강제 검증(우회 업로드 차단) |
+
+## 최근 작업(교수자 출석 자동 판정)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 결석 n회 이상 자동 판정(F/미수료) + 출석 통합 요약 API | `POST public_html/tutor_lms/api/course_evaluation_update.jsp`, `GET public_html/tutor_lms/api/attendance_course_summary.jsp`, `POST public_html/tutor_lms/api/attendance_absence_apply.jsp`, `GET public_html/tutor_lms/api/progress_students.jsp`, `GET public_html/tutor_lms/api/completion_list.jsp` | `src/dao/CourseUserDao.java`(`LM_COURSE_USER.complete_status/fail_reason`, `LM_COURSE.limit_absence_yn/limit_absence_cnt`), `src/dao/CourseProgressDao.java`(`LM_COURSE_PROGRESS.complete_yn`), `LM_COURSE_LESSON.progress_yn` | (React API 응답 JSON) | 정규(`course_type='R'`) + 결석 초과는 상태 라벨 `F`, 비정규는 `미수료`로 표시. 수동 출석 변경 시 즉시 자동 판정 재계산 |
 
 ## 최근 작업(교수자 수강생 상세 조회)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |

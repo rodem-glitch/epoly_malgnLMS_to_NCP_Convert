@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 15:45
+최근 자동 갱신: 2026-02-19 16:05
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -79,6 +79,12 @@
   - 연동 장애 대비 다운로드 경로는 `haksa_grade_export.jsp`를 유지하고, 조회 API와 같은 컷오프 규칙으로 등급을 계산해야 합니다.
   - `haksa_grade_export.jsp`에서 `TB_USER.login_id`와 `LM_POLY_COURSE_GRADE.member_key`는 운영 DB 컬레이션이 다를 수 있습니다. 조인 비교식에 컬레이션을 명시하지 않으면 SQL 에러로 CSV 데이터 행이 모두 누락될 수 있습니다.
   - 관련 코드: `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp`, `public_html/tutor_lms/api/haksa_grade_export.jsp`
+- 교수자 출석 자동 판정(주의):
+  - 결석 기준은 `LM_COURSE.limit_absence_yn/limit_absence_cnt`로 저장됩니다. DDL(`public_html/ddl_course_absence_limit.sql`) 반영 전에는 평가설정 저장 API가 DB 오류로 실패합니다.
+  - 자동 판정은 `CourseUserDao.completeUser()` 기준이므로, 수동 출석 변경(`CourseProgressDao.attendUser`) 직후에도 `completeUser()`를 같이 호출해 상태 지연을 막아야 합니다.
+  - 정규과정(`course_type='R'`)은 결석 초과 사유를 `absence_f`로 기록하고 결과 라벨을 `F`로 노출합니다. 비정규는 같은 `F` 판정이라도 라벨은 `미수료`로 유지합니다.
+  - 결석 횟수 계산은 `LM_COURSE_LESSON(progress_yn='Y') - LM_COURSE_PROGRESS(complete_yn='Y')` 기준입니다. `progress_yn` 조건이 빠지면 출석 기준이 과대 계산될 수 있습니다.
+  - 관련 코드: `src/dao/CourseUserDao.java`, `src/dao/CourseProgressDao.java`, `public_html/tutor_lms/api/attendance_course_summary.jsp`, `public_html/tutor_lms/api/attendance_absence_apply.jsp`, `public_html/tutor_lms/api/progress_students.jsp`, `public_html/tutor_lms/api/completion_list.jsp`
 - Resin 실행 conf 경로:
   - IntelliJ 실행 기준은 `.idea/runConfigurations/Resin.xml`의 `SCRIPT_OPTIONS`입니다.
   - 현재 기준값은 `console --conf C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml`입니다.

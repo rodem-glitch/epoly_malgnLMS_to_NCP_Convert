@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 15:45
+최근 자동 갱신: 2026-02-19 16:05
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -618,6 +618,37 @@
   - API 검증(실호출): `POST http://localhost:8081/tutor/content-recommend/lessons`에 과목명(`전기전자기초/반도체 공정 실무/영어 커뮤니케이션/스마트팩토리 데이터분석`)별 호출 시 상위 결과 제목군이 서로 다름을 확인
   - API 검증(빈 컨텍스트): `courseName/lessonTitle/lessonDescription/keywords` 모두 빈값이면 `NCS기반교육과정개발...`, `영어...`, `OTT...` 등 고정 패턴이 재현됨(입력 누락 시 동일 추천 원인)
 - 최근 갱신: 2026-02-11
+
+### FLOW-2004: 교수자 출석 기준(결석 n회) 자동 판정 + 통합 관리
+- 사용자 동작(의도):
+  - 교수자가 과목별 결석 기준을 저장하고, 결석 기준 초과자를 한 번에 자동 판정하고 싶음
+  - 출석 탭에서 과목 전체 위험 인원을 한 번에 보고 싶음
+- 진입점:
+  - 기준 저장: `public_html/tutor_lms/api/course_evaluation_update.jsp`
+  - 과목 요약: `public_html/tutor_lms/api/attendance_course_summary.jsp`
+  - 수강생 출석 상세: `public_html/tutor_lms/api/progress_students.jsp` (`lesson_id=-1` 전체보기)
+  - 일괄 자동 판정: `public_html/tutor_lms/api/attendance_absence_apply.jsp`
+  - 판정 결과 조회: `public_html/tutor_lms/api/completion_list.jsp`
+- 처리(핵심):
+  - 평가설정 저장 시 `limit_absence_yn`, `limit_absence_cnt`를 같이 저장
+  - `CourseUserDao.completeUser()/closeUser()`에서 결석 횟수(`총 진도차시 - 완료차시`)를 계산해, 기준 이상이면 즉시 `complete_status='F'`
+  - 정규(`course_type='R'`)는 결석 사유를 `absence_f`로 기록해 결과 화면 라벨을 `F`로 표기
+  - 비정규는 동일한 `F` 판정이지만 화면 라벨은 `미수료`로 표기
+  - `CourseProgressDao.attendUser()`에서 수동 출석 변경 직후 `completeUser()`를 호출해 판정 지연을 방지
+  - 과목 요약 API는 결석 기준 초과 인원(`at_risk_cnt`)을 과목 단위로 집계해 반환
+- DB:
+  - 과정 기준: `LM_COURSE.limit_absence_yn`, `LM_COURSE.limit_absence_cnt`
+  - 수강 상태: `LM_COURSE_USER.complete_status`, `LM_COURSE_USER.complete_yn`, `LM_COURSE_USER.fail_reason`
+  - 진도/출석 집계: `LM_COURSE_PROGRESS.complete_yn`, `LM_COURSE_LESSON.progress_yn`
+  - DDL: `public_html/ddl_course_absence_limit.sql`
+- 출력:
+  - 과목 요약 JSON: 결석 기준 사용여부/기준횟수/위험인원(`at_risk_cnt`)
+  - 수강생 JSON: `absence_cnt`, `absence_fail_yn`, `absence_status_label`
+  - 수료 목록 JSON: 정규 + 결석초과(`fail_reason=absence_f`)는 상태 `F`
+- 확인(근거):
+  - 코드 경로 확인: `src/dao/CourseUserDao.java`, `src/dao/CourseProgressDao.java`, `public_html/tutor_lms/api/course_evaluation_update.jsp`, `public_html/tutor_lms/api/attendance_course_summary.jsp`, `public_html/tutor_lms/api/attendance_absence_apply.jsp`, `public_html/tutor_lms/api/progress_students.jsp`, `public_html/tutor_lms/api/completion_list.jsp`
+  - 수동 출석 변경 후 판정 재계산 호출 확인: `CourseProgressDao.attendUser()` 내부 `courseUser.completeUser(...)`
+- 최근 갱신: 2026-02-19
 
 ### FLOW-4010: 학사(정규) 평가기준 저장 시 성적결과 즉시 반영 + 성적 CSV 다운로드
 - 사용자 동작(의도):
