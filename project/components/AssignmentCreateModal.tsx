@@ -359,14 +359,76 @@ export function AssignmentCreateModal({
               </div>
               <div>
                 <label className="block text-sm text-gray-700 mb-2">허용 파일 형식</label>
-                <input
-                  type="text"
-                  value={assignmentData.fileTypes}
-                  onChange={(e) => setAssignmentData({ ...assignmentData, fileTypes: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="예: .pdf, .docx, .zip"
-                />
-                <p className="text-sm text-gray-500 mt-1">쉼표로 구분하여 입력하세요</p>
+                {(() => {
+                  const FILE_TYPE_OPTIONS = [
+                    { ext: '.pdf', label: 'PDF' },
+                    { ext: '.docx', label: 'DOCX' },
+                    { ext: '.hwp', label: 'HWP' },
+                    { ext: '.pptx', label: 'PPTX' },
+                    { ext: '.xlsx', label: 'XLSX' },
+                    { ext: '.zip', label: 'ZIP' },
+                    { ext: '.jpg', label: 'JPG' },
+                    { ext: '.png', label: 'PNG' },
+                    { ext: '.txt', label: 'TXT' },
+                    { ext: '.html', label: 'HTML' },
+                    { ext: '.py', label: 'PY' },
+                    { ext: '.java', label: 'JAVA' },
+                  ];
+                  const selected = (assignmentData.fileTypes || '')
+                    .split(',')
+                    .map((s: string) => s.trim().toLowerCase())
+                    .filter(Boolean);
+                  const allSelected = selected.length === FILE_TYPE_OPTIONS.length &&
+                    FILE_TYPE_OPTIONS.every((o) => selected.includes(o.ext));
+                  const toggleExt = (ext: string) => {
+                    const next = selected.includes(ext)
+                      ? selected.filter((s: string) => s !== ext)
+                      : [...selected, ext];
+                    setAssignmentData({ ...assignmentData, fileTypes: next.join(', ') });
+                  };
+                  const toggleAll = () => {
+                    if (allSelected) {
+                      setAssignmentData({ ...assignmentData, fileTypes: '' });
+                    } else {
+                      setAssignmentData({
+                        ...assignmentData,
+                        fileTypes: FILE_TYPE_OPTIONS.map((o) => o.ext).join(', '),
+                      });
+                    }
+                  };
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={toggleAll}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                          allSelected
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        전체
+                      </button>
+                      {FILE_TYPE_OPTIONS.map((opt) => {
+                        const active = selected.includes(opt.ext);
+                        return (
+                          <button
+                            key={opt.ext}
+                            type="button"
+                            onClick={() => toggleExt(opt.ext)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                              active
+                                ? 'bg-blue-100 text-blue-700 border-blue-300'
+                                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>
