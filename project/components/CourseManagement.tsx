@@ -5665,6 +5665,27 @@ function HaksaGradingContent({
         >
           {recalcLoading ? '재계산 중...' : '성적 재계산'}
         </button>
+        <button
+          onClick={() => {
+            // 왜: 화면에 보이는 학생 성적을 그대로 CSV로 내려받아, 교수자가 엑셀로 활용할 수 있게 합니다.
+            const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const filename = `haksa_grades_${ymd}.csv`;
+            const headers = ['No', '이름', '학번', '점수', '성적'];
+            const rows = students.map((s, i) => ([
+              i + 1,
+              s.name ?? '',
+              s.studentId ?? '',
+              s.score ?? 0,
+              s.grade || '미판정',
+            ]));
+            downloadCsv(filename, headers, rows);
+          }}
+          disabled={students.length === 0}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          <span>성적표 다운로드(CSV)</span>
+        </button>
 
         {selectedIds.length > 0 && (
           <div className="flex items-center gap-2">

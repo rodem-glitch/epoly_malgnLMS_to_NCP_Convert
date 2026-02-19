@@ -754,7 +754,13 @@ function EvaluationTab({
       });
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
-      alert('저장되었습니다.');
+      // 왜: 배점 비율이 바뀌면 기존 총점이 달라지므로, 즉시 재계산해야 성적 탭에서 최신 결과를 볼 수 있습니다.
+      try {
+        await tutorLmsApi.recalcGrades({ courseId });
+        alert('저장되었습니다.\n배점 변경에 따라 성적이 자동 재계산되었습니다.');
+      } catch {
+        alert('저장되었습니다.\n(성적 재계산은 실패했습니다. 성적관리 탭에서 수동 재계산해 주세요.)');
+      }
       await onReload();
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : '저장 중 오류가 발생했습니다.');
