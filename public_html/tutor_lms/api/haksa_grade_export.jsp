@@ -1,4 +1,11 @@
 <%@ page pageEncoding="utf-8" %><%@ page import="org.json.*" %><%@ include file="init.jsp" %><%!
+// 왜: CSV 컬럼 안에 쉼표/줄바꿈/따옴표가 들어오면 엑셀 열이 깨지므로 서버에서 안전하게 이스케이프합니다.
+private String csv(String value) {
+	String v = value == null ? "" : value;
+	v = v.replace("\"", "\"\"");
+	return "\"" + v + "\"";
+}
+
 private String resolveGradeByScore(int score, int aPlus, int a, int bPlus, int b, int cPlus, int c, int dPlus, int d) {
 	int safeScore = score;
 	if(safeScore < 0) safeScore = 0;
@@ -35,7 +42,7 @@ private int parseCutoff(JSONObject cutoffs, String key) throws Exception {
 %><%
 
 //왜 필요한가:
-//- 학사 과목의 성적(A/B/C/D/F)을 DB에서 읽어옵니다.
+//- 평가 연동 상태와 상관없이, 교수자가 현재 성적 데이터를 즉시 내려받아 확인/공유할 수 있어야 합니다.
 
 String courseCode = m.rs("course_code");
 String openYear = m.rs("open_year");
@@ -50,8 +57,16 @@ if("".equals(courseCode) || "".equals(openYear) || "".equals(openTerm) || "".equ
 	return;
 }
 
-PolyCourseGradeDao grade = new PolyCourseGradeDao();
-PolyCourseSettingDao setting = new PolyCourseSettingDao();
+m.log(
+	"haksa_grade_export",
+	"export_start manager_id=" + userId
+	+ ", site_id=" + siteId
+	+ ", course_code=" + courseCode
+	+ ", open_year=" + openYear
+	+ ", open_term=" + openTerm
+	+ ", bunban_code=" + bunbanCode
+	+ ", group_code=" + groupCode
+);
 
 int cutoffAPlus = 95;
 int cutoffA = 90;
@@ -63,6 +78,7 @@ int cutoffDPlus = 65;
 int cutoffD = 60;
 boolean useCutoff = false;
 
+PolyCourseSettingDao setting = new PolyCourseSettingDao();
 DataSet sinfo = setting.find(
 	"site_id = " + siteId
 	+ " AND course_code = ? AND open_year = ? AND open_term = ? AND bunban_code = ? AND group_code = ?"
@@ -90,31 +106,47 @@ if(sinfo.next() && !"".equals(sinfo.s("eval_json"))) {
 	}
 }
 
-ArrayList<Object> params = new ArrayList<Object>();
-params.add(siteId);
-params.add(courseCode);
-params.add(openYear);
-params.add(openTerm);
-params.add(bunbanCode);
-params.add(groupCode);
-
+PolyCourseGradeDao grade = new PolyCourseGradeDao();
+UserDao user = new UserDao();
 DataSet list = grade.query(
-	" SELECT member_key student_id, grade, score "
-	+ " FROM " + grade.table
-	+ " WHERE site_id = ? AND course_code = ? AND open_year = ? AND open_term = ? "
-	+ " AND bunban_code = ? AND group_code = ? AND status != -1 "
-	+ " ORDER BY member_key ASC "
-	, params.toArray()
+	" SELECT g.member_key student_id, IFNULL(u.user_nm, '') user_nm, g.score, g.grade "
+	+ " FROM " + grade.table + " g "
+	// 왜: 운영 DB에서 login_id/member_key 컬레이션이 달라 조인 비교 시 SQL 에러가 발생하므로 동일 컬레이션으로 맞춥니다.
+	+ " LEFT JOIN " + user.table + " u ON u.site_id = " + siteId
+	+ " AND u.login_id COLLATE utf8mb4_unicode_ci = g.member_key COLLATE utf8mb4_unicode_ci"
+	+ " AND u.status != -1 "
+	+ " WHERE g.site_id = " + siteId
+	+ " AND g.course_code = ? AND g.open_year = ? AND g.open_term = ? "
+	+ " AND g.bunban_code = ? AND g.group_code = ? AND g.status != -1 "
+	+ " ORDER BY g.member_key ASC "
+	, new Object[] { courseCode, openYear, openTerm, bunbanCode, groupCode }
 );
 
-list.first();
+String filename = "haksa_grade_" + courseCode + "_" + openYear + "_" + openTerm + "_" + m.time("yyyyMMddHHmmss") + ".csv";
+
+response.reset();
+response.setContentType("text/csv; charset=UTF-8");
+response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+response.setHeader("Pragma", "no-cache");
+response.setHeader("Expires", "0");
+
+out.print('\uFEFF');
+out.print("No,학번,이름,점수,등급\n");
+
+int rowNo = 0;
+int queriedCount = list.size();
+// 왜: DataSet.first() 뒤에 next()를 바로 호출하면 단건 조회 시 첫 행이 건너뛰는 케이스가 있어 CSV 행 누락이 발생합니다.
+// 그래서 export는 next()만으로 처음 행부터 순회해 실제 조회 행을 모두 출력합니다.
 while(list.next()) {
+	rowNo++;
 	int score = list.i("score");
 	if(score < 0) score = 0;
 	if(score > 100) score = 100;
-	list.put("score", score);
+
+	String gradeValue = list.s("grade");
 	if(useCutoff) {
-		list.put("grade", resolveGradeByScore(
+		gradeValue = resolveGradeByScore(
 			score,
 			cutoffAPlus,
 			cutoffA,
@@ -124,14 +156,24 @@ while(list.next()) {
 			cutoffC,
 			cutoffDPlus,
 			cutoffD
-		));
+		);
 	}
+
+	out.print(rowNo + ",");
+	out.print(csv(list.s("student_id")) + ",");
+	out.print(csv(list.s("user_nm")) + ",");
+	out.print(score + ",");
+	out.print(csv(gradeValue) + "\n");
 }
 
-result.put("rst_code", "0000");
-result.put("rst_message", "성공");
-result.put("rst_count", list.size());
-result.put("rst_data", list);
-result.print();
+m.log(
+	"haksa_grade_export",
+	"export_done manager_id=" + userId
+	+ ", site_id=" + siteId
+	+ ", course_code=" + courseCode
+	+ ", queried_count=" + queriedCount
+	+ ", row_count=" + rowNo
+	+ ", use_cutoff=" + (useCutoff ? "Y" : "N")
+);
 
 %>

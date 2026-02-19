@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 14:53
+최근 자동 갱신: 2026-02-19 15:45
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -618,6 +618,37 @@
   - API 검증(실호출): `POST http://localhost:8081/tutor/content-recommend/lessons`에 과목명(`전기전자기초/반도체 공정 실무/영어 커뮤니케이션/스마트팩토리 데이터분석`)별 호출 시 상위 결과 제목군이 서로 다름을 확인
   - API 검증(빈 컨텍스트): `courseName/lessonTitle/lessonDescription/keywords` 모두 빈값이면 `NCS기반교육과정개발...`, `영어...`, `OTT...` 등 고정 패턴이 재현됨(입력 누락 시 동일 추천 원인)
 - 최근 갱신: 2026-02-11
+
+### FLOW-4010: 학사(정규) 평가기준 저장 시 성적결과 즉시 반영 + 성적 CSV 다운로드
+- 사용자 동작(의도):
+  - 교수자가 학사 과목 `평가항목`을 저장하면, 성적 결과 조회에 즉시 반영되길 원함
+  - 연동 이슈가 있어도 학사 성적을 엑셀(CSV)로 내려받길 원함
+- 진입점:
+  - 평가 저장 API: `public_html/tutor_lms/api/haksa_course_eval_update.jsp`
+  - 성적 조회 API: `public_html/tutor_lms/api/haksa_grade_list.jsp`
+  - 성적 저장 API: `public_html/tutor_lms/api/haksa_grade_update.jsp`
+  - 성적 다운로드 API(신규): `public_html/tutor_lms/api/haksa_grade_export.jsp`
+- 처리(핵심):
+  - `haksa_course_eval_update.jsp`에서 `eval_json.weights`를 `attendance/midterm/final/assignment/etc/participation` 6개 항목으로 검증하고 합계 100을 강제
+  - `haksa_course_eval_update.jsp`에서 `eval_json.cutoffs`를 검증(A+~D)한 뒤 저장
+  - 저장 직후 `LM_POLY_COURSE_GRADE.score` 기준으로 등급을 서버에서 재계산해 `grade`를 즉시 갱신
+  - `haksa_grade_list.jsp`는 조회 시에도 같은 컷오프 기준으로 등급을 다시 계산해 반환(조회 일관성)
+  - `haksa_grade_update.jsp`는 프론트 전달 `grade`를 그대로 저장하지 않고, 서버 컷오프 기준으로 재계산해 저장
+  - `haksa_grade_export.jsp`는 현재 성적을 CSV로 내려주며, 컷오프가 있으면 서버 기준 등급으로 계산해 포함
+  - `haksa_grade_export.jsp`는 `TB_USER.login_id`와 `LM_POLY_COURSE_GRADE.member_key` 조인 시 컬레이션 충돌을 막기 위해 비교 컬레이션을 명시해 조회
+- DB:
+  - 평가 기준: `src/dao/PolyCourseSettingDao.java` → `LM_POLY_COURSE_SETTING.eval_json`
+  - 학사 성적: `src/dao/PolyCourseGradeDao.java` → `LM_POLY_COURSE_GRADE(score, grade)`
+  - 사용자명 조인(내보내기): `src/dao/UserDao.java` → `TB_USER(login_id, user_nm)`
+- 출력:
+  - 평가 저장: `rst_changed_count`, `rst_target_count`
+  - 성적 조회/저장: 컷오프 기준 등급 반환/저장
+  - 성적 다운로드: `text/csv` 첨부 응답(`haksa_grade_*.csv`)
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp`, `public_html/tutor_lms/api/haksa_grade_export.jsp`
+  - 정적 검증: 컷오프 검증/재계산/로그 분기와 CSV 헤더(`No,학번,이름,점수,등급`)를 파일에서 확인
+  - 실기동 검증(2026-02-19): `GET /tutor_lms/api/haksa_grade_export.jsp?course_code=T26PF12&open_year=2026&open_term=10&bunban_code=12&group_code=U` 호출 시 CSV 본문 1행(`haksa_st26_12`, `88`, `B`) 출력, 로그 `queried_count=1`, `row_count=1` 확인
+- 최근 갱신: 2026-02-19
 
 ### FLOW-5001: GCP Linux VM + Firebase Hosting 원클릭 자동 셋업
 - 사용자 동작(의도): 사용자가 스크립트 1회 실행으로 `www(Firebase 짧은 링크)`와 `VM(Resin JSP + Spring API + MySQL + Qdrant)`을 배포하고, 필요 시 기존 DB까지 자동 이관

@@ -5,10 +5,10 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 14:53
+최근 자동 갱신: 2026-02-19 15:45
 
-- JSP 총합(전체): 1237
-- JSP(public_html): 1236 (sysop: 715, api: 18)
+- JSP 총합(전체): 1238
+- JSP(public_html): 1237 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 181
 - React(Vite) 프로젝트 파일 수(project, node_modules 제외): 106
@@ -86,6 +86,12 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
 | 담당과목/수강생추가 화면용 학생 상세 조회(API 단일 책임) | `public_html/tutor_lms/api/student_detail.jsp` | `src/dao/UserDao.java`(`TB_USER`), `src/dao/UserDeptDao.java`(`TB_USER_DEPT`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER`) | (React API 응답 JSON) | 상세 API는 데이터 조회만 수행. 개인정보 로그는 기존 `public_html/tutor_lms/api/privacy_log.jsp`(가려진 정보 보기) 경로를 그대로 사용 |
+
+## 최근 작업(학사 성적 연동/다운로드)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 학사 평가기준 저장 시 성적결과 즉시 반영 | `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp` | `src/dao/PolyCourseSettingDao.java`(`LM_POLY_COURSE_SETTING.eval_json`), `src/dao/PolyCourseGradeDao.java`(`LM_POLY_COURSE_GRADE.score/grade`) | (React API 응답 JSON) | `weights(attendance/midterm/final/assignment/etc/participation)` 합계 100 검증 후 저장, 평가 저장 직후 등급 재계산 + 조회/저장 시 서버 컷오프 기준 재판정 |
+| 학사 성적 CSV 다운로드 API 추가 | `public_html/tutor_lms/api/haksa_grade_export.jsp` | `src/dao/PolyCourseGradeDao.java`, `src/dao/PolyCourseSettingDao.java`, `src/dao/UserDao.java` | (CSV 첨부 다운로드) | 연동 상태와 무관하게 `No/학번/이름/점수/등급` CSV 즉시 다운로드 제공. `login_id/member_key` 조인 컬레이션 충돌 방지를 위해 비교 컬레이션 명시 |
 
 ## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |

@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 14:53
+최근 자동 갱신: 2026-02-19 15:45
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -71,6 +71,14 @@
   - 차시 수강기간은 동영상/시험은 기존대로 차단하지만, 과제는 차시 기간 밖이어도 `보기` 이동을 허용합니다(사용성 이슈로 예외).
   - 서버에서도 동일 예외가 적용되므로, “차시 기간 밖 과제 차단”이 필요해지면 이 정책부터 재검토해야 합니다.
   - 관련 코드: `public_html/html/classroom/index.html`, `public_html/classroom/haksa_module.jsp`
+- 학사(정규) 평가기준/성적연동(주의):
+  - 평가항목 구성은 `weights.attendance/midterm/final/assignment/etc/participation` 6개 키와 합계 100을 강제합니다. 키 누락/합계 불일치면 저장이 차단됩니다.
+  - `eval_json.cutoffs`(A+~D)가 잘못 저장되면 성적 조회/저장/다운로드가 모두 실패할 수 있으므로 저장 API에서 즉시 검증해야 합니다.
+  - 학사 성적 저장 API는 프론트 전달 `grade`를 그대로 저장하지 않고 서버 컷오프로 다시 계산합니다. 프론트 컷오프와 서버 컷오프가 다르면 저장 직후 표시가 달라질 수 있습니다.
+  - 평가기준 저장 시 `LM_POLY_COURSE_GRADE` 전체를 즉시 재판정하므로, 수강생 수가 많은 반은 저장 응답시간이 늘어날 수 있습니다.
+  - 연동 장애 대비 다운로드 경로는 `haksa_grade_export.jsp`를 유지하고, 조회 API와 같은 컷오프 규칙으로 등급을 계산해야 합니다.
+  - `haksa_grade_export.jsp`에서 `TB_USER.login_id`와 `LM_POLY_COURSE_GRADE.member_key`는 운영 DB 컬레이션이 다를 수 있습니다. 조인 비교식에 컬레이션을 명시하지 않으면 SQL 에러로 CSV 데이터 행이 모두 누락될 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp`, `public_html/tutor_lms/api/haksa_grade_export.jsp`
 - Resin 실행 conf 경로:
   - IntelliJ 실행 기준은 `.idea/runConfigurations/Resin.xml`의 `SCRIPT_OPTIONS`입니다.
   - 현재 기준값은 `console --conf C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml`입니다.
