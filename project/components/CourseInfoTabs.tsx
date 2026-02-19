@@ -448,7 +448,7 @@ function BasicInfoTab({
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">개설학기</label>
-                <div className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-900 text-sm">{course?.haksaOpenTerm || '-'}</div>
+                <div className="px-4 py-2.5 bg-gray-50 rounded-lg text-gray-900 text-sm">{course?.haksaOpenTermConv || course?.haksaOpenTerm || '-'}</div>
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">주차</label>

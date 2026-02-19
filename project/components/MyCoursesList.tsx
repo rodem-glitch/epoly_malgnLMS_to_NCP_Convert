@@ -35,6 +35,7 @@ interface Course {
   haksaDeptName?: string;
   haksaWeek?: string;
   haksaOpenTerm?: string;
+  haksaOpenTermConv?: string;
   haksaCourseCode?: string;
   haksaVisible?: string;
   haksaStartdate?: string;
@@ -244,13 +245,23 @@ function MyCoursesListContent({ routeSubPath, routeParams, onRouteChange }: MyCo
       subjectName: row.course_nm_conv || row.subject_nm_conv || row.course_nm || '-',
       programId: Number(row.program_id ?? 0),
       programName: row.program_nm_conv || '-',
-      period: row.period_conv || '-',
+      period: (() => {
+        const raw = row.period_conv || '-';
+        const termConv = (row.haksa_open_term_conv || '').trim();
+        const termRaw = (row.haksa_open_term || '').trim();
+        // 왜: period_conv에 "10학기", "20학기" 같은 raw 코드가 들어있어, 변환된 값으로 치환합니다.
+        if (termConv && termRaw && raw.includes(termRaw + '학기')) {
+          return raw.replace(termRaw + '학기', termConv);
+        }
+        return raw;
+      })(),
       students: Number(row.student_cnt ?? 0),
       status: statusLabel,
       haksaCategory: row.haksa_category || '',
       haksaDeptName: row.haksa_dept_name || '',
       haksaWeek: row.haksa_week || '',
       haksaOpenTerm: row.haksa_open_term || '',
+      haksaOpenTermConv: row.haksa_open_term_conv || '',
       haksaCourseCode: row.haksa_course_code || '',
       haksaVisible: row.haksa_visible || '',
       haksaStartdate: row.haksa_startdate || '',
