@@ -14,6 +14,7 @@ import { AssignmentManagePage } from './components/AssignmentManagePage';
 import { AssignmentTemplateTab } from './components/AssignmentTemplateTab';
 import { FeedbackTemplateTab } from './components/FeedbackTemplateTab';
 import { QnaManagePage } from './components/QnaManagePage';
+import { FaqManagePage } from './components/FaqManagePage';
 import { AttendanceManagePage } from './components/AttendanceManagePage';
 import { VideoGroupManagePage } from './components/VideoGroupManagePage';
 import type { CourseManagementTabId } from './components/CourseManagement';
@@ -27,6 +28,7 @@ const MENU_IDS = [
   'assignment-templates',
   'feedback-templates',
   'qna-manage',
+  'faq-manage',
   'create-course',
   'content-all',
   'content-favorites',
@@ -118,6 +120,7 @@ export default function App() {
   const [contentLibraryExpanded, setContentLibraryExpanded] = useState(false);
   const [examMenuExpanded, setExamMenuExpanded] = useState(false);
   const [assignmentMenuExpanded, setAssignmentMenuExpanded] = useState(false);
+  const [qnaMenuExpanded, setQnaMenuExpanded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // 컴포넌트 재렌더링용 키
   const activeMenu = routeState.menu;
 
@@ -129,6 +132,9 @@ export default function App() {
 
   // 과제 통합관리 하위 메뉴 여부 확인
   const isAssignmentSubMenu = activeMenu === 'assignment-manage' || activeMenu === 'assignment-submissions' || activeMenu === 'assignment-templates' || activeMenu === 'feedback-templates';
+
+  // Q&A 하위 메뉴 여부 확인
+  const isQnaSubMenu = activeMenu === 'qna-manage' || activeMenu === 'faq-manage';
 
   const syncHash = useCallback((route: RouteState, replace = false) => {
     // 왜: 서버 라우팅 없이도 뒤로가기/직접 주소 접근이 되도록 해시를 동기화합니다.
@@ -152,6 +158,9 @@ export default function App() {
     }
     if (route.menu === 'assignment-manage' || route.menu === 'assignment-submissions' || route.menu === 'assignment-templates' || route.menu === 'feedback-templates') {
       setAssignmentMenuExpanded(true);
+    }
+    if (route.menu === 'qna-manage' || route.menu === 'faq-manage') {
+      setQnaMenuExpanded(true);
     }
     if (options?.syncHash !== false) {
       syncHash(route, options?.replaceHash);
@@ -211,6 +220,10 @@ export default function App() {
 
   const handleAssignmentMenuClick = () => {
     setAssignmentMenuExpanded((prev) => !prev);
+  };
+
+  const handleQnaMenuClick = () => {
+    setQnaMenuExpanded((prev) => !prev);
   };
 
   // 현재 화면 새로고침
@@ -476,17 +489,52 @@ export default function App() {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => applyMenu('qna-manage')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-                activeMenu === 'qna-manage'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-sidebar-foreground hover:bg-muted'
-              }`}
-            >
-              <MessageSquare className="w-5 h-5" />
-              <span>Q&A 통합관리</span>
-            </button>
+            <div>
+              <button
+                onClick={handleQnaMenuClick}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-left ${
+                  isQnaSubMenu
+                    ? 'bg-blue-600 text-white'
+                    : 'text-sidebar-foreground hover:bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="w-5 h-5" />
+                  <span>Q&A 통합관리</span>
+                </div>
+                {qnaMenuExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+              {qnaMenuExpanded && (
+                <div className="ml-4 mt-1 flex flex-col gap-1">
+                  <button
+                    onClick={() => applyMenu('qna-manage')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'qna-manage'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>Q&A 관리</span>
+                  </button>
+                  <button
+                    onClick={() => applyMenu('faq-manage')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'faq-manage'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>FAQ 공지 설정</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* === 리소스 === */}
             <div className="mt-3 mb-1 border-t border-border pt-3">
@@ -592,6 +640,8 @@ export default function App() {
               key={refreshKey}
               onOpenCourse={handleOpenCourseFromDashboard}
             />
+          ) : activeMenu === 'faq-manage' ? (
+            <FaqManagePage key={refreshKey} />
           ) : activeMenu === 'create-course' ? (
             <CreateCourseForm
               key={refreshKey}
