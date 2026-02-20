@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 20:41
+최근 자동 갱신: 2026-02-20 12:08
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -75,6 +75,12 @@
   - 학생 기본값: `kopo_st01` / 비밀번호 `Growai!2026`, 교수자(`tutor_lms` 등) 기본값: `kopo_pr01`(`returl` 분기: `member/login.jsp`, `mypage/new_main/index.jsp`)
   - 운영 전환 시에는 하드코딩 제거(또는 서버 설정값 외부화)를 우선 점검해야 하며, 템플릿 위치는 `public_html/html/mypage/new_main_full.html`, `public_html/html/layout/layout_new_main.html`입니다.
 - React 배포 산출물: `public_html/tutor_lms/app` (빌드 누락/정적파일 캐시 이슈)
+- 담당과목 QR 출결(프론트 임시 UI) 주의:
+  - 현재 `project/components/courseManagement/AttendanceTab.tsx`의 QR 발급은 **프론트 타이머 기반 임시 구현**입니다.
+  - 10분 만료/토큰 재사용 방지는 화면 편의용이라서, 실제 운영에서는 백엔드에서 만료시각·대상차시·사용자 권한·중복스캔(1회성) 검증을 반드시 수행해야 합니다.
+  - 출석표의 `출석 칩 클릭 토글(출석↔결석)` 수동 변경도 현재는 프론트 상태(`manualAttendanceOverrides`)만 바뀌며 DB에 저장되지 않습니다.
+  - 수동 변경값은 차시 변경 시 즉시 초기화되므로, 운영 저장이 필요하면 백엔드 업데이트 API/로그 설계를 먼저 확정해야 합니다.
+  - QR 이미지 생성은 외부 URL(`api.qrserver.com`) 미리보기이므로, 망 정책에서 차단되면 이미지 대신 안내 문구가 보일 수 있습니다.
 - 교수자 차시관리 추천 동영상(시간/인정시간) 주의:
   - `public_html/tutor_lms/api/content_recommend.jsp`의 `lessonId`는 데이터셋에 따라 `LM_LESSON.id`(숫자) 또는 콜러스 `media_content_key`(문자열)일 수 있습니다.
   - 숫자 `lessonId`를 media key로 그대로 사용하면 추천 탭 시간 표시(`-`)와 인정시간 자동세팅(0분)이 동시에 깨질 수 있으므로, `LM_LESSON.start_url` 정규화 경로를 유지해야 합니다.

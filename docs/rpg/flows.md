@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 20:41
+최근 자동 갱신: 2026-02-20 12:08
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -421,6 +421,31 @@
   - API 검증(실호출): `POST http://localhost:8081/tutor/content-recommend/lessons`에 과목명(`전기전자기초/반도체 공정 실무/영어 커뮤니케이션/스마트팩토리 데이터분석`)별 호출 시 상위 결과 제목군이 서로 다름을 확인
   - API 검증(빈 컨텍스트): `courseName/lessonTitle/lessonDescription/keywords` 모두 빈값이면 `NCS기반교육과정개발...`, `영어...`, `OTT...` 등 고정 패턴이 재현됨(입력 누락 시 동일 추천 원인)
 - 최근 갱신: 2026-02-11
+
+### FLOW-4004: 교수자 LMS > 담당과목 > 진도/출석 QR 출결 발급 + 수동 출결변경 UI(프론트 임시)
+- 사용자 동작(의도): 교수자가 담당과목의 `진도/출석` 화면에서 QR을 발급한 상태에서도 학생별 출석/결석을 수동으로 바꿔 출결을 보정
+- 진입점:
+  - React 라우팅: `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html`
+  - 화면 컴포넌트: `project/components/courseManagement/AttendanceTab.tsx`
+- 처리(핵심):
+  - 학사/비학사 공통으로 QR 패널(`renderAttendanceQrPanel`)을 표시
+  - 학사 과목은 `selectedSessionId`, 비학사 과목은 `selectedLessonId`를 QR 대상 식별자로 사용
+  - 과목 매핑 ID(`effectiveCourseId`)와 차시 선택이 완료되어야 `QR 생성` 버튼 활성화
+  - QR 생성 시 프론트에서 임시 payload(JSON)를 만들고 `token/issuedAt/expiresAt(10분)`를 포함
+  - QR 이미지는 외부 생성 URL(`api.qrserver.com`)로 미리보기하며, 로딩 실패 시 안내 문구로 대체
+  - 1초 타이머로 남은 시간을 표시하고, 만료 시 QR을 자동 제거(재사용 방지)
+  - 학사 출석표는 `출석` 칩 자체를 클릭하면 `출석↔결석`이 즉시 토글되고, 변경 건수/초기화 버튼을 제공
+  - 수동 변경은 `manualAttendanceOverrides` 프론트 상태에만 반영되며, 차시 변경 시 초기화됨
+  - 현재 단계에서는 백엔드 저장/API 호출 없이 UI + payload 미리보기만 제공
+- DB: 없음(프론트 임시 인터페이스만 구현)
+- 출력:
+  - QR 발급 카드(생성/재생성/즉시 종료/남은 시간/만료 안내)
+  - QR 이미지 + 백엔드 연동용 payload 텍스트 미리보기
+  - 출석표 수동 변경(출석 칩 클릭 토글) + 변경건수/초기화 UI
+- 확인(근거):
+  - 코드 경로 확인: `project/components/courseManagement/AttendanceTab.tsx`
+  - 빌드 확인: `cd project && npm run build` 성공
+- 최근 갱신: 2026-02-20
 
 ### FLOW-5001: GCP Linux VM + Firebase Hosting 원클릭 자동 셋업
 - 사용자 동작(의도): 사용자가 스크립트 1회 실행으로 `www(Firebase 짧은 링크)`와 `VM(Resin JSP + Spring API + MySQL + Qdrant)`을 배포하고, 필요 시 기존 DB까지 자동 이관

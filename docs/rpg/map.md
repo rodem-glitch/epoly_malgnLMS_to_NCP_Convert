@@ -5,13 +5,13 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 20:41
+최근 자동 갱신: 2026-02-20 12:08
 
 - JSP 총합(전체): 1227
 - JSP(public_html): 1226 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 178
-- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 106
+- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 113
 - polytech-lms-api(Java/Spring Boot) Java 파일 수: 147
 
 생성된 인덱스:
@@ -75,6 +75,7 @@
 | 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
 | 과제 > 피드백 관리: 학생 제출물(제목/내용/첨부) 모달 확인 추가 | `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `project/components/HomeworkSubmissionDetailModal.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | “제출물 보기” 버튼으로 제출 본문/첨부파일을 모달에서 확인(파일은 `CL_FILE(module='homework_{homework_id}', module_id=course_user_id)` 기반) |
+| 담당과목 > 진도/출석: QR 출결 발급 + 출석 칩 토글 수동변경 UI(10분 만료) | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/components/courseManagement/AttendanceTab.tsx` | `public_html/tutor_lms/app/assets/*` | 학사/비학사 공통 QR 생성·재생성·즉시종료·10분 타이머 + 학사 출석표 출석 칩 클릭 시 `출석↔결석` 토글(프론트 임시 상태, 백엔드 미연동) |
 
 ## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
