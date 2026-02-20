@@ -25,6 +25,7 @@ import {
   Printer,
   Paperclip,
   AlertTriangle,
+  BarChart3,
 } from 'lucide-react';
 import { SessionEditModal } from './SessionEditModal';
 import { CourseInfoTab } from './CourseInfoTabs';
@@ -4050,6 +4051,104 @@ function GradesTab({ courseId }: { courseId: number }) {
           </table>
         </div>
       )}
+
+      {/* 성적 분포 그래프 */}
+      {!loading && grades.length > 0 && (
+        <GradeDistributionChart grades={grades} />
+      )}
+    </div>
+  );
+}
+
+// 성적 분포 그래프 (CSS-only 가로 바 차트)
+function GradeDistributionChart({ grades }: { grades: any[] }) {
+  // 왜: 10점 단위 구간별 학생 수를 세어 바 차트로 시각화합니다.
+  const bins = [
+    { label: '90~100', min: 90, max: 100 },
+    { label: '80~89', min: 80, max: 89.99 },
+    { label: '70~79', min: 70, max: 79.99 },
+    { label: '60~69', min: 60, max: 69.99 },
+    { label: '50~59', min: 50, max: 59.99 },
+    { label: '40~49', min: 40, max: 49.99 },
+    { label: '30~39', min: 30, max: 39.99 },
+    { label: '20~29', min: 20, max: 29.99 },
+    { label: '10~19', min: 10, max: 19.99 },
+    { label: '0~9', min: 0, max: 9.99 },
+  ];
+
+  const binCounts = bins.map(bin => ({
+    ...bin,
+    count: grades.filter(g => {
+      const score = Number(g.totalScore) || 0;
+      return score >= bin.min && score <= bin.max;
+    }).length,
+  }));
+
+  const maxCount = Math.max(...binCounts.map(b => b.count), 1);
+  const total = grades.length;
+
+  // 평균, 최고, 최저
+  const scores = grades.map(g => Number(g.totalScore) || 0);
+  const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
+  const minScore = scores.length > 0 ? Math.min(...scores) : 0;
+
+  const barColors = [
+    'bg-blue-600', 'bg-blue-500', 'bg-blue-400', 'bg-sky-500',
+    'bg-emerald-500', 'bg-yellow-500', 'bg-orange-400', 'bg-orange-500',
+    'bg-red-400', 'bg-red-500',
+  ];
+
+  return (
+    <div className="mt-6 p-5 bg-white border border-gray-200 rounded-xl">
+      <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <BarChart3 className="w-5 h-5 text-blue-600" />
+        성적 분포
+      </h4>
+
+      {/* 통계 요약 */}
+      <div className="grid grid-cols-4 gap-3 mb-5">
+        <div className="p-3 bg-blue-50 rounded-lg text-center">
+          <div className="text-xs text-blue-600 mb-1">수강생</div>
+          <div className="text-lg font-bold text-blue-900">{total}명</div>
+        </div>
+        <div className="p-3 bg-green-50 rounded-lg text-center">
+          <div className="text-xs text-green-600 mb-1">평균</div>
+          <div className="text-lg font-bold text-green-900">{avg.toFixed(1)}점</div>
+        </div>
+        <div className="p-3 bg-purple-50 rounded-lg text-center">
+          <div className="text-xs text-purple-600 mb-1">최고점</div>
+          <div className="text-lg font-bold text-purple-900">{maxScore.toFixed(1)}점</div>
+        </div>
+        <div className="p-3 bg-orange-50 rounded-lg text-center">
+          <div className="text-xs text-orange-600 mb-1">최저점</div>
+          <div className="text-lg font-bold text-orange-900">{minScore.toFixed(1)}점</div>
+        </div>
+      </div>
+
+      {/* 바 차트 */}
+      <div className="space-y-2">
+        {binCounts.map((bin, idx) => {
+          const pct = maxCount > 0 ? (bin.count / maxCount) * 100 : 0;
+          const ratio = total > 0 ? ((bin.count / total) * 100).toFixed(0) : '0';
+          return (
+            <div key={bin.label} className="flex items-center gap-3">
+              <div className="w-14 text-right text-xs font-medium text-gray-500">{bin.label}</div>
+              <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                <div
+                  className={`h-full ${barColors[idx]} rounded-md transition-all duration-500 ease-out`}
+                  style={{ width: `${pct}%`, minWidth: bin.count > 0 ? '2px' : '0' }}
+                />
+                {bin.count > 0 && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+                    {bin.count}명 ({ratio}%)
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -5836,27 +5935,77 @@ function HaksaGradingContent({
         </table>
       </div>
 
-      {/* 성적 통계 */}
-      {students.length > 0 && (
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-3">성적 분포</h4>
-          <div className="flex flex-wrap gap-4">
-            {GRADES.map(g => {
-              const count = students.filter(s => s.grade === g.value).length;
-              return (
+      {/* 성적 분포 그래프 */}
+      {students.length > 0 && (() => {
+        const gradeCounts = GRADES.map(g => ({
+          ...g,
+          count: students.filter(s => s.grade === g.value).length,
+        }));
+        const ungraded = students.filter(s => !s.grade).length;
+        const maxGradeCount = Math.max(...gradeCounts.map(g => g.count), ungraded, 1);
+
+        return (
+          <div className="p-5 bg-white border border-gray-200 rounded-xl">
+            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              성적 분포
+            </h4>
+
+            {/* 뱃지 요약 */}
+            <div className="flex flex-wrap gap-3 mb-4">
+              {gradeCounts.map(g => (
                 <div key={g.value} className="flex items-center gap-2">
                   <span className={`px-3 py-1 rounded-full text-sm ${g.color}`}>{g.value}</span>
-                  <span className="text-gray-600">{count}명</span>
+                  <span className="text-gray-600 text-sm">{g.count}명</span>
                 </div>
-              );
-            })}
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">미판정</span>
-              <span className="text-gray-600">{students.filter(s => !s.grade).length}명</span>
+              ))}
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">미판정</span>
+                <span className="text-gray-600 text-sm">{ungraded}명</span>
+              </div>
+            </div>
+
+            {/* 바 차트 */}
+            <div className="space-y-2">
+              {gradeCounts.map(g => {
+                const pct = maxGradeCount > 0 ? (g.count / maxGradeCount) * 100 : 0;
+                const ratio = students.length > 0 ? ((g.count / students.length) * 100).toFixed(0) : '0';
+                return (
+                  <div key={g.value} className="flex items-center gap-3">
+                    <div className="w-10 text-right text-xs font-semibold text-gray-600">{g.value}</div>
+                    <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                      <div
+                        className="h-full bg-blue-500 rounded-md transition-all duration-500 ease-out"
+                        style={{ width: `${pct}%`, minWidth: g.count > 0 ? '2px' : '0' }}
+                      />
+                      {g.count > 0 && (
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+                          {g.count}명 ({ratio}%)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {/* 미판정 */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 text-right text-xs font-semibold text-gray-400">-</div>
+                <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                  <div
+                    className="h-full bg-gray-400 rounded-md transition-all duration-500 ease-out"
+                    style={{ width: `${maxGradeCount > 0 ? (ungraded / maxGradeCount) * 100 : 0}%`, minWidth: ungraded > 0 ? '2px' : '0' }}
+                  />
+                  {ungraded > 0 && (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+                      {ungraded}명
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
