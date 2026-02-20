@@ -694,6 +694,10 @@ export function ContentLibraryModal({
                           selectedIds.has(content.id) ? 'bg-blue-50' : ''
                         }`}
                         onClick={() => handleSelect(content)}
+                        onDoubleClick={() => {
+                          // 왜: 더블클릭 시 해당 영상 하나만 즉시 선택하여 모달을 닫습니다 (빠른 단일 선택 지원).
+                          onSelect(content);
+                        }}
                       >
                         {multiSelect && (
                           <td className="px-3 py-2 text-center">

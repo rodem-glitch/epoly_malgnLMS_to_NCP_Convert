@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Video, FileText, ClipboardList, BookOpen, FolderOpen } from 'lucide-react';
+import { X, Video, FileText, ClipboardList, BookOpen, FolderOpen, Trash2 } from 'lucide-react';
 import { ContentLibraryModal } from '../ContentLibraryModal';
 import { Exam, getExamList } from '../ExamManagementPage';
 
@@ -96,25 +96,39 @@ const buildDefaultDocumentData = () => ({
 
 export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, onAdd }: WeeklyContentModalProps) {
   const [selectedType, setSelectedType] = useState<ContentType | null>(null);
-  const [videoTitle, setVideoTitle] = useState('');
-  const [videoDescription, setVideoDescription] = useState('');
   const [assignmentData, setAssignmentData] = useState(buildDefaultAssignmentData());
   const [documentData, setDocumentData] = useState(buildDefaultDocumentData());
   
   // 콘텐츠 라이브러리 모달 상태
   const [showLibrary, setShowLibrary] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<{
+  // 왜: 여러 영상을 한 번에 선택하고, 각각에 제목/설명을 편집할 수 있도록 배열로 관리합니다.
+  const [selectedVideos, setSelectedVideos] = useState<Array<{
     mediaKey: string;
     lessonId?: number;
     title: string;
+    customTitle: string;
+    description: string;
     duration?: string;
-    totalTime?: number; // 인정시간 기본값 설정용
-  } | null>(null);
+    totalTime?: number;
+  }>>([]);
 
   // 시험 선택 상태
   const [examList, setExamList] = useState<Exam[]>([]);
   const [selectedExamId, setSelectedExamId] = useState<string>('');
   const [examSettings, setExamSettings] = useState(buildDefaultExamSettings());
+
+  // 왜: 모달을 열 때마다 이전 입력 내역을 초기화하여 새 상태에서 시작합니다.
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedType(null);
+      setSelectedVideos([]);
+      setSelectedExamId('');
+      setExamSettings(buildDefaultExamSettings());
+      setAssignmentData(buildDefaultAssignmentData());
+      setDocumentData(buildDefaultDocumentData());
+      setShowLibrary(false);
+    }
+  }, [isOpen]);
 
   // 시험 목록 로드
   useEffect(() => {
@@ -157,19 +171,21 @@ export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, on
     
     // 동영상
     if (selectedType === 'video') {
-      if (!selectedVideo) return;
-      onAdd({
-        weekNumber,
-        type: selectedType,
-        title: videoTitle.trim() || selectedVideo.title,
-        description: videoDescription.trim() || undefined,
-        duration: selectedVideo.duration,
-        // 왜: 비정규 쪽 CurriculumEditor.tsx처럼 totalTime을 인정시간 기본값으로 설정
-        completeTime: selectedVideo.totalTime || 0,
-        mediaKey: selectedVideo.mediaKey,
-        lessonId: selectedVideo.lessonId,
-        originalVideoTitle: selectedVideo.title,
-      });
+      if (selectedVideos.length === 0) return;
+      // 왜: 여러 영상 각각에 대해 onAdd를 호출하여 개별 콘텐츠 항목으로 등록합니다.
+      for (const video of selectedVideos) {
+        onAdd({
+          weekNumber,
+          type: selectedType,
+          title: video.customTitle.trim() || video.title,
+          description: video.description.trim() || undefined,
+          duration: video.duration,
+          completeTime: video.totalTime || 0,
+          mediaKey: video.mediaKey,
+          lessonId: video.lessonId,
+          originalVideoTitle: video.title,
+        });
+      }
     }
     // 시험
     else if (selectedType === 'exam') {
@@ -245,24 +261,59 @@ export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, on
 
   const resetForm = () => {
     setSelectedType(null);
-    setVideoTitle('');
-    setVideoDescription('');
-    setSelectedVideo(null);
+    setSelectedVideos([]);
     setSelectedExamId('');
     setExamSettings(buildDefaultExamSettings());
     setAssignmentData(buildDefaultAssignmentData());
     setDocumentData(buildDefaultDocumentData());
   };
 
+  // 왜: 여러 영상 선택을 위해 단일 콘텐츠 대신 배열에 추가합니다.
   const handleVideoSelect = (content: any) => {
-    setSelectedVideo({
-      mediaKey: content.mediaKey,
-      lessonId: content.lessonId,
-      title: content.title,
-      duration: content.duration || (content.totalTime ? `${content.totalTime}분` : undefined),
-      totalTime: content.totalTime || 0, // 왜: 인정시간 기본값 설정을 위해 totalTime 저장
+    setSelectedVideos(prev => {
+      // 이미 선택된 영상은 중복 추가하지 않음
+      if (prev.some(v => v.mediaKey === content.mediaKey)) return prev;
+      return [...prev, {
+        mediaKey: content.mediaKey,
+        lessonId: content.lessonId,
+        title: content.title,
+        customTitle: '',
+        description: '',
+        duration: content.duration || (content.totalTime ? `${content.totalTime}분` : undefined),
+        totalTime: content.totalTime || 0,
+      }];
     });
     setShowLibrary(false);
+  };
+
+  // 왜: 멀티셀렉트에서 여러 영상을 한 번에 수신합니다.
+  const handleMultiVideoSelect = (contents: any[]) => {
+    setSelectedVideos(prev => {
+      const existingKeys = new Set(prev.map(v => v.mediaKey));
+      const newItems = contents
+        .filter(c => !existingKeys.has(c.mediaKey))
+        .map(c => ({
+          mediaKey: c.mediaKey,
+          lessonId: c.lessonId,
+          title: c.title,
+          customTitle: '',
+          description: '',
+          duration: c.duration || (c.totalTime ? `${c.totalTime}분` : undefined),
+          totalTime: c.totalTime || 0,
+        }));
+      return [...prev, ...newItems];
+    });
+    setShowLibrary(false);
+  };
+
+  const handleRemoveVideo = (mediaKey: string) => {
+    setSelectedVideos(prev => prev.filter(v => v.mediaKey !== mediaKey));
+  };
+
+  const updateVideoField = (mediaKey: string, field: 'customTitle' | 'description', value: string) => {
+    setSelectedVideos(prev => prev.map(v =>
+      v.mediaKey === mediaKey ? { ...v, [field]: value } : v
+    ));
   };
 
   const contentTypes = [
@@ -307,7 +358,7 @@ export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, on
   );
   const isSubmitDisabled = (
     !selectedType ||
-    (selectedType === 'video' && !selectedVideo) ||
+    (selectedType === 'video' && selectedVideos.length === 0) ||
     (selectedType === 'exam' && !selectedExamId) ||
     isAssignmentInvalid ||
     isDocumentInvalid
@@ -318,7 +369,9 @@ export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, on
       ? '등록'
       : selectedType === 'document'
         ? '업로드'
-        : '추가하기';
+        : selectedType === 'video' && selectedVideos.length > 0
+          ? `추가하기 (${selectedVideos.length}건)`
+          : '추가하기';
 
   return (
     <>
@@ -354,10 +407,8 @@ export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, on
                     type="button"
                     onClick={() => {
                       setSelectedType(type);
-                      setSelectedVideo(null);
+                      setSelectedVideos([]);
                       setSelectedExamId('');
-                      setVideoTitle('');
-                      setVideoDescription('');
                       setAssignmentData(buildDefaultAssignmentData());
                       setDocumentData(buildDefaultDocumentData());
                       setExamSettings(buildDefaultExamSettings());
@@ -383,65 +434,79 @@ export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, on
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         선택한 동영상 <span className="text-red-500 ml-1">*</span>
+                        {selectedVideos.length > 0 && (
+                          <span className="ml-2 text-blue-600 font-normal">({selectedVideos.length}건 선택됨)</span>
+                        )}
                       </label>
-                      {selectedVideo ? (
-                        <div className="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Video className="w-5 h-5 text-blue-600" />
-                            <div>
-                              <p className="font-medium text-blue-900">{selectedVideo.title}</p>
-                              {selectedVideo.duration && (
-                                <p className="text-sm text-blue-600">재생시간: {selectedVideo.duration}</p>
-                              )}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setShowLibrary(true)}
-                            className="px-3 py-1.5 text-sm text-blue-600 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
-                          >
-                            변경
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setShowLibrary(true)}
-                          className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
-                        >
-                          <FolderOpen className="w-5 h-5" />
-                          <span>콘텐츠 라이브러리에서 영상 선택</span>
-                        </button>
-                      )}
-                    </div>
-                    
-                    {selectedVideo && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          콘텐츠 제목 (선택)
-                        </label>
-                        <input
-                          type="text"
-                          value={videoTitle}
-                          onChange={(e) => setVideoTitle(e.target.value)}
-                          placeholder={selectedVideo.title}
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        <p className="text-xs text-gray-400 mt-1">
-                          비워두면 동영상 제목이 사용됩니다.
-                        </p>
-                      </div>
-                    )}
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">설명 (선택)</label>
-                      <textarea
-                        value={videoDescription}
-                        onChange={(e) => setVideoDescription(e.target.value)}
-                        placeholder="콘텐츠에 대한 간단한 설명을 입력하세요"
-                        rows={3}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      />
+                      {/* 선택된 영상 목록 */}
+                      {selectedVideos.length > 0 && (
+                        <div className="space-y-3 mb-3">
+                          {selectedVideos.map((video, idx) => (
+                            <div key={video.mediaKey} className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="flex items-center justify-center w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full">
+                                    {idx + 1}
+                                  </span>
+                                  <Video className="w-4 h-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-blue-900 truncate max-w-xs">
+                                    {video.title}
+                                  </span>
+                                  {video.duration && (
+                                    <span className="text-xs text-blue-500">({video.duration})</span>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveVideo(video.mediaKey)}
+                                  className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                  title="선택 해제"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <div className="space-y-2">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">제목 (선택)</label>
+                                  <input
+                                    type="text"
+                                    value={video.customTitle}
+                                    onChange={(e) => updateVideoField(video.mediaKey, 'customTitle', e.target.value)}
+                                    placeholder={video.title}
+                                    className="w-full px-3 py-2 text-sm border border-blue-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">설명 (선택)</label>
+                                  <input
+                                    type="text"
+                                    value={video.description}
+                                    onChange={(e) => updateVideoField(video.mediaKey, 'description', e.target.value)}
+                                    placeholder="콘텐츠에 대한 간단한 설명"
+                                    className="w-full px-3 py-2 text-sm border border-blue-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* 영상 추가 버튼 */}
+                      <button
+                        type="button"
+                        onClick={() => setShowLibrary(true)}
+                        className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                      >
+                        <FolderOpen className="w-5 h-5" />
+                        <span>{selectedVideos.length > 0 ? '영상 더 추가하기' : '콘텐츠 라이브러리에서 영상 선택'}</span>
+                      </button>
+                      {selectedVideos.length === 0 && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          여러 영상을 한 번에 선택할 수 있습니다.
+                        </p>
+                      )}
                     </div>
                   </>
                 )}
@@ -842,14 +907,13 @@ export function WeeklyContentModal({ isOpen, onClose, weekNumber, courseName, on
         isOpen={showLibrary}
         onClose={() => setShowLibrary(false)}
         onSelect={handleVideoSelect}
-        multiSelect={false}
+        multiSelect={true}
+        onMultiSelect={handleMultiVideoSelect}
         recommendContext={{
-          // 왜: 차시 입력이 비어 있어도 "현재 과목명"은 항상 추천 힌트로 보내야 과목별 추천이 갈립니다.
           courseName: courseName || '',
-          // 왜: 관리 화면에서도 차시 제목/설명을 기반으로 추천을 먼저 보여주면 콘텐츠 선택이 더 빨라집니다.
-          lessonTitle: videoTitle,
-          lessonDescription: videoDescription,
         }}
+        // 왜: 이미 선택된 영상은 라이브러리에서 제외하여 중복 선택을 방지합니다.
+        excludeLessonIds={selectedVideos.filter(v => v.lessonId).map(v => v.lessonId!)}
       />
     </>
   );
