@@ -99,6 +99,18 @@
   - 연동 장애 대비 다운로드 경로는 `haksa_grade_export.jsp`를 유지하고, 조회 API와 같은 컷오프 규칙으로 등급을 계산해야 합니다.
   - `haksa_grade_export.jsp`에서 `TB_USER.login_id`와 `LM_POLY_COURSE_GRADE.member_key`는 운영 DB 컬레이션이 다를 수 있습니다. 조인 비교식에 컬레이션을 명시하지 않으면 SQL 에러로 CSV 데이터 행이 모두 누락될 수 있습니다.
   - 관련 코드: `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp`, `public_html/tutor_lms/api/haksa_grade_export.jsp`
+- 교수자 Q&A FAQ 공지(주의):
+  - FAQ 공지는 일반 공지와 같은 테이블(`CL_POST`)을 사용하지만, 반드시 `board_cd='notice' + notice_yn='Y'` 조건으로만 조회/수정/삭제해야 일반 공지와 섞이지 않습니다.
+  - 저장 API는 base64 이미지/본문 용량(60000바이트)을 차단하므로, 프론트 에디터에서 이미지 data URI를 넣으면 저장이 거절됩니다.
+  - 삭제는 물리삭제가 아니라 `status=-1`, `display_yn='N'`로 처리합니다. 운영 이력 추적을 위해 hard delete로 바꾸지 않아야 합니다.
+  - 권한은 관리자(S/A) 또는 과목 주강사(`LM_COURSE_TUTOR.type='major'`)만 허용합니다. 목록/저장/삭제 권한식을 다르게 두면 일부 화면만 403이 발생할 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/qna_faq_notice_list.jsp`, `public_html/tutor_lms/api/qna_faq_notice_save.jsp`, `public_html/tutor_lms/api/qna_faq_notice_delete.jsp`
+- 교수자 성적분포 통계 API(주의):
+  - 비정규 분포(`grades_distribution.jsp`)의 합격/수료/미달 판정은 `grades_list.jsp`와 같은 기준으로 계산해야 목록과 그래프 수치 불일치를 막을 수 있습니다.
+  - 정규 분포(`haksa_grade_distribution.jsp`)는 학사 5종 키 기반이며, 권한 검증을 `LM_POLY_COURSE_PROF(member_key)`로 강제해야 타 과목 성적 노출을 방지할 수 있습니다.
+  - 점수는 집계 전에 0~100으로 보정(clamp)합니다. 원천 데이터 이상값을 그대로 쓰면 분포 구간이 깨질 수 있습니다.
+  - 정규 분포의 `grade` 값은 운영 데이터 오염 가능성이 있어 `A+~F` 외 값을 `ETC`로 별도 집계합니다.
+  - 관련 코드: `public_html/tutor_lms/api/grades_distribution.jsp`, `public_html/tutor_lms/api/haksa_grade_distribution.jsp`
 - 교수자 출석 자동 판정(주의):
   - 결석 기준은 `LM_COURSE.limit_absence_yn/limit_absence_cnt`로 저장됩니다. DDL(`public_html/ddl_course_absence_limit.sql`) 반영 전에는 평가설정 저장 API가 DB 오류로 실패합니다.
   - 자동 판정은 `CourseUserDao.completeUser()` 기준이므로, 수동 출석 변경(`CourseProgressDao.attendUser`) 직후에도 `completeUser()`를 같이 호출해 상태 지연을 막아야 합니다.

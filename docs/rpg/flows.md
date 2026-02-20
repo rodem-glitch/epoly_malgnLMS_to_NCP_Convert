@@ -276,6 +276,53 @@
   - 호출 경로 기준: `/tutor_lms/api/student_detail.jsp?course_id={courseId}&user_id={userId}`
 - 최근 갱신: 2026-02-19
 
+### FLOW-2004: 교수자 담당과목 Q&A FAQ 공지 CRUD
+- 사용자 동작(의도): 교수자가 담당과목 Q&A에서 반복 질문을 FAQ 공지로 등록/수정/삭제하고 목록으로 관리
+- 진입점:
+  - 목록: `public_html/tutor_lms/api/qna_faq_notice_list.jsp`
+  - 저장(등록/수정): `public_html/tutor_lms/api/qna_faq_notice_save.jsp`
+  - 삭제: `public_html/tutor_lms/api/qna_faq_notice_delete.jsp`
+- 처리(핵심):
+  - 입력 검증: `course_id` 필수, 저장 시 `subject/content` 필수
+  - 권한 검증: 관리자(S/A) 또는 주강사(`LM_COURSE_TUTOR.type='major'`)만 허용
+  - 게시판 검증: 과목별 공지 게시판(`CL_BOARD.code='notice'`) 존재 필수
+  - FAQ 구분 기준: `CL_POST.board_cd='notice' AND notice_yn='Y' AND depth='A'`
+  - 저장 시 base64 이미지 차단 + 본문 60000바이트 제한 + `proc_status=1` 고정
+  - 삭제 시 물리삭제 없이 `status=-1`, `display_yn='N'` 처리
+- DB:
+  - 게시판: `src/dao/ClBoardDao.java` → `CL_BOARD`
+  - FAQ 공지: `src/dao/ClPostDao.java` → `CL_POST` (`subject`, `content`, `notice_yn`, `status`, `display_yn`)
+- 출력:
+  - JSON: `rst_data`(faq_id), `rst_count`, `rst_message`
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/qna_faq_notice_list.jsp`, `public_html/tutor_lms/api/qna_faq_notice_save.jsp`, `public_html/tutor_lms/api/qna_faq_notice_delete.jsp`
+  - 정적 점검: `git status --short`에서 신규 API 3개 추가 확인
+- 최근 갱신: 2026-02-20
+
+### FLOW-2005: 교수자 담당과목 성적분포 통계(비정규/정규)
+- 사용자 동작(의도): 교수자가 성적관리 화면에서 그래프로 볼 수 있는 분포 통계(점수구간/등급구간)를 조회
+- 진입점:
+  - 비정규(프리즘): `public_html/tutor_lms/api/grades_distribution.jsp`
+  - 정규(학사): `public_html/tutor_lms/api/haksa_grade_distribution.jsp`
+- 처리(핵심):
+  - 비정규:
+    - `course_id` 기준으로 `LM_COURSE_USER.status IN (1,3)` 학생의 `total_score`를 집계
+    - 점수구간(90~100/80~89/70~79/60~69/0~59) 분포 + 평균/최저/최고 + 합격/수료/미달 카운트 반환
+    - 합격/수료 판정은 기존 `grades_list.jsp`와 같은 기준(`limit_progress/limit_total_score`, `complete_limit_*`) 사용
+  - 정규(학사):
+    - 학사 5종 키(`course_code/open_year/open_term/bunban_code/group_code`) 기준으로 `LM_POLY_COURSE_GRADE` 집계
+    - 점수구간 분포 + 등급(A+~F, 기타) 분포 + 평균/최저/최고 반환
+    - 권한은 관리자 또는 `LM_POLY_COURSE_PROF(member_key)` 매핑 교수만 허용
+- DB:
+  - 비정규 성적: `src/dao/CourseUserDao.java` → `LM_COURSE_USER`
+  - 정규 성적/권한: `src/dao/PolyCourseGradeDao.java` → `LM_POLY_COURSE_GRADE`, `src/dao/PolyCourseProfDao.java` → `LM_POLY_COURSE_PROF`, `src/dao/PolyMemberKeyDao.java`
+- 출력:
+  - JSON: `rst_summary`(요약), `rst_data`(점수 분포), 정규는 `rst_grade_data`(등급 분포) 추가
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/grades_distribution.jsp`, `public_html/tutor_lms/api/haksa_grade_distribution.jsp`
+  - 정적 점검: 두 API 모두 `m.log(stats_start/stats_done)` 로깅과 권한 분기 포함 확인
+- 최근 갱신: 2026-02-20
+
 ### FLOW-2011: 비정규 차시 일괄등록 + 단건 수정/삭제 안정화
 - 사용자 동작(의도): 비정규 과정 차시를 1건씩 반복 등록하지 않고, 1~15차시 구성을 한 번에 반영하거나 재반영
 - 진입점:

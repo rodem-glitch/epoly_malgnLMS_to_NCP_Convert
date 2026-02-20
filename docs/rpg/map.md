@@ -105,6 +105,12 @@
 | 학사 평가기준 저장 시 성적결과 즉시 반영 | `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp` | `src/dao/PolyCourseSettingDao.java`(`LM_POLY_COURSE_SETTING.eval_json`), `src/dao/PolyCourseGradeDao.java`(`LM_POLY_COURSE_GRADE.score/grade`) | (React API 응답 JSON) | `weights(attendance/midterm/final/assignment/etc/participation)` 합계 100 검증 후 저장, 평가 저장 직후 등급 재계산 + 조회/저장 시 서버 컷오프 기준 재판정 |
 | 학사 성적 CSV 다운로드 API 추가 | `public_html/tutor_lms/api/haksa_grade_export.jsp` | `src/dao/PolyCourseGradeDao.java`, `src/dao/PolyCourseSettingDao.java`, `src/dao/UserDao.java` | (CSV 첨부 다운로드) | 연동 상태와 무관하게 `No/학번/이름/점수/등급` CSV 즉시 다운로드 제공. `login_id/member_key` 조인 컬레이션 충돌 방지를 위해 비교 컬레이션 명시 |
 
+## 최근 작업(교수자 Q&A FAQ 공지/성적분포)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 담당과목 > Q&A: FAQ 공지(자주 묻는 질문) CRUD API 추가 | `GET public_html/tutor_lms/api/qna_faq_notice_list.jsp`, `POST public_html/tutor_lms/api/qna_faq_notice_save.jsp`, `POST public_html/tutor_lms/api/qna_faq_notice_delete.jsp` | `src/dao/ClBoardDao.java`(`CL_BOARD.code='notice'`), `src/dao/ClPostDao.java`(`CL_POST.notice_yn/subject/content/status`) | (React API 응답 JSON) | FAQ 공지는 공지게시판 데이터 중 `notice_yn='Y'`로 구분. 일반 공지와 분리해 목록/수정/삭제하며, 관리자/주강사 권한 검증 적용 |
+| 담당과목 > 성적관리: 그래프용 분포 통계 API 추가(비정규/정규) | `GET public_html/tutor_lms/api/grades_distribution.jsp`, `GET public_html/tutor_lms/api/haksa_grade_distribution.jsp` | `src/dao/CourseUserDao.java`(`LM_COURSE_USER.total_score/progress_ratio`), `src/dao/PolyCourseGradeDao.java`(`LM_POLY_COURSE_GRADE.score/grade`), `src/dao/PolyCourseProfDao.java` | (React API 응답 JSON) | 점수구간(90~100/80~89/...)과 요약 통계(평균/최저/최고/인원수) 제공. 학사는 등급(A+~F) 분포도 함께 제공 |
+
 ## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
 |---|---|---|---|---|
