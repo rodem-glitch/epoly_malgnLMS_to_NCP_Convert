@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GraduationCap, BookOpen, FolderPlus, Compass, Library, ChevronDown, ChevronRight, Heart, RefreshCw, ClipboardList, BookPlus, BarChart3, ClipboardCheck, MessageSquare, UserCheck, Video } from 'lucide-react';
+import { GraduationCap, BookOpen, FolderPlus, Compass, Library, ChevronDown, ChevronRight, Heart, RefreshCw, ClipboardList, BookPlus, BarChart3, ClipboardCheck, MessageSquare, UserCheck, Video, FileQuestion } from 'lucide-react';
 import { CreateCourseForm } from './components/CreateCourseForm';
 import { MyCoursesList } from './components/MyCoursesList';
 import { CourseExplorer } from './components/CourseExplorer';
@@ -17,6 +17,7 @@ import { QnaManagePage } from './components/QnaManagePage';
 import { FaqManagePage } from './components/FaqManagePage';
 import { AttendanceManagePage } from './components/AttendanceManagePage';
 import { VideoGroupManagePage } from './components/VideoGroupManagePage';
+import { SurveyManagePage } from './components/SurveyManagePage';
 import type { CourseManagementTabId } from './components/CourseManagement';
 
 const MENU_IDS = [
@@ -37,6 +38,7 @@ const MENU_IDS = [
   'exam-management',
   'attendance-manage',
   'video-group-manage',
+  'survey-manage',
   'subject-create',
   'statistics',
 ] as const;
@@ -535,6 +537,17 @@ export default function App() {
                 </div>
               )}
             </div>
+            <button
+              onClick={() => applyMenu('survey-manage')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+                activeMenu === 'survey-manage'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-sidebar-foreground hover:bg-muted'
+              }`}
+            >
+              <FileQuestion className="w-5 h-5" />
+              <span>설문관리</span>
+            </button>
 
             {/* === 리소스 === */}
             <div className="mt-3 mb-1 border-t border-border pt-3">
@@ -671,6 +684,8 @@ export default function App() {
             <AttendanceManagePage key={refreshKey} />
           ) : activeMenu === 'video-group-manage' ? (
             <VideoGroupManagePage key={refreshKey} />
+          ) : activeMenu === 'survey-manage' ? (
+            <SurveyManagePage key={refreshKey} />
           ) : (
             <div className="bg-card rounded-xl border-2 border-dashed border-border p-16 text-center">
               <div className="text-muted-foreground">
