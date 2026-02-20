@@ -38,7 +38,7 @@ if(!cinfo.next()) {
 
 DataSet list = courseModule.query(
 	" SELECT a.module_id homework_id, a.module_nm, a.apply_type, a.start_date, a.end_date, a.chapter, a.assign_score "
-	+ " , h.homework_nm, h.onoff_type, h.content, h.homework_file, h.submit_file_ext_mode, h.submit_file_exts "
+	+ " , h.homework_nm, h.onoff_type, h.content, h.homework_file, h.submit_file_ext_mode, h.submit_file_exts, h.allow_late_submission_yn, h.late_penalty "
 	+ " , (SELECT COUNT(*) FROM " + courseUser.table + " cu "
 		+ " WHERE cu.site_id = " + siteId + " AND cu.course_id = a.course_id AND cu.status IN (1,3)) total_cnt "
 	+ " , (SELECT COUNT(*) FROM " + homeworkUser.table + " hu "
@@ -88,6 +88,14 @@ while(list.next()) {
 	list.put("submit_file_exts", submitFileExts);
 	list.put("submit_file_allow_ext", submitFileAllowExt);
 	list.put("submit_file_allow_ext_conv", homework.toCommaSeparatedExts(submitFileAllowExt));
+
+	String allowLateSubmissionYn = "Y".equals(list.s("allow_late_submission_yn")) ? "Y" : "N";
+	int latePenalty = Math.max(0, Math.min(100, list.i("late_penalty")));
+	if(!"Y".equals(allowLateSubmissionYn)) latePenalty = 0;
+	list.put("allow_late_submission_yn", allowLateSubmissionYn);
+	list.put("allowLateSubmission", "Y".equals(allowLateSubmissionYn));
+	list.put("late_penalty", latePenalty);
+	list.put("latePenalty", latePenalty);
 }
 
 result.put("rst_code", "0000");
@@ -97,4 +105,3 @@ result.put("rst_data", list);
 result.print();
 
 %>
-

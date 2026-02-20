@@ -32,6 +32,8 @@ f.addElement("homework_file", null, "hname:'첨부파일'");
 f.addElement("onoff_type", "N", "hname:'온오프라인구분'"); //왜: 과제는 기본적으로 온라인 제출을 가정합니다.
 f.addElement("submit_file_ext_mode", "ALL", "hname:'제출첨부허용형식모드'"); //ALL/DOC/IMAGE/ARCHIVE/AUDIO/CUSTOM
 f.addElement("submit_file_exts", null, "hname:'제출첨부허용확장자'");
+f.addElement("allowLateSubmission", "N", "hname:'지각제출허용여부'"); //Y/N, true/false, 1/0 허용
+f.addElement("latePenalty", "0", "hname:'지각제출감점'");
 
 if(!f.validate()) {
 	result.put("rst_code", "1000");
@@ -116,6 +118,28 @@ String title = f.get("title").trim();
 String content = f.get("description");
 int assignScore = Math.max(0, f.getInt("totalScore"));
 String onoffType = !"".equals(f.get("onoff_type")) ? f.get("onoff_type") : "N";
+String allowLateSubmissionInput = f.get("allowLateSubmission");
+if(null == allowLateSubmissionInput) allowLateSubmissionInput = "";
+String allowLateSubmissionNormalized = allowLateSubmissionInput.trim().toUpperCase();
+String allowLateSubmissionYn = ("Y".equals(allowLateSubmissionNormalized) || "TRUE".equals(allowLateSubmissionNormalized) || "1".equals(allowLateSubmissionNormalized)) ? "Y" : "N";
+String latePenaltyRaw = f.get("latePenalty");
+if(null == latePenaltyRaw || "".equals(latePenaltyRaw.trim())) latePenaltyRaw = "0";
+int latePenalty = 0;
+try {
+	latePenalty = Integer.parseInt(latePenaltyRaw.trim());
+} catch(Exception ex) {
+	result.put("rst_code", "1108");
+	result.put("rst_message", "지각 제출 감점은 0~100 사이 숫자여야 합니다.");
+	result.print();
+	return;
+}
+if(latePenalty < 0 || latePenalty > 100) {
+	result.put("rst_code", "1108");
+	result.put("rst_message", "지각 제출 감점은 0~100 사이로 입력해 주세요.");
+	result.print();
+	return;
+}
+if(!"Y".equals(allowLateSubmissionYn)) latePenalty = 0;
 String submitFileExtModeInput = f.get("submit_file_ext_mode");
 if(null == submitFileExtModeInput) submitFileExtModeInput = "";
 String submitFileExtMode = homework.normalizeSubmitFileExtMode("".equals(submitFileExtModeInput) ? "ALL" : submitFileExtModeInput);
@@ -187,6 +211,7 @@ m.log(
 	"insert_multi requested=" + targetCourseIdSet.size() + ", valid=" + validCourseIds.size()
 	+ ", start=" + startDateTime + ", end=" + endDateTime
 	+ ", submit_ext_mode=" + submitFileExtMode + ", submit_ext_cnt=" + resolvedSubmitAllowExt.split("\\|").length
+	+ ", allow_late_submission_yn=" + allowLateSubmissionYn + ", late_penalty=" + latePenalty
 	+ ", user_id=" + userId
 );
 
@@ -200,6 +225,8 @@ homework.item("homework_nm", title);
 homework.item("content", content);
 homework.item("submit_file_ext_mode", submitFileExtMode);
 homework.item("submit_file_exts", "CUSTOM".equals(submitFileExtMode) ? submitFileExts : "");
+homework.item("allow_late_submission_yn", allowLateSubmissionYn);
+homework.item("late_penalty", latePenalty);
 homework.item("manager_id", userId);
 homework.item("reg_date", m.time("yyyyMMddHHmmss"));
 homework.item("status", 1);

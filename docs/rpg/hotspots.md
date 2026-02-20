@@ -46,6 +46,8 @@
   - 다중 등록은 부분 성공을 허용합니다. 응답의 `rst_success_courses`, `rst_failed_courses`, `rst_invalid_tokens`를 함께 확인하지 않으면 운영자가 “일부 과목 누락”을 놓칠 수 있습니다.
   - 학생 제출 첨부는 `public_html/classroom/file_upload.jsp`에서 최종 차단되므로, 허용 파일형식 옵션(`submit_file_ext_mode`, `submit_file_exts`)을 프론트 검증만으로 믿으면 안 됩니다.
   - 허용 파일형식 옵션은 과제 단위(`LM_HOMEWORK`) 설정입니다. 다중 강의에 연결된 동일 과제는 설정도 공유되므로, 한 강의에서 바꾸면 연결 강의 모두에 즉시 반영됩니다.
+  - 지각 제출 옵션도 과제 단위(`LM_HOMEWORK.allow_late_submission_yn`, `LM_HOMEWORK.late_penalty`)라서, 다중 강의에 연결된 동일 과제는 한 강의에서 수정하면 연결 강의 전체에 동시에 반영됩니다.
+  - 운영 DB에 지각 제출 컬럼이 없으면 등록/수정/조회 API가 즉시 실패하므로, 배포 전에 `public_html/ddl_homework_late_submission.sql` 반영 여부를 먼저 확인해야 합니다.
 - 교수자 LMS 과제 피드백 템플릿 운영 주의:
   - 템플릿 API는 `LM_HOMEWORK_FEEDBACK_TEMPLATE`에 과목/교수자별로 저장하며, 서버 개수 제한은 없습니다(요구사항상 “5개”는 예시).
   - 조회/저장/삭제 API 모두 과목 존재 + 담당교수(`LM_COURSE_TUTOR.type='major'`) 권한을 함께 확인하므로, 프론트에서 `course_id`를 잘못 보내면 `403/404`가 발생할 수 있습니다.

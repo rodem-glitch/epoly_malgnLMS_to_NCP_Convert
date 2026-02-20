@@ -525,6 +525,27 @@
   - 로컬 호출 확인: 비로그인 상태에서 `homework_insert.jsp`가 `4010` JSON 반환(라우팅/컴파일 정상)
 - 최근 갱신: 2026-02-19
 
+### FLOW-4009: 교수자 LMS > 과제 관리(지각 제출 허용/감점 반영)
+- 사용자 동작(의도): 과제 수정 시 "지각 제출 허용"과 "감점률(%)" 변경이 실제 저장/조회에 반영되어야 함
+- 진입점:
+  - 등록/수정/조회 API: `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`
+- 처리(핵심):
+  - 등록 API는 `allowLateSubmission`, `latePenalty` 입력을 검증해 `LM_HOMEWORK`에 저장
+  - 수정 API는 지각 제출 값이 요청에 포함된 경우만 변경하고, 형식 오류(`1107`)·범위 오류(`1108`)를 즉시 반환
+  - 지각 제출 비허용(`N`)이면 감점률은 서버에서 `0`으로 강제해 상태 불일치를 방지
+  - 목록 API는 저장값을 `allow_late_submission_yn`, `late_penalty`(및 camelCase 보조키)로 내려줘 수정 모달 초기값 재사용이 가능
+  - 과제는 정규/비정규 모두 동일하게 `LM_HOMEWORK` + `LM_COURSE_MODULE(module='homework')` 경로를 사용하므로 공통 반영
+- DB:
+  - `src/dao/HomeworkDao.java` → `LM_HOMEWORK.allow_late_submission_yn`, `LM_HOMEWORK.late_penalty`
+  - DDL: `public_html/ddl_homework_late_submission.sql`
+- 출력:
+  - 목록 API JSON: `allow_late_submission_yn`, `late_penalty`, `allowLateSubmission`, `latePenalty`
+  - 등록/수정 API JSON: 기존 성공코드(`0000`) 유지, 입력 오류 시 `1107`/`1108`
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`
+  - 실DB 확인: `LM_HOMEWORK` 컬럼 조회 후(`SHOW COLUMNS`) 신규 컬럼 DDL 필요성 확인
+- 최근 갱신: 2026-02-20
+
 ### FLOW-4007: 교수자 LMS > 과제 > 피드백 템플릿(조회/저장/삭제)
 - 사용자 동작(의도): 교수자가 과제 피드백에서 자주 쓰는 문구를 템플릿으로 저장하고, 필요할 때 빠르게 불러와 재사용
 - 진입점:

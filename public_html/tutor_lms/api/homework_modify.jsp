@@ -30,6 +30,8 @@ f.addElement("homework_file", null, "hname:'첨부파일'");
 f.addElement("delete_homework_file_yn", "N", "hname:'첨부파일삭제여부'");
 f.addElement("submit_file_ext_mode", null, "hname:'제출첨부허용형식모드'");
 f.addElement("submit_file_exts", null, "hname:'제출첨부허용확장자'");
+f.addElement("allowLateSubmission", null, "hname:'지각제출허용여부'");
+f.addElement("latePenalty", null, "hname:'지각제출감점'");
 
 if(!f.validate()) {
 	result.put("rst_code", "1000");
@@ -125,6 +127,46 @@ if("".equals(resolvedSubmitAllowExt)) {
 	return;
 }
 
+// 왜: 수정 API는 화면/클라이언트 버전에 따라 지각 제출 값이 누락될 수 있어, 값이 온 경우에만 변경합니다.
+String currentAllowLateSubmissionYn = "Y".equals(hinfo.s("allow_late_submission_yn")) ? "Y" : "N";
+int currentLatePenalty = Math.max(0, Math.min(100, hinfo.i("late_penalty")));
+String allowLateSubmissionInput = f.get("allowLateSubmission");
+if(null == allowLateSubmissionInput) allowLateSubmissionInput = "";
+String latePenaltyInput = f.get("latePenalty");
+if(null == latePenaltyInput) latePenaltyInput = "";
+String allowLateSubmissionYn = currentAllowLateSubmissionYn;
+if(!"".equals(allowLateSubmissionInput)) {
+	String allowLateSubmissionNormalized = allowLateSubmissionInput.trim().toUpperCase();
+	if("Y".equals(allowLateSubmissionNormalized) || "TRUE".equals(allowLateSubmissionNormalized) || "1".equals(allowLateSubmissionNormalized)) {
+		allowLateSubmissionYn = "Y";
+	} else if("N".equals(allowLateSubmissionNormalized) || "FALSE".equals(allowLateSubmissionNormalized) || "0".equals(allowLateSubmissionNormalized)) {
+		allowLateSubmissionYn = "N";
+	} else {
+		result.put("rst_code", "1107");
+		result.put("rst_message", "지각 제출 허용 값이 올바르지 않습니다.");
+		result.print();
+		return;
+	}
+}
+int latePenalty = currentLatePenalty;
+if(!"".equals(latePenaltyInput)) {
+	try {
+		latePenalty = Integer.parseInt(latePenaltyInput.trim());
+	} catch(Exception ex) {
+		result.put("rst_code", "1108");
+		result.put("rst_message", "지각 제출 감점은 0~100 사이 숫자여야 합니다.");
+		result.print();
+		return;
+	}
+	if(latePenalty < 0 || latePenalty > 100) {
+		result.put("rst_code", "1108");
+		result.put("rst_message", "지각 제출 감점은 0~100 사이로 입력해 주세요.");
+		result.print();
+		return;
+	}
+}
+if(!"Y".equals(allowLateSubmissionYn)) latePenalty = 0;
+
 if(-1 < content.indexOf("<img") && -1 < content.indexOf("data:image/") && -1 < content.indexOf("base64")) {
 	result.put("rst_code", "1101");
 	result.put("rst_message", "이미지는 첨부파일로 업로드해 주세요.");
@@ -171,6 +213,7 @@ m.log(
 	"modify_file course_id=" + courseId + ", homework_id=" + homeworkId + ", delete_file=" + (deleteHomeworkFile ? "Y" : "N")
 	+ ", has_new_file=" + (hasNewHomeworkFile ? "Y" : "N")
 	+ ", submit_ext_mode=" + submitFileExtMode + ", submit_ext_cnt=" + resolvedSubmitAllowExt.split("\\|").length
+	+ ", allow_late_submission_yn=" + allowLateSubmissionYn + ", late_penalty=" + latePenalty
 	+ ", user_id=" + userId
 );
 
@@ -180,6 +223,8 @@ homework.item("onoff_type", onoffType);
 homework.item("content", content);
 homework.item("submit_file_ext_mode", submitFileExtMode);
 homework.item("submit_file_exts", "CUSTOM".equals(submitFileExtMode) ? submitFileExts : "");
+homework.item("allow_late_submission_yn", allowLateSubmissionYn);
+homework.item("late_penalty", latePenalty);
 boolean oldFileDeleted = false;
 if(deleteHomeworkFile) {
 	// 왜: "파일만 삭제" 요구가 있어, 수정 요청에서 명시적으로 첨부를 비울 수 있어야 합니다.
@@ -225,4 +270,3 @@ result.put("rst_data", homeworkId);
 result.print();
 
 %>
-
