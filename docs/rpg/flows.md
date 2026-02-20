@@ -815,6 +815,37 @@
   - 정적 검증: `rg -n "attendance_batch_update|attendance_week_lessons|attendance_student_matrix" public_html/tutor_lms/api` 결과로 신규 API 진입점 확인
 - 최근 갱신: 2026-02-20
 
+### FLOW-2007: 교수자 담당과목 설문관리(익명/실명, 정규/비정규 공통)
+- 사용자 동작(의도):
+  - 교수가 담당과목에서 의견 수렴 설문을 만들고, 익명/실명을 선택해 운영하고 싶음
+  - 과목 유형이 정규/비정규여도 같은 화면에서 설문을 관리하고 결과를 보고 싶음
+- 진입점:
+  - 목록: `public_html/tutor_lms/api/survey_list.jsp` (GET)
+  - 등록: `public_html/tutor_lms/api/survey_insert.jsp` (POST)
+  - 수정: `public_html/tutor_lms/api/survey_modify.jsp` (POST)
+  - 삭제: `public_html/tutor_lms/api/survey_delete.jsp` (POST)
+  - 결과: `public_html/tutor_lms/api/survey_result.jsp` (GET)
+- 처리(핵심):
+  - 공통 권한: 관리자 또는 과목 주강사(`LM_COURSE_TUTOR.type='major'`) 또는 과정담당(`LM_COURSE_MANAGER`) 또는 개설자(`LM_COURSE.manager_id`)만 허용
+  - 등록 시 `LM_SURVEY` + `LM_SURVEY_QUESTION` + `LM_SURVEY_ITEM` 생성 후 과목 배치(`LM_COURSE_MODULE`) 연결
+  - 익명/실명 설정은 과목 배치 컬럼 `LM_COURSE_MODULE.result_yn`에 저장해 과목마다 다르게 운영
+  - 정규(`course_type='R'`)는 기간형(`apply_type=1`, `start_date/end_date`)으로 저장, 비정규는 차시형(`apply_type=2`, `chapter`)으로 저장
+  - 결과 API는 문항 통계(응답 수/선택지 카운트)와 상세 응답을 제공하고, 익명 모드면 작성자 정보(`user_nm/login_id/course_user_id`)를 마스킹
+  - 삭제 API는 해당 과목 참여내역(`LM_SURVEY_USER`)이 있으면 차단하고, 다른 과목에서 미사용일 때만 설문/문항을 `status=-1`로 정리
+- DB:
+  - 설문 본문: `src/dao/SurveyDao.java` → `LM_SURVEY`
+  - 문항/연결: `src/dao/SurveyQuestionDao.java` → `LM_SURVEY_QUESTION`, `src/dao/SurveyItemDao.java` → `LM_SURVEY_ITEM`
+  - 참여/응답: `src/dao/SurveyUserDao.java` → `LM_SURVEY_USER`, `src/dao/SurveyResultDao.java` → `LM_SURVEY_RESULT`
+  - 과목 배치/익명여부: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE` (`module='survey'`, `result_yn`)
+- 출력:
+  - 공통 JSON 패턴(`rst_code/rst_message/rst_data`) 유지
+  - 목록: 참여율(`survey_rate`), 익명설정(`anonymous_yn`, `anonymous_type_conv`) 포함
+  - 결과: `rst_survey`(설문정보), `rst_stat`(전체참여통계), `rst_data`(문항통계), 선택 조회 시 `rst_responses` 포함
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/survey_list.jsp`, `public_html/tutor_lms/api/survey_insert.jsp`, `public_html/tutor_lms/api/survey_modify.jsp`, `public_html/tutor_lms/api/survey_delete.jsp`, `public_html/tutor_lms/api/survey_result.jsp`
+  - 정적 검증: `rg -n "anonymous_yn|result_yn|course_type|apply_type" public_html/tutor_lms/api/survey_*.jsp`로 익명/과정유형 분기 반영 확인
+- 최근 갱신: 2026-02-20
+
 ### FLOW-4010: 학사(정규) 평가기준 저장 시 성적결과 즉시 반영 + 성적 CSV 다운로드
 - 사용자 동작(의도):
   - 교수자가 학사 과목 `평가항목`을 저장하면, 성적 결과 조회에 즉시 반영되길 원함

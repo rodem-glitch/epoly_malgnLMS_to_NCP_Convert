@@ -111,6 +111,11 @@
 | 담당과목 > Q&A: FAQ 공지(자주 묻는 질문) CRUD API 추가 | `GET public_html/tutor_lms/api/qna_faq_notice_list.jsp`, `POST public_html/tutor_lms/api/qna_faq_notice_save.jsp`, `POST public_html/tutor_lms/api/qna_faq_notice_delete.jsp` | `src/dao/ClBoardDao.java`(`CL_BOARD.code='notice'`), `src/dao/ClPostDao.java`(`CL_POST.notice_yn/subject/content/status`) | (React API 응답 JSON) | FAQ 공지는 공지게시판 데이터 중 `notice_yn='Y'`로 구분. 일반 공지와 분리해 목록/수정/삭제하며, 관리자/주강사 권한 검증 적용 |
 | 담당과목 > 성적관리: 그래프용 분포 통계 API 추가(비정규/정규) | `GET public_html/tutor_lms/api/grades_distribution.jsp`, `GET public_html/tutor_lms/api/haksa_grade_distribution.jsp` | `src/dao/CourseUserDao.java`(`LM_COURSE_USER.total_score/progress_ratio`), `src/dao/PolyCourseGradeDao.java`(`LM_POLY_COURSE_GRADE.score/grade`), `src/dao/PolyCourseProfDao.java` | (React API 응답 JSON) | 점수구간(90~100/80~89/...)과 요약 통계(평균/최저/최고/인원수) 제공. 학사는 등급(A+~F) 분포도 함께 제공 |
 
+## 최근 작업(교수자 담당과목 설문)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 담당과목 > 설문관리: 설문 등록/목록/수정/삭제/결과 API 추가 | `GET public_html/tutor_lms/api/survey_list.jsp`, `POST public_html/tutor_lms/api/survey_insert.jsp`, `POST public_html/tutor_lms/api/survey_modify.jsp`, `POST public_html/tutor_lms/api/survey_delete.jsp`, `GET public_html/tutor_lms/api/survey_result.jsp` | `src/dao/SurveyDao.java`(`LM_SURVEY`), `src/dao/SurveyQuestionDao.java`(`LM_SURVEY_QUESTION`), `src/dao/SurveyItemDao.java`(`LM_SURVEY_ITEM`), `src/dao/SurveyUserDao.java`(`LM_SURVEY_USER`), `src/dao/SurveyResultDao.java`(`LM_SURVEY_RESULT`), `src/dao/CourseModuleDao.java`(`LM_COURSE_MODULE.result_yn`) | (React API 응답 JSON) | 정규(`course_type='R'`)는 기간(`apply_type=1`), 비정규는 차시(`apply_type=2`)로 배치. 익명/실명은 `LM_COURSE_MODULE.result_yn`으로 과목별 저장 |
+
 ## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
 |---|---|---|---|---|

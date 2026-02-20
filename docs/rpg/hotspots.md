@@ -111,6 +111,13 @@
   - 점수는 집계 전에 0~100으로 보정(clamp)합니다. 원천 데이터 이상값을 그대로 쓰면 분포 구간이 깨질 수 있습니다.
   - 정규 분포의 `grade` 값은 운영 데이터 오염 가능성이 있어 `A+~F` 외 값을 `ETC`로 별도 집계합니다.
   - 관련 코드: `public_html/tutor_lms/api/grades_distribution.jsp`, `public_html/tutor_lms/api/haksa_grade_distribution.jsp`
+- 교수자 담당과목 설문 API(주의):
+  - 설문 API 권한식(관리자/주강사/과정담당/개설자)을 목록/등록/수정/삭제/결과에서 동일하게 유지해야, 화면별 403 불일치 회귀를 막을 수 있습니다.
+  - 익명 설문(`LM_COURSE_MODULE.result_yn='Y'`)은 결과 상세에서 `user_nm/login_id/course_user_id`까지 함께 마스킹해야 실명 추적 단서를 차단할 수 있습니다.
+  - 익명 설정은 설문 본문(`LM_SURVEY`)이 아니라 과목 배치(`LM_COURSE_MODULE`) 값이 기준입니다. 같은 설문 ID를 여러 과목에 배치하면 과목별 익명여부가 달라질 수 있습니다.
+  - 정규/비정규 분기는 `LM_COURSE.course_type` 기준으로 처리해야 하며, 정규(`R`)는 기간(`apply_type=1`), 비정규는 차시(`apply_type=2`)를 섞지 않도록 주의해야 합니다.
+  - 설문 삭제는 해당 과목 참여내역(`LM_SURVEY_USER`)이 있으면 차단해야 하며, 무리한 삭제 허용은 통계/감사 추적 단절로 이어집니다.
+  - 관련 코드: `public_html/tutor_lms/api/survey_list.jsp`, `public_html/tutor_lms/api/survey_insert.jsp`, `public_html/tutor_lms/api/survey_modify.jsp`, `public_html/tutor_lms/api/survey_delete.jsp`, `public_html/tutor_lms/api/survey_result.jsp`
 - 교수자 출석 자동 판정(주의):
   - 결석 기준은 `LM_COURSE.limit_absence_yn/limit_absence_cnt`로 저장됩니다. DDL(`public_html/ddl_course_absence_limit.sql`) 반영 전에는 평가설정 저장 API가 DB 오류로 실패합니다.
   - 자동 판정은 `CourseUserDao.completeUser()` 기준이므로, 수동 출석 변경(`CourseProgressDao.attendUser`) 직후에도 `completeUser()`를 같이 호출해 상태 지연을 막아야 합니다.
