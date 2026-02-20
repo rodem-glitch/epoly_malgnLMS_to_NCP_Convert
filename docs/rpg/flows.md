@@ -1,6 +1,6 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-19
+최근 갱신: 2026-02-20
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
@@ -718,6 +718,34 @@
   - 코드 경로 확인: `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`, `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp`
   - 정적 검증: `rg -n "open_yn|visibility_checked"`로 목록/저장/출제 검증 경로 반영 확인
 - 최근 갱신: 2026-02-19
+
+### FLOW-2006: 교수자 출석 탭 부분 출결(다중 차시) 백엔드 API
+- 사용자 동작(의도):
+  - "1주 1차시 2시간, 2차시 1시간" 같은 구성에서 학생이 일부 시간만 듣고 가면 차시별로 다른 상태(Y/N)를 빠르게 반영하고 싶음
+  - 출석 화면에서 주차별 차시 목록과 학생×차시 매트릭스를 한 번에 보고 싶음
+- 진입점:
+  - 다중 차시 일괄 저장: `public_html/tutor_lms/api/attendance_batch_update.jsp` (POST)
+  - 주차(섹션)별 차시 조회: `public_html/tutor_lms/api/attendance_week_lessons.jsp` (GET)
+  - 학생×차시 매트릭스 조회: `public_html/tutor_lms/api/attendance_student_matrix.jsp` (GET)
+- 처리(핵심):
+  - 세 API 모두 `course_id` 기준으로 과목 존재/권한(관리자 또는 담당 교수/과정담당/개설자) 확인 후 처리
+  - 일괄 저장 API는 `lesson_ids` + `attend_statuses(Y/N)` + `course_user_ids`를 받아 차시별 상태를 분리 적용
+  - 저장은 `CourseProgressDao.attendUser()`를 차시 단위로 반복 호출해 기존 출결 저장 로직/수료판정 연동을 재사용
+  - 주차 조회 API는 `LM_COURSE_LESSON + LM_COURSE_SECTION + LM_LESSON`을 묶어 `section(주차) -> lesson(차시)` 목록 반환
+  - 매트릭스 API는 `LM_COURSE_USER × LM_COURSE_LESSON` 기준으로 `LM_COURSE_PROGRESS.complete_yn`을 붙여 학생별 차시 상태를 평탄화 행으로 반환
+  - 운영 추적을 위해 세 API 모두 요청/결과 건수를 `m.log(...)`로 기록
+- DB:
+  - 출결 저장: `src/dao/CourseProgressDao.java` → `LM_COURSE_PROGRESS`
+  - 차시/주차: `src/dao/CourseLessonDao.java` → `LM_COURSE_LESSON`, `src/dao/CourseSectionDao.java` → `LM_COURSE_SECTION`
+  - 수강생: `src/dao/CourseUserDao.java` → `LM_COURSE_USER`
+- 출력:
+  - 일괄 저장: `rst_requested_count`, `rst_success_count`, `rst_lesson_count`, `rst_student_count`
+  - 주차 조회: `rst_sections`(주차 목록), `rst_data`(차시 목록)
+  - 매트릭스 조회: `rst_students`, `rst_lessons`, `rst_data`(학생×차시 행 데이터)
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/attendance_batch_update.jsp`, `public_html/tutor_lms/api/attendance_week_lessons.jsp`, `public_html/tutor_lms/api/attendance_student_matrix.jsp`
+  - 정적 검증: `rg -n "attendance_batch_update|attendance_week_lessons|attendance_student_matrix" public_html/tutor_lms/api` 결과로 신규 API 진입점 확인
+- 최근 갱신: 2026-02-20
 
 ### FLOW-4010: 학사(정규) 평가기준 저장 시 성적결과 즉시 반영 + 성적 CSV 다운로드
 - 사용자 동작(의도):

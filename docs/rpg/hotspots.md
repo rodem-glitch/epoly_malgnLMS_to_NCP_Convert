@@ -1,6 +1,6 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-19
+최근 갱신: 2026-02-20
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
@@ -102,7 +102,11 @@
   - 자동 판정은 `CourseUserDao.completeUser()` 기준이므로, 수동 출석 변경(`CourseProgressDao.attendUser`) 직후에도 `completeUser()`를 같이 호출해 상태 지연을 막아야 합니다.
   - 정규과정(`course_type='R'`)은 결석 초과 사유를 `absence_f`로 기록하고 결과 라벨을 `F`로 노출합니다. 비정규는 같은 `F` 판정이라도 라벨은 `미수료`로 유지합니다.
   - 결석 횟수 계산은 `LM_COURSE_LESSON(progress_yn='Y') - LM_COURSE_PROGRESS(complete_yn='Y')` 기준입니다. `progress_yn` 조건이 빠지면 출석 기준이 과대 계산될 수 있습니다.
-  - 관련 코드: `src/dao/CourseUserDao.java`, `src/dao/CourseProgressDao.java`, `public_html/tutor_lms/api/attendance_course_summary.jsp`, `public_html/tutor_lms/api/attendance_absence_apply.jsp`, `public_html/tutor_lms/api/progress_students.jsp`, `public_html/tutor_lms/api/completion_list.jsp`
+  - 다중 차시 일괄 저장(`attendance_batch_update.jsp`)은 `lesson_ids`와 `attend_statuses` 길이가 다르면 즉시 차단해야 합니다. 이 검증이 빠지면 차시별 상태 매핑이 어긋나 잘못 저장될 수 있습니다.
+  - 다중 차시 API는 기존 `CourseProgressDao.attendUser()`를 재사용하므로, 저장 후 수료/미수료 재판정 연동이 유지됩니다. 이 호출 경로를 우회하면 출석 탭과 수료 탭 상태가 불일치할 수 있습니다.
+  - 학생×차시 매트릭스(`attendance_student_matrix.jsp`)는 `수강생 수 × 차시 수`로 응답 건수가 커질 수 있어, 필요 시 `section_id` 조건으로 조회 범위를 줄여야 운영 부하를 줄일 수 있습니다.
+  - 주차 그룹 API(`attendance_week_lessons.jsp`)와 매트릭스 API(`attendance_student_matrix.jsp`)는 둘 다 `section_id/section_nm` 기준을 공유합니다. 한쪽만 기준을 바꾸면 프론트 매핑이 깨질 수 있습니다.
+  - 관련 코드: `src/dao/CourseUserDao.java`, `src/dao/CourseProgressDao.java`, `public_html/tutor_lms/api/attendance_course_summary.jsp`, `public_html/tutor_lms/api/attendance_absence_apply.jsp`, `public_html/tutor_lms/api/progress_students.jsp`, `public_html/tutor_lms/api/completion_list.jsp`, `public_html/tutor_lms/api/attendance_batch_update.jsp`, `public_html/tutor_lms/api/attendance_week_lessons.jsp`, `public_html/tutor_lms/api/attendance_student_matrix.jsp`
 - Resin 실행 conf 경로:
   - IntelliJ 실행 기준은 `.idea/runConfigurations/Resin.xml`의 `SCRIPT_OPTIONS`입니다.
   - 현재 기준값은 `console --conf C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml`입니다.

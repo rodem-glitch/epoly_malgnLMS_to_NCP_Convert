@@ -1,6 +1,6 @@
 ﻿# RPG-라이트: 저장소 지도 (`map.md`)
 
-최근 갱신: 2026-02-19
+최근 갱신: 2026-02-20
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
@@ -86,6 +86,7 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
 | 결석 n회 이상 자동 판정(F/미수료) + 출석 통합 요약 API | `POST public_html/tutor_lms/api/course_evaluation_update.jsp`, `GET public_html/tutor_lms/api/attendance_course_summary.jsp`, `POST public_html/tutor_lms/api/attendance_absence_apply.jsp`, `GET public_html/tutor_lms/api/progress_students.jsp`, `GET public_html/tutor_lms/api/completion_list.jsp` | `src/dao/CourseUserDao.java`(`LM_COURSE_USER.complete_status/fail_reason`, `LM_COURSE.limit_absence_yn/limit_absence_cnt`), `src/dao/CourseProgressDao.java`(`LM_COURSE_PROGRESS.complete_yn`), `LM_COURSE_LESSON.progress_yn` | (React API 응답 JSON) | 정규(`course_type='R'`) + 결석 초과는 상태 라벨 `F`, 비정규는 `미수료`로 표시. 수동 출석 변경 시 즉시 자동 판정 재계산 |
+| 출석 탭 부분 출결(다중 차시 일괄저장 + 주차 그룹 + 학생×차시 매트릭스) API 추가 | `POST public_html/tutor_lms/api/attendance_batch_update.jsp`, `GET public_html/tutor_lms/api/attendance_week_lessons.jsp`, `GET public_html/tutor_lms/api/attendance_student_matrix.jsp` | `src/dao/CourseProgressDao.java`(`LM_COURSE_PROGRESS.complete_yn`), `src/dao/CourseLessonDao.java`(`LM_COURSE_LESSON.section_id/chapter`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER`), `src/dao/CourseSectionDao.java`(`LM_COURSE_SECTION`) | (React API 응답 JSON) | 한 번 요청으로 `여러 차시 × 여러 학생` 상태를 저장하고, 주차별 차시/매트릭스 조회를 같이 제공해 교수자 출결 입력 클릭 수를 줄임 |
 
 ## 최근 작업(교수자 수강생 상세 조회)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
