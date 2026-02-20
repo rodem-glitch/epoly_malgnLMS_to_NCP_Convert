@@ -83,6 +83,11 @@
   - `LM_COURSE_LESSON` PK는 `course_id + lesson_id`라서, 존재 체크를 `chapter`까지 묶으면 chapter 변경 시 insert가 PK 충돌로 실패할 수 있습니다.
   - 학사 JSON의 `sessionNo`는 주차마다 반복될 수 있습니다. DB `chapter`는 전체 순번(`chapterNo`)으로 따로 관리해야 “한 차시에 몰림” 회귀를 막을 수 있습니다.
   - 관련 코드: `public_html/tutor_lms/api/haksa_curriculum_update.jsp`
+- 학사 미러(viewtable) 배치 동기화(주의):
+  - `public_html/main/poly_sync.jsp`는 로컬 IP만 허용하므로, 배치는 반드시 서버 내부(`127.0.0.1`)에서 호출해야 합니다.
+  - 배치 실패를 숨기면 다음 화면에서 “학사 데이터 미동기화”가 누적되므로, `rst_code` 검사와 종료코드 기반 알림을 유지해야 합니다.
+  - 자동 실행(cron)에서는 중복 실행 충돌을 막기 위해 `flock` 잠금 사용을 권장합니다.
+  - 관련 코드: `tools/poly_sync/run_poly_sync.sh`, `tools/poly_sync/run_poly_sync.py`, `public_html/main/poly_sync.jsp`
 - 비정규 자동승인(주의):
   - 비정규(`course_type='A'`)에서 `LM_COURSE_USER.status=0/2`가 남으면 영상 재생/진도 계산 경로(`status IN (1,3)`)에서 제외되어 학습 불가가 발생할 수 있습니다.
   - 자동승인은 과정유형 `A`로 제한해 정규 승인정책과 섞이지 않게 유지해야 합니다.

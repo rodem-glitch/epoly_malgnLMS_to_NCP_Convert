@@ -733,6 +733,29 @@
   - API 검증(빈 컨텍스트): `courseName/lessonTitle/lessonDescription/keywords` 모두 빈값이면 `NCS기반교육과정개발...`, `영어...`, `OTT...` 등 고정 패턴이 재현됨(입력 누락 시 동일 추천 원인)
 - 최근 갱신: 2026-02-11
 
+### FLOW-4011: 교수자 LMS > 콘텐츠 라이브러리 영상 제목 수정(분류용)
+- 사용자 동작(의도): 교수자가 콘텐츠 라이브러리의 예전 영상을 제목으로 구분(예: 학기/주제 접두어)하고, 전체/찜 목록에서 동일한 수정 제목으로 확인하고 싶음
+- 진입점:
+  - 전체 목록 API: `public_html/tutor_lms/api/kollus_list.jsp`
+  - 제목 수정 API: `public_html/tutor_lms/api/kollus_media_title_update.jsp` (POST)
+- 처리(핵심):
+  - 제목 수정 API는 `media_content_key`와 `title`을 필수로 받아 `TB_KOLLUS_MEDIA`를 upsert
+  - 기존 행이 있으면 제목(`title`)과 수정시각(`mod_date`)을 갱신하고, 요청에 포함된 메타(`snapshot_url/category/파일명/시간/해상도`)만 선택 반영
+  - 기존 행이 없으면 `TB_KOLLUS_MEDIA` 신규 생성 후 제목/메타를 저장
+  - 전체 목록 조회(`kollus_list.jsp`)는 콜러스 원본 응답에 `TB_KOLLUS_MEDIA`를 매핑해, DB 제목이 있으면 원본 제목보다 우선 노출
+  - 같은 매핑 행에서 썸네일/카테고리/원본파일명/시간/해상도도 보강해 목록 표시 일관성을 유지
+  - 디버깅 로그(`kollus_media_title_update`)에 `site_id/user_id/media_id/media_key/title_len`을 남겨 수정 이력 추적 가능
+- DB:
+  - `src/dao/KollusMediaDao.java` → `TB_KOLLUS_MEDIA` (`id`, `site_id`, `media_content_key`, `title`, `mod_date`)
+- 출력:
+  - 제목 수정 API: `rst_data = media_id`
+  - 전체 목록 API: `rst_data[].title`이 사용자 수정 제목 우선으로 반환
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/kollus_media_title_update.jsp`, `public_html/tutor_lms/api/kollus_list.jsp`
+  - 정적 검증: `rg -n "kollus_media_title_update|media_content_key|title" public_html/tutor_lms/api/kollus_media_title_update.jsp public_html/tutor_lms/api/kollus_list.jsp`로 진입 파라미터/반영 위치 확인
+  - 실행 검증: 로컬 WAS 미기동 상태라 HTTP 실호출 검증은 이번 작업에서 미수행
+- 최근 갱신: 2026-02-20
+
 ### FLOW-2004: 교수자 출석 기준(결석 n회) 자동 판정 + 통합 관리
 - 사용자 동작(의도):
   - 교수자가 과목별 결석 기준을 저장하고, 결석 기준 초과자를 한 번에 자동 판정하고 싶음
@@ -973,3 +996,26 @@
     - `resin-web.xml.tpl`에서 VM `src` 소스 컴파일 제거 후 `CourseSectionDao` 컴파일 오류 재발 방지
     - MySQL을 `--lower_case_table_names=1`로 재기동해 Linux 대소문자 충돌(`TB_RECO_CONTENT` 미인식) 재발 방지
 - 최근 갱신: 2026-02-11
+
+### FLOW-5002: 학사 미러(viewtable) 서버 단독 배치 동기화
+- 사용자 동작(의도): 운영 서버에서 `poly_sync`를 수동/자동(cron) 실행해 학사 미러 테이블을 주기적으로 최신화
+- 진입점:
+  - 실행 래퍼: `tools/poly_sync/run_poly_sync.sh`
+  - 배치 본체: `tools/poly_sync/run_poly_sync.py`
+  - 호출 대상: `public_html/main/poly_sync.jsp`
+- 처리(핵심):
+  - 쉘 래퍼가 Python 배치를 호출하고 기본 URL을 `http://127.0.0.1/main/poly_sync.jsp`로 고정
+  - Python 배치가 POST 파라미터(`mode`, `start_year`, `end_year`, `student_cnt` 등)를 전달
+  - 응답 JSON의 `rst_code`를 필수 검사하고, `0000`이 아니면 비정상 종료코드(`30`)로 즉시 실패 처리
+  - 운영 로그 추적을 위해 콘솔 로그 + 선택 로그파일(`--log-file`)에 시작/파라미터/응답을 기록
+- DB:
+  - 배치 스크립트 자체 DB 접근 없음
+  - 실제 동기화 저장은 `public_html/main/poly_sync.jsp` 내부 DAO 흐름(`LM_POLY_*`) 사용
+- 출력:
+  - 배치 실행 로그(표준출력/로그파일)
+  - 종료코드 기반 성공/실패 판별(성공 `0`, 실패 `10/11/12/20/30`)
+- 확인(근거):
+  - `python3 tools/poly_sync/run_poly_sync.py --help` 실행으로 CLI 진입 확인
+  - `python3 tools/poly_sync/run_poly_sync.py --base-url http://127.0.0.1:1` 실행 시 접속 오류와 비정상 종료코드 반환 확인
+  - `tools/poly_sync/README.md`에 cron 예시/운영 주의사항 반영 확인
+- 최근 갱신: 2026-02-20

@@ -121,6 +121,7 @@
 |---|---|---|---|---|
 | 차시관리 > 콘텐츠 라이브러리 추천 탭에서 동영상 시간/인정시간 자동세팅 복구 | `POST public_html/tutor_lms/api/content_recommend.jsp`, `POST public_html/tutor_lms/api/kollus_lesson_upsert.jsp` | `src/dao/LessonDao.java` / `LM_LESSON`, `src/dao/KollusMediaDao.java` / `TB_KOLLUS_MEDIA`, `TB_KOLLUS_TRANSCRIPT(duration_seconds)` | `project/components/ContentLibraryModal.tsx` | `lessonId`가 숫자(`LM_LESSON.id`)로 들어오는 추천 데이터는 `start_url(media key)`로 정규화하고, DB 메타가 비면 `TB_KOLLUS_TRANSCRIPT` 시간을 분 단위로 보강. 업서트 단계에서도 `total_time` 미전달 시 전사시간으로 1회 보강해 인정시간 기본값 누락을 방지 |
 | 콘텐츠 라이브러리 추천 탭 자연어 검색 정렬(학생 검색형) | `POST public_html/tutor_lms/api/content_recommend.jsp` → `POST /tutor/content-recommend/lessons` | `TB_RECO_CONTENT` (`title`, `summary`, `keywords`, `lesson_id`) | `polytech-lms-api/src/main/java/kr/polytech/lms/tutorcontentrecommend/service/TutorContentRecommendService.java`, `project/components/courseManagement/CurriculumTab.tsx`, `project/components/CurriculumEditor.tsx`, `project/components/courseManagement/WeeklyContentModal.tsx`, `project/components/courseManagement/EditContentModal.tsx` | 교수자 추천은 `courseName`만 질의로 사용(차시명/설명 제외)하고, 내부는 `키워드 DB 검색 + RETRIEVAL_QUERY 벡터검색 + 제목 매칭 재정렬` 구조를 유지. 학사/비정규 경로 모두 `recommendContext.courseName` 전달 강제, 프록시(`content_recommend.jsp`)는 `request_context` 로그로 유입 확인 |
+| 콘텐츠 라이브러리 전체/찜 목록 영상 제목 사용자 수정(구분용) | `GET public_html/tutor_lms/api/kollus_list.jsp`, `POST public_html/tutor_lms/api/kollus_media_title_update.jsp` | `src/dao/KollusMediaDao.java` / `TB_KOLLUS_MEDIA(title, media_content_key, site_id)` | `project/components/ContentLibraryPage.tsx`(API 연동 대상) | 제목 수정 API는 `media_content_key + title`을 기준으로 upsert하고, 전체 목록 조회는 DB 제목을 우선 노출해 예전 영상을 사용자 규칙(분류명)으로 즉시 구분 가능 |
 
 ## 최근 작업(교수자 차시관리 일괄등록/학사영상관리)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
@@ -148,6 +149,11 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
 |---|---|---|---|---|
 | `/mypage/*` 흰화면(200 + 빈 본문) 복구 | `public_html/init.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/member/login.jsp` | `public_html/WEB-INF/resin-web.xml`, `public_html/init.jsp`, `C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml` | 로컬 Resin JNDI(`jdbc/malgn`, `jdbc/lms`) + src 자동 컴파일 | 확인 근거: `curl -i /mypage/new_main/index.jsp`가 `Content-Length: 12/0` 빈 응답에서 HTML 본문 응답으로 변경, `/mypage/index.jsp`와 `/member/login.jsp`가 `302 -> /mypage/new_main/?login_required=Y...` 정상 확인 |
+
+## 최근 작업(학사 미러 배치 실행)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
+|---|---|---|---|---|
+| viewtable 동기화를 서버 단독 배치로 실행 | `tools/poly_sync/run_poly_sync.sh` → `POST /main/poly_sync.jsp` | `tools/poly_sync/run_poly_sync.py`, `tools/poly_sync/README.md` | 서버 배치/cron 실행 스크립트 | `rst_code` 검사로 실패를 종료코드로 반환. 로컬 호출 제한(`127.0.0.1`)을 유지한 상태에서 자동 동기화 가능 |
 
 ## 최근 작업(GCP/Firebase 원클릭 자동화)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |

@@ -138,6 +138,19 @@ while(list.next()) {
 		new String[] { list.s("media_content_key") }
 	);
 	if(minfo.next()) {
+		// 왜: 교수자가 콘텐츠라이브러리에서 제목을 구분용으로 수정한 경우, 콜러스 원본 제목보다 DB 제목을 우선 보여줘야 합니다.
+		if(!"".equals(minfo.s("title"))) list.put("title", minfo.s("title"));
+		if(!"".equals(minfo.s("snapshot_url"))) {
+			list.put("snapshot_url", minfo.s("snapshot_url"));
+			list.put("thumbnail", minfo.s("snapshot_url"));
+		}
+		if(!"".equals(minfo.s("category_key"))) list.put("category_key", minfo.s("category_key"));
+		if(!"".equals(minfo.s("category_nm"))) list.put("category_nm", minfo.s("category_nm"));
+		if(!"".equals(minfo.s("original_file_name"))) list.put("original_file_name", minfo.s("original_file_name"));
+		if(minfo.i("total_time") > 0) list.put("total_time", minfo.i("total_time"));
+		if(minfo.i("content_width") > 0) list.put("content_width", minfo.i("content_width"));
+		if(minfo.i("content_height") > 0) list.put("content_height", minfo.i("content_height"));
+
 		int mediaId = minfo.i("id");
 		list.put("media_id", mediaId);
 		list.put("is_favorite", wishlist.isAdded(userId, "kollus", mediaId));
