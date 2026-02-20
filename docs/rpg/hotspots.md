@@ -92,6 +92,12 @@
   - 비정규(`course_type='A'`)에서 `LM_COURSE_USER.status=0/2`가 남으면 영상 재생/진도 계산 경로(`status IN (1,3)`)에서 제외되어 학습 불가가 발생할 수 있습니다.
   - 자동승인은 과정유형 `A`로 제한해 정규 승인정책과 섞이지 않게 유지해야 합니다.
   - 관련 코드: `public_html/tutor_lms/api/course_students_list.jsp`, `public_html/tutor_lms/api/course_students_auto_approve.jsp`
+- 교수자 담당과목 과목 복사/삭제(주의):
+  - `course_copy.jsp`와 `tutor_list.jsp` 권한식이 다르면(예: 복사는 허용인데 tutor 목록이 403) 화면에서는 버튼이 떠도 실제 동작이 막힐 수 있습니다. 두 API를 같은 권한 모델로 유지해야 합니다.
+  - 비관리자 복사에서 `tutor_id`를 타인으로 허용하면 계정 오남용이 생길 수 있으므로, 본인 ID만 허용하는 제약을 유지해야 합니다.
+  - 학사연동 과목(`LM_COURSE.etc2='HAKSA_MAPPED'`)은 복사/삭제를 차단해야 학사 원천 데이터와 LMS 운영 데이터의 기준 불일치를 막을 수 있습니다.
+  - 삭제 API는 반드시 수강생(`LM_COURSE_USER.status NOT IN (-1,-4)`)과 선행과정 참조(`LM_COURSE_PRECEDE.precede_id`)를 먼저 검사해야 하며, 실패를 무시한 하드삭제/강제삭제를 넣으면 운영 데이터가 깨질 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/course_copy.jsp`, `public_html/tutor_lms/api/course_delete.jsp`, `public_html/tutor_lms/api/tutor_list.jsp`
 - 교수자 차시 대량등록(주의):
   - 대량 반영은 재실행 시 update 중심(멱등)으로 처리해야 중복/PK 충돌 없이 운영 가능합니다.
   - 외부 링크 레슨 자동생성에서 필수값 누락 항목은 실패 인덱스를 응답으로 노출해, 조용히 건너뛰는 fallback을 만들지 않도록 유지해야 합니다.

@@ -1051,3 +1051,38 @@
   - 정적 확인: `public_html/tutor_lms/api/course_chat.jsp`, `public_html/api/course_chat.jsp`에서 모드별 분기/권한/상태 갱신 로직 확인
   - 문서 반영 확인: `docs/rpg/map.md`, `docs/rpg/hotspots.md` 동시 갱신
 - 최근 갱신: 2026-02-20
+
+### FLOW-2014: 교수자 담당과목 비정규 과목 복사/삭제
+- 사용자 동작(의도):
+  - 과목 세부 관리 화면 상단 액션에서 비정규(프리즘) 과목을 복사하거나 삭제
+- 진입점:
+  - 복사: `POST public_html/tutor_lms/api/course_copy.jsp`
+  - 삭제: `POST public_html/tutor_lms/api/course_delete.jsp`
+  - 복사 모달 교수목록: `GET public_html/tutor_lms/api/tutor_list.jsp`
+- 처리(핵심):
+  - 공통:
+    - 로그인/교수자 검증은 `tutor_lms/api/init.jsp` 공통 규칙 사용
+    - 학사연동 과목(`LM_COURSE.etc2='HAKSA_MAPPED'`)은 복사/삭제 모두 차단
+  - 복사(`course_copy.jsp`):
+    - 기존 관리자 전용 제한을 완화해, 비관리자도 본인 담당 과목(주/보조강사 + 과정담당자 + 개설자)인 경우 복사 허용
+    - 비관리자는 `tutor_id`를 본인 ID로만 허용해 타인 계정 지정 차단
+    - 과목/차시/섹션/담당자/과정담당자를 복제하고, 실패 시 신규 과목을 `status=-1`로 비활성 처리
+  - 삭제(`course_delete.jsp`):
+    - 비관리자도 본인 담당 과목(주/보조강사 + 과정담당자 + 개설자)만 삭제 허용
+    - 수강생(`LM_COURSE_USER.status NOT IN (-1,-4)`)이 있거나 선행과정 참조(`LM_COURSE_PRECEDE.precede_id`)가 있으면 삭제 차단
+    - 성공 시 과목 `status=-1`, 차시 `status=-1`, 선행과정 매핑(`course_id`측) 정리
+  - 교수목록(`tutor_list.jsp`):
+    - 관리자는 전체 교수/강사 목록
+    - 비관리자는 본인 1명만 반환(복사 권한 범위와 일치)
+- DB:
+  - 과목 본문/상태: `src/dao/CourseDao.java` → `LM_COURSE` (`status`, `etc2`, `manager_id`)
+  - 권한/담당자: `src/dao/CourseTutorDao.java`, `src/dao/CourseManagerDao.java`
+  - 삭제 제한: `src/dao/CourseUserDao.java`(`LM_COURSE_USER.status`), `src/dao/CoursePrecedeDao.java`(`LM_COURSE_PRECEDE`)
+  - 차시 정리: `src/dao/CourseLessonDao.java`(`LM_COURSE_LESSON.status`)
+- 출력:
+  - JSON: `rst_code`, `rst_message`, `rst_data`
+  - 운영 추적 로그: `m.log("course_copy"...), m.log("course_delete"...), m.log("tutor_list"...)`
+- 확인(근거):
+  - 정적 확인: `public_html/tutor_lms/api/course_copy.jsp`, `public_html/tutor_lms/api/course_delete.jsp`, `public_html/tutor_lms/api/tutor_list.jsp`에서 권한/차단/삭제 분기 확인
+  - 확인 경로(수동): 교수 계정으로 `담당과목 > 과목 세부 관리 > 복사/삭제` 호출 시 권한/차단 메시지 확인
+- 최근 갱신: 2026-02-20

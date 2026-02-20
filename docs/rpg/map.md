@@ -117,6 +117,11 @@
 |---|---|---|---|---|
 | 담당과목 > 설문관리: 설문 등록/목록/수정/삭제/결과 API 추가 | `GET public_html/tutor_lms/api/survey_list.jsp`, `POST public_html/tutor_lms/api/survey_insert.jsp`, `POST public_html/tutor_lms/api/survey_modify.jsp`, `POST public_html/tutor_lms/api/survey_delete.jsp`, `GET public_html/tutor_lms/api/survey_result.jsp` | `src/dao/SurveyDao.java`(`LM_SURVEY`), `src/dao/SurveyQuestionDao.java`(`LM_SURVEY_QUESTION`), `src/dao/SurveyItemDao.java`(`LM_SURVEY_ITEM`), `src/dao/SurveyUserDao.java`(`LM_SURVEY_USER`), `src/dao/SurveyResultDao.java`(`LM_SURVEY_RESULT`), `src/dao/CourseModuleDao.java`(`LM_COURSE_MODULE.result_yn`) | (React API 응답 JSON) | 정규(`course_type='R'`)는 기간(`apply_type=1`), 비정규는 차시(`apply_type=2`)로 배치. 익명/실명은 `LM_COURSE_MODULE.result_yn`으로 과목별 저장 |
 
+## 최근 작업(교수자 담당과목 복사/삭제)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 담당과목 > 과목 세부관리 상단 액션 대비: 과목 복사 권한 보강 + 과목 삭제 API 추가 | `POST public_html/tutor_lms/api/course_copy.jsp`, `POST public_html/tutor_lms/api/course_delete.jsp`, `GET public_html/tutor_lms/api/tutor_list.jsp` | `src/dao/CourseDao.java`(`LM_COURSE.status/etc2/manager_id`), `src/dao/CourseTutorDao.java`(`LM_COURSE_TUTOR.type`), `src/dao/CourseManagerDao.java`(`LM_COURSE_MANAGER`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER.status`), `src/dao/CoursePrecedeDao.java`(`LM_COURSE_PRECEDE`), `src/dao/CourseLessonDao.java`(`LM_COURSE_LESSON.status`) | (React API 응답 JSON) | 비관리자도 본인 담당 과목은 복사 가능(타인 지정 차단), 학사연동(`etc2='HAKSA_MAPPED'`) 복사/삭제 차단, 삭제 시 수강생/선행과정 참조 검사 후 soft delete |
+
 ## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
 |---|---|---|---|---|

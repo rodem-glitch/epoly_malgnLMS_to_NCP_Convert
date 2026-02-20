@@ -11,20 +11,46 @@ if(!m.isPost()) {
 	return;
 }
 
-if(!isAdmin) {
-	result.put("rst_code", "4030");
-	result.put("rst_message", "관리자 권한이 필요합니다.");
+int sourceCourseId = m.ri("source_course_id");
+String courseNm = m.rs("course_nm").trim();
+int tutorId = m.ri("tutor_id");
+m.log(
+	"course_copy",
+	"copy_start source_course_id=" + sourceCourseId
+	+ ", tutor_id=" + tutorId
+	+ ", request_user_id=" + userId
+	+ ", site_id=" + siteId
+	+ ", is_admin=" + isAdmin
+	+ ", course_nm_len=" + courseNm.length()
+);
+
+if(0 == sourceCourseId || "".equals(courseNm) || 0 == tutorId) {
+	m.log(
+		"course_copy",
+		"copy_invalid_param source_course_id=" + sourceCourseId
+		+ ", tutor_id=" + tutorId
+		+ ", request_user_id=" + userId
+		+ ", site_id=" + siteId
+		+ ", course_nm_len=" + courseNm.length()
+	);
+	result.put("rst_code", "1001");
+	result.put("rst_message", "필수값이 누락되었습니다.");
 	result.print();
 	return;
 }
 
-int sourceCourseId = m.ri("source_course_id");
-String courseNm = m.rs("course_nm").trim();
-int tutorId = m.ri("tutor_id");
-
-if(0 == sourceCourseId || "".equals(courseNm) || 0 == tutorId) {
-	result.put("rst_code", "1001");
-	result.put("rst_message", "필수값이 누락되었습니다.");
+// 왜: 교수자 담당과목에서도 복사 버튼을 사용할 수 있어야 하며,
+//     다른 교수 계정으로 임의 복사를 막기 위해 비관리자는 본인만 지정 가능하게 제한합니다.
+if(!isAdmin && tutorId != userId) {
+	m.log(
+		"course_copy",
+		"copy_permission_denied_tutor_assign source_course_id=" + sourceCourseId
+		+ ", tutor_id=" + tutorId
+		+ ", request_user_id=" + userId
+		+ ", site_id=" + siteId
+	);
+	result.put("rst_code", "4030");
+	result.put("rst_message", "본인 계정으로만 과목 복사가 가능합니다.");
 	result.print();
 	return;
 }
@@ -38,6 +64,13 @@ TutorDao tutor = new TutorDao();
 
 DataSet tinfo = tutor.find("user_id = " + tutorId + " AND site_id = " + siteId + " AND status = 1");
 if(!tinfo.next()) {
+	m.log(
+		"course_copy",
+		"copy_tutor_not_found source_course_id=" + sourceCourseId
+		+ ", tutor_id=" + tutorId
+		+ ", request_user_id=" + userId
+		+ ", site_id=" + siteId
+	);
 	result.put("rst_code", "4042");
 	result.put("rst_message", "담당 교수/강사 정보를 찾을 수 없습니다.");
 	result.print();
@@ -46,8 +79,62 @@ if(!tinfo.next()) {
 
 DataSet info = course.find("id = " + sourceCourseId + " AND site_id = " + siteId + " AND status != -1");
 if(!info.next()) {
+	m.log(
+		"course_copy",
+		"copy_source_not_found source_course_id=" + sourceCourseId
+		+ ", request_user_id=" + userId
+		+ ", site_id=" + siteId
+	);
 	result.put("rst_code", "4041");
 	result.put("rst_message", "원본 과목 정보가 없습니다.");
+	result.print();
+	return;
+}
+
+if(!isAdmin) {
+	// 왜: 담당과목 목록/상세와 동일한 권한 기준(주/보조강사 + 과정담당자 + 개설자)을 적용해야
+	//     화면에서 보이는 과목과 복사 가능 과목이 불일치하지 않습니다.
+	int tutorAccessCount = courseTutor.findCount(
+		"course_id = " + sourceCourseId
+		+ " AND user_id = " + userId
+		+ " AND type IN ('major', 'minor')"
+		+ " AND site_id = " + siteId
+	);
+	int managerAccessCount = courseManager.findCount(
+		"course_id = " + sourceCourseId
+		+ " AND user_id = " + userId
+		+ " AND site_id = " + siteId
+	);
+	int ownerAccessCount = course.findCount(
+		"id = " + sourceCourseId
+		+ " AND manager_id = " + userId
+		+ " AND site_id = " + siteId
+		+ " AND status != -1"
+	);
+	if(0 >= tutorAccessCount && 0 >= managerAccessCount && 0 >= ownerAccessCount) {
+		m.log(
+			"course_copy",
+			"copy_permission_denied_course source_course_id=" + sourceCourseId
+			+ ", request_user_id=" + userId
+			+ ", site_id=" + siteId
+		);
+		result.put("rst_code", "4031");
+		result.put("rst_message", "해당 과목을 복사할 권한이 없습니다.");
+		result.print();
+		return;
+	}
+}
+
+// 왜: 학사 연동 과목은 외부 시스템 기준값이 있어 LMS에서 복사 편집하면 데이터 기준이 어긋날 수 있어 차단합니다.
+if("HAKSA_MAPPED".equals(info.s("etc2"))) {
+	m.log(
+		"course_copy",
+		"copy_denied_haksa source_course_id=" + sourceCourseId
+		+ ", request_user_id=" + userId
+		+ ", site_id=" + siteId
+	);
+	result.put("rst_code", "4032");
+	result.put("rst_message", "학사 연동 과목은 복사할 수 없습니다.");
 	result.print();
 	return;
 }
@@ -134,14 +221,32 @@ try {
 	result.put("rst_message", "성공");
 	result.put("rst_data", newId);
 	result.print();
+	m.log(
+		"course_copy",
+		"copy_ok source_course_id=" + sourceCourseId
+		+ ", new_course_id=" + newId
+		+ ", tutor_id=" + tutorId
+		+ ", request_user_id=" + userId
+		+ ", site_id=" + siteId
+	);
 } catch(Exception e) {
+	String errMsg = (null != e.getMessage() && !"".equals(e.getMessage())) ? e.getMessage() : e.toString();
 	// 왜: 복사 중 오류가 나면 반쪽짜리 과목이 남지 않게 비활성 처리합니다.
 	if(newId > 0) {
 		course.item("status", -1);
 		course.update("id = " + newId + " AND site_id = " + siteId);
 	}
+	m.log(
+		"course_copy",
+		"copy_failed source_course_id=" + sourceCourseId
+		+ ", new_course_id=" + newId
+		+ ", tutor_id=" + tutorId
+		+ ", request_user_id=" + userId
+		+ ", site_id=" + siteId
+		+ ", message=" + m.replace(errMsg, "\n", " ")
+	);
 	result.put("rst_code", "2000");
-	result.put("rst_message", e.getMessage());
+	result.put("rst_message", errMsg);
 	result.print();
 }
 
