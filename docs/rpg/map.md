@@ -110,6 +110,7 @@
 |---|---|---|---|---|
 | 담당과목 > Q&A: FAQ 공지(자주 묻는 질문) CRUD API 추가 | `GET public_html/tutor_lms/api/qna_faq_notice_list.jsp`, `POST public_html/tutor_lms/api/qna_faq_notice_save.jsp`, `POST public_html/tutor_lms/api/qna_faq_notice_delete.jsp` | `src/dao/ClBoardDao.java`(`CL_BOARD.code='notice'`), `src/dao/ClPostDao.java`(`CL_POST.notice_yn/subject/content/status`) | (React API 응답 JSON) | FAQ 공지는 공지게시판 데이터 중 `notice_yn='Y'`로 구분. 일반 공지와 분리해 목록/수정/삭제하며, 관리자/주강사 권한 검증 적용 |
 | 담당과목 > 성적관리: 그래프용 분포 통계 API 추가(비정규/정규) | `GET public_html/tutor_lms/api/grades_distribution.jsp`, `GET public_html/tutor_lms/api/haksa_grade_distribution.jsp` | `src/dao/CourseUserDao.java`(`LM_COURSE_USER.total_score/progress_ratio`), `src/dao/PolyCourseGradeDao.java`(`LM_POLY_COURSE_GRADE.score/grade`), `src/dao/PolyCourseProfDao.java` | (React API 응답 JSON) | 점수구간(90~100/80~89/...)과 요약 통계(평균/최저/최고/인원수) 제공. 학사는 등급(A+~F) 분포도 함께 제공 |
+| 담당과목 > 학생 문의 채팅: 교수/학생 스레드형 메시지 API 추가 | `GET/POST public_html/tutor_lms/api/course_chat.jsp`, `GET/POST public_html/api/course_chat.jsp` | `src/dao/ClBoardDao.java`(`CL_BOARD.code='qna'`), `src/dao/ClPostDao.java`(`CL_POST.thread/depth/proc_status`), `src/dao/CourseTutorDao.java`, `src/dao/CourseManagerDao.java`, `src/dao/CourseUserDao.java` | (React/프론트 API 응답 JSON) | DB 추가 없이 Q&A 스레드를 채팅으로 재사용. 교수는 담당과목(주/보조강사+과정담당+개설자)만 접근, 학생은 본인 스레드만 접근 |
 
 ## 최근 작업(교수자 담당과목 설문)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |

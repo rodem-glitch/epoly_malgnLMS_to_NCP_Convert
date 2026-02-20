@@ -1019,3 +1019,35 @@
   - `python3 tools/poly_sync/run_poly_sync.py --base-url http://127.0.0.1:1` 실행 시 접속 오류와 비정상 종료코드 반환 확인
   - `tools/poly_sync/README.md`에 cron 예시/운영 주의사항 반영 확인
 - 최근 갱신: 2026-02-20
+
+### FLOW-2013: 과목 문의 채팅(교수/학생 공통 스레드)
+- 사용자 동작(의도):
+  - 교수: 담당과목 학생 문의 채팅방 목록을 보고 스레드에 답변
+  - 학생: 수강신청/수강 관련 문의를 과목 기준으로 채팅 형태로 등록/추가 질문
+- 진입점:
+  - 교수 API: `public_html/tutor_lms/api/course_chat.jsp` (`mode=rooms/messages/send`)
+  - 학생 API: `public_html/api/course_chat.jsp` (`mode=rooms/messages/send`)
+- 처리(핵심):
+  - 공통: 과목별 `CL_BOARD(code='qna')` + `CL_POST(thread/depth)`를 재사용해 채팅 스레드로 처리
+  - 교수 권한:
+    - 관리자(S/A) 또는 과목 권한자(주/보조강사 + 과정담당자 + 개설자)만 접근
+    - 메시지 전송 시 `depth=getThreadDepth(thread,'A')`로 새 메시지를 추가하고 루트 질문(`depth='A'`)의 `proc_status=1`로 갱신
+  - 학생 권한:
+    - 본인 로그인 필수, 본인 루트 스레드(`depth='A' and user_id=userId`)만 조회/전송 가능
+    - 신규 문의 생성은 `course_id + subject + content` 필수, `LM_COURSE_USER` 수강 이력(`status != -1`) 확인 후 스레드 생성
+    - 학생 추가 메시지 전송 시 루트 질문 `proc_status=0`으로 갱신
+  - 보안/품질:
+    - POST 강제(`send`), base64 이미지 본문 차단, 60000바이트 초과 차단
+    - 민감정보 없는 운영 로그(`m.log`)로 권한거부/저장실패/성공 추적
+- DB:
+  - 게시판/메시지: `src/dao/ClBoardDao.java` → `CL_BOARD`, `src/dao/ClPostDao.java` → `CL_POST`
+  - 과목 권한: `src/dao/CourseTutorDao.java`, `src/dao/CourseManagerDao.java`, `src/dao/CourseDao.java`
+  - 학생 수강 확인: `src/dao/CourseUserDao.java` → `LM_COURSE_USER`
+- 출력:
+  - JSON: `rst_code`, `rst_message`, `rst_data`, `rst_count`, `rst_thread`
+  - 목록(`rooms`): 최근 메시지 미리보기/응답상태
+  - 상세(`messages`): 스레드 전체 메시지 + 발신자 역할(`student/professor`) + 내 메시지 여부(`mine`)
+- 확인(근거):
+  - 정적 확인: `public_html/tutor_lms/api/course_chat.jsp`, `public_html/api/course_chat.jsp`에서 모드별 분기/권한/상태 갱신 로직 확인
+  - 문서 반영 확인: `docs/rpg/map.md`, `docs/rpg/hotspots.md` 동시 갱신
+- 최근 갱신: 2026-02-20

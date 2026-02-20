@@ -116,6 +116,13 @@
   - 점수는 집계 전에 0~100으로 보정(clamp)합니다. 원천 데이터 이상값을 그대로 쓰면 분포 구간이 깨질 수 있습니다.
   - 정규 분포의 `grade` 값은 운영 데이터 오염 가능성이 있어 `A+~F` 외 값을 `ETC`로 별도 집계합니다.
   - 관련 코드: `public_html/tutor_lms/api/grades_distribution.jsp`, `public_html/tutor_lms/api/haksa_grade_distribution.jsp`
+- 교수/학생 과목 문의 채팅 API(주의):
+  - 채팅은 신규 테이블이 아니라 `CL_POST` Q&A 스레드를 재사용합니다. `depth='A'`는 루트 문의, 답글은 `getThreadDepth(thread, 'A')`로 같은 레벨(`AA/AB/...`)에 누적하는 규칙을 유지해야 합니다.
+  - 교수 API(`public_html/tutor_lms/api/course_chat.jsp`)와 학생 API(`public_html/api/course_chat.jsp`)의 `proc_status` 갱신 기준이 다릅니다. 교수 전송은 `1(답변완료)`, 학생 전송은 `0(답변대기)`로 맞춰야 목록 상태가 뒤틀리지 않습니다.
+  - 교수 권한식은 담당과목 화면과 같은 기준(주/보조강사 + 과정담당자 + 개설자 + 관리자)을 사용해야 하며, 학생은 본인 루트 스레드만 조회/전송하도록 `user_id` 조건을 반드시 유지해야 합니다.
+  - 신규 학생 문의 생성은 `LM_COURSE_USER.status != -1` 수강 이력 확인이 없으면 임의 과목 문의가 가능해질 수 있어 권한 검증을 제거하면 안 됩니다.
+  - 본문은 base64 이미지/60000바이트를 차단합니다. 동일 제한이 빠지면 DB 용량 급증과 편집기 렌더 오류가 운영에서 반복될 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/course_chat.jsp`, `public_html/api/course_chat.jsp`
 - 교수자 담당과목 설문 API(주의):
   - 설문 API 권한식(관리자/주강사/과정담당/개설자)을 목록/등록/수정/삭제/결과에서 동일하게 유지해야, 화면별 403 불일치 회귀를 막을 수 있습니다.
   - 익명 설문(`LM_COURSE_MODULE.result_yn='Y'`)은 결과 상세에서 `user_nm/login_id/course_user_id`까지 함께 마스킹해야 실명 추적 단서를 차단할 수 있습니다.
