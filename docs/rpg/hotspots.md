@@ -111,6 +111,7 @@
   - `tools/gcp/templates/deploy-stack.sh.tpl`은 VM에서 Docker/Nginx/Certbot을 한 번에 설치하므로, 기존 운영 VM에 재실행하면 설정이 덮어써질 수 있습니다(신규 VM 기준 사용 권장).
   - GitHub Actions 배포에서 VM SSH 계정이 다르면 `gcloud compute scp/ssh` 단계가 즉시 실패합니다. 워크플로 시크릿 `GCP_VM_SSH_USER`를 실제 sudo 가능한 계정으로 맞춰야 합니다.
   - `.github/workflows/deploy-lms-gcp.yml`는 배포 시작 전에 필수 시크릿 누락을 즉시 실패시킵니다. 새 시크릿 추가/이름 변경 시 사전 점검 목록(`required_vars`)도 함께 수정해야 합니다.
+  - `.github/workflows/deploy-lms-gcp.yml`의 `jobs.deploy.if`(main 배포 가드)를 제거하면 `workflow_dispatch`에서 `dev` 수동 배포가 다시 열립니다. 브랜치 정책 변경 시 `push(main)` 자동 배포 유지 + `dev` 수동 차단을 함께 점검해야 합니다.
   - `GCP_VM_SSH_USER`는 필수값이 아니며, 비어 있어도 `one-click`이 SSH 후보를 자동 탐색합니다. 다만 보안 정책상 허용된 운영 계정이 명확하면 시크릿을 고정하는 편이 실패 분석에 유리합니다.
   - 워크플로우 `VM SSH 권한 사전 점검`에서 `sudo -n` 가능한 계정을 찾지 못하면 one-click 이전에 즉시 실패합니다. 이 경우 VM 내부 sudo 정책(비밀번호 필요 여부)을 먼저 조정해야 합니다.
   - SSH 사전 점검/배포 전송은 `ConnectTimeout=15`를 사용합니다. 네트워크가 막힌 환경에서는 빠르게 실패로 전환되므로, 반복 실패 시 방화벽/인스턴스 상태를 먼저 확인해야 합니다.

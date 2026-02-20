@@ -188,6 +188,22 @@
   - 출력 경로 확인: `public_html/html/main/search.html`, `public_html/html/main/search_detail.html`에서 추천영상 타이틀 카테고리 라벨 제거 + `course_block` 행의 `reco-video-row` 클래스 적용 + 요약/키워드 칩 슬롯 확인
 - 최근 갱신: 2026-02-11
 
+### FLOW-2102: GitHub Actions 배포 브랜치 가드(dev 배포 차단)
+- 사용자 동작(의도): GitHub Actions에서 `Deploy LMS to GCP + Firebase`를 수동 실행(`workflow_dispatch`)하거나 `main`에 push
+- 진입점: `.github/workflows/deploy-lms-gcp.yml` (`jobs.deploy`)
+- 처리(핵심):
+  - 자동 배포는 기존과 동일하게 `push.branches = main`에서만 실행
+  - 수동 배포(`workflow_dispatch`)는 `jobs.deploy.if`에서 `github.ref == 'refs/heads/main'`일 때만 실행
+  - `dev` 등 non-main 브랜치 수동 실행은 `deploy` job이 `skipped` 처리되어 운영 배포를 차단
+- DB: 없음(배포 워크플로우 제어)
+- 출력:
+  - `main`: 배포 job 실행
+  - `dev`: 배포 job 미실행(`skipped`)
+- 확인(근거):
+  - 파일 확인: `.github/workflows/deploy-lms-gcp.yml`의 `jobs.deploy.if`
+  - 명령 확인: `rg -n "workflow_dispatch|push:|branches:|- main|jobs:|deploy:|if:" .github/workflows/deploy-lms-gcp.yml`
+- 최근 갱신: 2026-02-20
+
 ### FLOW-1008: 강의실(학사 커리큘럼) 과제 `보기`는 차시 수강기간과 무관하게 이동
 - 사용자 동작(의도): 강의실의 학사(정규) 커리큘럼에서 과제 항목 `보기`를 눌러 과제 글로 바로 이동
 - 진입점:
