@@ -369,7 +369,7 @@ export function AttendanceManagePage() {
         weekSessionHeaders.push(sc === 1 ? `${w}주` : `${w}주-${s}차시`);
       }
     }
-    const headers = ['No', '이름', '학번', ...weekSessionHeaders, '결석횟수', 'F처리'];
+    const headers = ['No', '이름', '학번', ...weekSessionHeaders, '결석횟수', '출석률', 'F처리'];
     const rows = students.map((student, i) => {
       const cells: string[] = [];
       for (let w = 1; w <= weekCount; w++) {
@@ -379,12 +379,14 @@ export function AttendanceManagePage() {
         }
       }
       const absences = getAbsenceCount(student);
+      const rate = totalSessionCells > 0 ? Math.round(((totalSessionCells - absences) / totalSessionCells) * 100) : 0;
       return [
         i + 1,
         student.name,
         student.studentId,
         ...cells,
         absences,
+        `${rate}%`,
         absences >= absenceLimit ? 'Y' : 'N',
       ];
     });
@@ -627,6 +629,7 @@ export function AttendanceManagePage() {
                       );
                     })}
                     <th rowSpan={2} className="px-2 py-2 text-center text-gray-700 min-w-[44px] border-r border-gray-200">결석</th>
+                    <th rowSpan={2} className="px-2 py-2 text-center text-gray-700 min-w-[56px] border-r border-gray-200">출석률</th>
                     <th rowSpan={2} className="px-2 py-2 text-center text-gray-700 min-w-[44px]">상태</th>
                   </tr>
                   {/* 차시 번호 행 (차시가 2개 이상인 주가 있을 때만 표시) */}
@@ -697,6 +700,18 @@ export function AttendanceManagePage() {
                             {absences}
                           </span>
                         </td>
+                        <td className="px-2 py-2 text-center border-l border-gray-100">
+                          {(() => {
+                            const rate = totalSessionCells > 0 ? Math.round(((totalSessionCells - absences) / totalSessionCells) * 100) : 0;
+                            return (
+                              <span className={`text-xs font-medium ${
+                                rate >= 80 ? 'text-green-700' : rate >= 60 ? 'text-yellow-600' : 'text-red-700'
+                              }`}>
+                                {rate}%
+                              </span>
+                            );
+                          })()}
+                        </td>
                         <td className="px-2 py-2 text-center">
                           {isFail ? (
                             <span className="inline-flex px-2 py-0.5 bg-red-200 text-red-800 rounded-full text-xs font-bold">
@@ -714,7 +729,7 @@ export function AttendanceManagePage() {
 
                   {filteredStudents.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={totalSessionCells + 4} className="px-4 py-10 text-center text-gray-500">
+                      <td colSpan={totalSessionCells + 5} className="px-4 py-10 text-center text-gray-500">
                         {keyword ? '검색 결과가 없습니다.' : '수강생 데이터가 없습니다.'}
                       </td>
                     </tr>
