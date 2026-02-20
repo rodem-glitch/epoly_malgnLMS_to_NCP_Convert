@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ChevronDown, Download, Save, Search } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Download, Save, Search, Settings2 } from 'lucide-react';
 import { tutorLmsApi } from '../api/tutorLmsApi';
 import { downloadCsv } from '../utils/csv';
 
 // 왜: 교수자가 담당하는 모든 과목의 출결을 한눈에 관리하는 페이지입니다.
+// 왜: 주차별로 차시 수가 다를 수 있으므로 (예: 3학점 과목이라도 2시간/3시간 강의 가능)
+//     각 주차마다 차시 수를 설정하고, 차시별로 출결을 관리합니다.
 
 type AttendanceStatus = 'present' | 'late' | 'absent' | 'excused';
 
@@ -20,11 +22,13 @@ interface CourseItem {
   haksaGroupCode?: string;
 }
 
+// 왜: 차시별 출결을 관리하기 위해 키를 "주차_차시" 형식(예: "1_1", "3_2")으로 사용
 interface StudentAttendance {
   courseUserId: number;
   studentId: string;
   name: string;
-  weeks: Record<number, AttendanceStatus>;
+  // 키: "week_session" 형식 (예: "1_1" = 1주차 1차시, "3_2" = 3주차 2차시)
+  cells: Record<string, AttendanceStatus>;
 }
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
@@ -48,6 +52,11 @@ function toNum(val: unknown, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+// 셀 키 생성 헬퍼
+function cellKey(week: number, session: number): string {
+  return `${week}_${session}`;
+}
+
 export function AttendanceManagePage() {
   // === 과목 목록 ===
   const [courses, setCourses] = useState<CourseItem[]>([]);
@@ -63,6 +72,55 @@ export function AttendanceManagePage() {
   const [weekCount, setWeekCount] = useState(15);
   const [absenceLimit, setAbsenceLimit] = useState(4);
   const [dirty, setDirty] = useState(false);
+
+  // === 차시 설정 ===
+  // 왜: 주차별로 차시 수가 다를 수 있음 (예: 1주차=2시간, 2주차=3시간)
+  const [sessionsPerWeek, setSessionsPerWeek] = useState<Record<number, number>>({});
+  const [showSessionConfig, setShowSessionConfig] = useState(false);
+
+  // 주차별 차시 수 가져오기 (기본값 1)
+  const getSessionCount = (week: number) => sessionsPerWeek[week] || 1;
+
+  // 주차별 차시 수 변경
+  const updateSessionCount = (week: number, count: number) => {
+    setSessionsPerWeek(prev => ({ ...prev, [week]: Math.max(1, Math.min(6, count)) }));
+    // 왜: 차시 수가 줄어들면 해당 차시 출결 데이터 삭제 필요 없음 (보이지 않을 뿐)
+    //     차시 수가 늘어나면 새 차시는 '출석'으로 초기화
+    setStudents(prev => prev.map(student => {
+      const cells = { ...student.cells };
+      for (let s = 1; s <= count; s++) {
+        const key = cellKey(week, s);
+        if (!(key in cells)) {
+          cells[key] = 'present';
+        }
+      }
+      return { ...student, cells };
+    }));
+    setDirty(true);
+  };
+
+  // 전체 주차 차시 수 일괄 변경
+  const setAllSessionCount = (count: number) => {
+    const next: Record<number, number> = {};
+    for (let w = 1; w <= weekCount; w++) {
+      next[w] = count;
+    }
+    setSessionsPerWeek(next);
+    // 새 차시 셀 초기화
+    setStudents(prev => prev.map(student => {
+      const cells = { ...student.cells };
+      for (let w = 1; w <= weekCount; w++) {
+        for (let s = 1; s <= count; s++) {
+          const key = cellKey(w, s);
+          if (!(key in cells)) {
+            cells[key] = 'present';
+          }
+        }
+      }
+      return { ...student, cells };
+    }));
+    setDirty(true);
+  };
 
   // === 학사 복합키 생성 (MyCoursesList와 동일) ===
   const buildHaksaCourseId = (row: any): string => {
@@ -176,11 +234,14 @@ export function AttendanceManagePage() {
 
       // TODO: 실제 출석 데이터 API 호출. 현재는 전원 '출석'으로 초기화.
       const initial: StudentAttendance[] = studentList.map((s) => {
-        const weeks: Record<number, AttendanceStatus> = {};
+        const cells: Record<string, AttendanceStatus> = {};
         for (let w = 1; w <= weekCount; w++) {
-          weeks[w] = 'present';
+          const sessionCount = getSessionCount(w);
+          for (let ses = 1; ses <= sessionCount; ses++) {
+            cells[cellKey(w, ses)] = 'present';
+          }
         }
-        return { ...s, weeks };
+        return { ...s, cells };
       });
       setStudents(initial);
     } catch (e) {
@@ -188,7 +249,7 @@ export function AttendanceManagePage() {
     } finally {
       setLoading(false);
     }
-  }, [weekCount]);
+  }, [weekCount, sessionsPerWeek]);
 
   const handleSelectCourse = (courseId: string) => {
     if (dirty) {
@@ -201,23 +262,61 @@ export function AttendanceManagePage() {
     if (course) void fetchAttendance(course);
   };
 
-  // === 출석 상태 변경 ===
-  const toggleStatus = (studentIdx: number, week: number) => {
+  // === 출석 상태 변경 (차시 단위) ===
+  const toggleStatus = (studentIdx: number, week: number, session: number) => {
     setStudents((prev) => {
       const next = [...prev];
       const student = { ...next[studentIdx] };
-      const current = student.weeks[week] || 'present';
+      const key = cellKey(week, session);
+      const current = student.cells[key] || 'present';
       const ci = STATUS_CYCLE.indexOf(current);
-      student.weeks = { ...student.weeks, [week]: STATUS_CYCLE[(ci + 1) % STATUS_CYCLE.length] };
+      student.cells = { ...student.cells, [key]: STATUS_CYCLE[(ci + 1) % STATUS_CYCLE.length] };
       next[studentIdx] = student;
       return next;
     });
     setDirty(true);
   };
 
-  // === 결석 횟수 ===
+  // === 이후 차시 결석 처리 (우클릭) ===
+  // 왜: 1시간만 듣고 나간 학생의 경우, 해당 차시 이후를 한번에 결석 처리
+  const markAbsentAfter = (studentIdx: number, week: number, fromSession: number) => {
+    const sessionCount = getSessionCount(week);
+    if (fromSession >= sessionCount) return; // 마지막 차시면 할 필요 없음
+
+    setStudents((prev) => {
+      const next = [...prev];
+      const student = { ...next[studentIdx] };
+      const cells = { ...student.cells };
+      for (let s = fromSession + 1; s <= sessionCount; s++) {
+        cells[cellKey(week, s)] = 'absent';
+      }
+      student.cells = cells;
+      next[studentIdx] = student;
+      return next;
+    });
+    setDirty(true);
+  };
+
+  // === 주차 전체 상태 일괄 변경 ===
+  const setWeekStatus = (studentIdx: number, week: number, status: AttendanceStatus) => {
+    const sessionCount = getSessionCount(week);
+    setStudents((prev) => {
+      const next = [...prev];
+      const student = { ...next[studentIdx] };
+      const cells = { ...student.cells };
+      for (let s = 1; s <= sessionCount; s++) {
+        cells[cellKey(week, s)] = status;
+      }
+      student.cells = cells;
+      next[studentIdx] = student;
+      return next;
+    });
+    setDirty(true);
+  };
+
+  // === 결석 횟수 (차시 단위로 카운트) ===
   const getAbsenceCount = (student: StudentAttendance): number =>
-    Object.values(student.weeks).filter((s) => s === 'absent').length;
+    Object.values(student.cells).filter((s) => s === 'absent').length;
 
   // === 결석 초과 학생 ===
   const autoFailStudents = useMemo(
@@ -235,6 +334,13 @@ export function AttendanceManagePage() {
   }, [students, keyword]);
 
   const selectedCourse = courses.find((c) => c.courseId === selectedCourseId);
+
+  // === 전체 차시 수 (통계용) ===
+  const totalSessionCells = useMemo(() => {
+    let count = 0;
+    for (let w = 1; w <= weekCount; w++) count += getSessionCount(w);
+    return count;
+  }, [weekCount, sessionsPerWeek]);
 
   // === 저장 ===
   const handleSave = async () => {
@@ -255,16 +361,33 @@ export function AttendanceManagePage() {
   const handleDownloadCsv = () => {
     const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const filename = `attendance_${selectedCourse?.courseName ?? selectedCourseId}_${ymd}.csv`;
-    const weekHeaders = Array.from({ length: weekCount }, (_, i) => `${i + 1}주차`);
-    const headers = ['No', '이름', '학번', ...weekHeaders, '결석횟수', 'F처리'];
-    const rows = students.map((s, i) => [
-      i + 1,
-      s.name,
-      s.studentId,
-      ...Array.from({ length: weekCount }, (_, w) => STATUS_LABELS[s.weeks[w + 1] || 'present']),
-      getAbsenceCount(s),
-      getAbsenceCount(s) >= absenceLimit ? 'Y' : 'N',
-    ]);
+    // 왜: 차시별로 컬럼을 생성 (예: "1주-1차시", "1주-2차시")
+    const weekSessionHeaders: string[] = [];
+    for (let w = 1; w <= weekCount; w++) {
+      const sc = getSessionCount(w);
+      for (let s = 1; s <= sc; s++) {
+        weekSessionHeaders.push(sc === 1 ? `${w}주` : `${w}주-${s}차시`);
+      }
+    }
+    const headers = ['No', '이름', '학번', ...weekSessionHeaders, '결석횟수', 'F처리'];
+    const rows = students.map((student, i) => {
+      const cells: string[] = [];
+      for (let w = 1; w <= weekCount; w++) {
+        const sc = getSessionCount(w);
+        for (let s = 1; s <= sc; s++) {
+          cells.push(STATUS_LABELS[student.cells[cellKey(w, s)] || 'present']);
+        }
+      }
+      const absences = getAbsenceCount(student);
+      return [
+        i + 1,
+        student.name,
+        student.studentId,
+        ...cells,
+        absences,
+        absences >= absenceLimit ? 'Y' : 'N',
+      ];
+    });
     downloadCsv(filename, headers, rows);
   };
 
@@ -291,7 +414,7 @@ export function AttendanceManagePage() {
           {/* 제목 */}
           <div className="mr-auto">
             <h1 className="text-2xl font-bold text-gray-900">출석 관리</h1>
-            <p className="text-gray-500 text-sm mt-0.5">담당 과목별 학생들의 출결을 관리합니다.</p>
+            <p className="text-gray-500 text-sm mt-0.5">담당 과목별 학생들의 출결을 차시 단위로 관리합니다.</p>
           </div>
 
           {/* 과목 드롭다운 */}
@@ -366,7 +489,7 @@ export function AttendanceManagePage() {
 
           {/* 설정 바 */}
           <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
               <div>
                 <label className="block text-sm text-gray-700 mb-1">총 주차 수</label>
                 <input
@@ -403,27 +526,79 @@ export function AttendanceManagePage() {
                 </div>
               </div>
               <div>
+                <label className="block text-sm text-gray-700 mb-1">전체 차시 수 일괄 설정</label>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const count = Number(e.target.value);
+                    if (count > 0) setAllSessionCount(count);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">선택...</option>
+                  {[1, 2, 3, 4, 5, 6].map(n => (
+                    <option key={n} value={n}>전체 주차 {n}차시 ({n}시간)</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <button
                   onClick={handleAutoFail}
                   disabled={autoFailStudents.length === 0}
                   className="flex items-center gap-2 w-full justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors text-sm"
                 >
                   <AlertTriangle className="w-4 h-4" />
-                  <span>결석 초과 F 처리 ({autoFailStudents.length}명)</span>
+                  <span>F 처리 ({autoFailStudents.length}명)</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* 범례 */}
-          <div className="mb-3 flex gap-3 text-xs">
-            {STATUS_CYCLE.map((status) => (
-              <span key={status} className={`px-2 py-1 rounded ${STATUS_COLORS[status]}`}>
-                {STATUS_LABELS[status]}
-              </span>
-            ))}
-            <span className="text-gray-500 ml-2">셀을 클릭하면 상태가 전환됩니다</span>
+          {/* 차시 설정 토글 */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex gap-3 text-xs">
+              {STATUS_CYCLE.map((status) => (
+                <span key={status} className={`px-2 py-1 rounded ${STATUS_COLORS[status]}`}>
+                  {STATUS_LABELS[status]}
+                </span>
+              ))}
+              <span className="text-gray-500 ml-2">클릭: 상태 전환 · 우클릭: 이후 결석</span>
+            </div>
+            <button
+              onClick={() => setShowSessionConfig(prev => !prev)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                showSessionConfig
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              <span>주차별 차시 설정</span>
+            </button>
           </div>
+
+          {/* 주차별 차시 수 설정 (토글) */}
+          {showSessionConfig && (
+            <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <p className="text-xs text-indigo-600 mb-2">각 주차의 차시(시간) 수를 설정하세요. 1차시 = 1시간 기준.</p>
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: weekCount }, (_, i) => i + 1).map(week => (
+                  <div key={week} className="flex items-center gap-1 bg-white rounded-lg border border-indigo-200 px-2 py-1">
+                    <span className="text-xs text-gray-600 w-8">{week}주</span>
+                    <select
+                      value={getSessionCount(week)}
+                      onChange={(e) => updateSessionCount(week, Number(e.target.value))}
+                      className="px-1 py-0.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      {[1, 2, 3, 4, 5, 6].map(n => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 출석 테이블 */}
           {loading ? (
@@ -431,19 +606,44 @@ export function AttendanceManagePage() {
           ) : (
             <div className="overflow-x-auto border border-gray-200 rounded-lg">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-3 py-2 text-left text-gray-700 sticky left-0 bg-gray-50 z-10 min-w-[110px]">
+                <thead>
+                  {/* 왜: 2-row 헤더 — 1행은 주차(span), 2행은 차시 번호 */}
+                  <tr className="bg-gray-100 border-b border-gray-200">
+                    <th rowSpan={2} className="px-3 py-2 text-left text-gray-700 sticky left-0 bg-gray-100 z-10 min-w-[100px] border-r border-gray-200">
                       이름
                     </th>
-                    <th className="px-3 py-2 text-center text-gray-700 min-w-[80px]">학번</th>
-                    {Array.from({ length: weekCount }, (_, i) => (
-                      <th key={i} className="px-1 py-2 text-center text-gray-700 min-w-[48px] whitespace-nowrap">
-                        {i + 1}주
-                      </th>
-                    ))}
-                    <th className="px-3 py-2 text-center text-gray-700 min-w-[60px]">결석</th>
-                    <th className="px-3 py-2 text-center text-gray-700 min-w-[50px]">상태</th>
+                    <th rowSpan={2} className="px-3 py-2 text-center text-gray-700 min-w-[80px] border-r border-gray-200">학번</th>
+                    {Array.from({ length: weekCount }, (_, i) => {
+                      const week = i + 1;
+                      const sc = getSessionCount(week);
+                      return (
+                        <th
+                          key={week}
+                          colSpan={sc}
+                          className="px-1 py-1.5 text-center text-gray-700 whitespace-nowrap border-r border-gray-200"
+                        >
+                          <span className="text-xs">{week}주</span>
+                        </th>
+                      );
+                    })}
+                    <th rowSpan={2} className="px-2 py-2 text-center text-gray-700 min-w-[44px] border-r border-gray-200">결석</th>
+                    <th rowSpan={2} className="px-2 py-2 text-center text-gray-700 min-w-[44px]">상태</th>
+                  </tr>
+                  {/* 차시 번호 행 (차시가 2개 이상인 주가 있을 때만 표시) */}
+                  <tr className="bg-gray-50 border-b border-gray-300">
+                    {Array.from({ length: weekCount }, (_, i) => {
+                      const week = i + 1;
+                      const sc = getSessionCount(week);
+                      return Array.from({ length: sc }, (_, s) => (
+                        <th
+                          key={cellKey(week, s + 1)}
+                          className="px-0.5 py-1 text-center text-gray-500 whitespace-nowrap border-r border-gray-200 last:border-r"
+                          style={{ minWidth: '36px' }}
+                        >
+                          <span className="text-[10px]">{sc > 1 ? `${s + 1}차` : '·'}</span>
+                        </th>
+                      ));
+                    })}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -456,32 +656,48 @@ export function AttendanceManagePage() {
                         key={student.courseUserId}
                         className={`hover:bg-gray-50 transition-colors ${isFail ? 'bg-red-50' : ''}`}
                       >
-                        <td className="px-3 py-2 text-gray-900 sticky left-0 bg-white z-10">{student.name}</td>
-                        <td className="px-3 py-2 text-center text-gray-600">{student.studentId}</td>
-                        {Array.from({ length: weekCount }, (_, w) => {
-                          const week = w + 1;
-                          const status = student.weeks[week] || 'present';
-                          return (
-                            <td
-                              key={week}
-                              className="px-1 py-2 text-center cursor-pointer select-none"
-                              onClick={() => toggleStatus(originalIdx, week)}
-                              title={`${week}주차: ${STATUS_LABELS[status]} (클릭하여 변경)`}
-                            >
-                              <span
-                                className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[status]}`}
+                        <td className="px-3 py-2 text-gray-900 sticky left-0 bg-white z-10 border-r border-gray-100">{student.name}</td>
+                        <td className="px-3 py-2 text-center text-gray-600 border-r border-gray-100">{student.studentId}</td>
+                        {Array.from({ length: weekCount }, (_, i) => {
+                          const week = i + 1;
+                          const sc = getSessionCount(week);
+                          return Array.from({ length: sc }, (_, s) => {
+                            const session = s + 1;
+                            const key = cellKey(week, session);
+                            const status = student.cells[key] || 'present';
+                            return (
+                              <td
+                                key={key}
+                                className="px-0.5 py-1.5 text-center cursor-pointer select-none"
+                                onClick={() => toggleStatus(originalIdx, week, session)}
+                                onContextMenu={(e) => {
+                                  e.preventDefault();
+                                  if (sc > 1 && session < sc) {
+                                    // 우클릭: 이 차시 이후 전부 결석 처리
+                                    markAbsentAfter(originalIdx, week, session);
+                                  } else {
+                                    // 단일 차시이거나 마지막 차시면 주차 전체 상태 변경
+                                    const nextStatus = STATUS_CYCLE[(STATUS_CYCLE.indexOf(status) + 1) % STATUS_CYCLE.length];
+                                    setWeekStatus(originalIdx, week, nextStatus);
+                                  }
+                                }}
+                                title={`${week}주차 ${sc > 1 ? `${session}차시` : ''}: ${STATUS_LABELS[status]}\n클릭: 상태 전환\n우클릭: ${sc > 1 && session < sc ? '이후 결석 처리' : '주차 전체 변경'}`}
                               >
-                                {STATUS_LABELS[status].charAt(0)}
-                              </span>
-                            </td>
-                          );
+                                <span
+                                  className={`inline-block px-1 py-0.5 rounded text-[10px] font-medium ${STATUS_COLORS[status]}`}
+                                >
+                                  {STATUS_LABELS[status].charAt(0)}
+                                </span>
+                              </td>
+                            );
+                          });
                         })}
-                        <td className="px-3 py-2 text-center">
+                        <td className="px-2 py-2 text-center border-l border-gray-100">
                           <span className={`font-medium ${isFail ? 'text-red-700' : 'text-gray-700'}`}>
                             {absences}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-center">
+                        <td className="px-2 py-2 text-center">
                           {isFail ? (
                             <span className="inline-flex px-2 py-0.5 bg-red-200 text-red-800 rounded-full text-xs font-bold">
                               F
@@ -498,7 +714,7 @@ export function AttendanceManagePage() {
 
                   {filteredStudents.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={weekCount + 4} className="px-4 py-10 text-center text-gray-500">
+                      <td colSpan={totalSessionCells + 4} className="px-4 py-10 text-center text-gray-500">
                         {keyword ? '검색 결과가 없습니다.' : '수강생 데이터가 없습니다.'}
                       </td>
                     </tr>
