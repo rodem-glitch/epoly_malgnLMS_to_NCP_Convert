@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-21 19:05
+최근 자동 갱신: 2026-02-21 19:29
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -1149,4 +1149,30 @@
 - 확인(근거):
   - 정적 확인: `project/components/QuestionBankPage.tsx`, `project/api/tutorLmsApi.ts`, `public_html/tutor_lms/api/question_bank_list.jsp`
   - 빌드 확인: `cd project && cmd /c npm run build` 성공
+- 최근 갱신: 2026-02-21
+
+### FLOW-2017: 교수자 과제 템플릿 탭 서버 연동(localStorage → DB CRUD)
+- 사용자 동작(의도):
+  - 교수자가 과제 템플릿 탭에서 만든 템플릿을 브라우저에만 임시 저장하지 않고, 계정 기준으로 서버에 저장/조회/삭제해서 여러 PC에서도 동일하게 사용
+- 진입점:
+  - 프론트: `project/components/AssignmentTemplateTab.tsx`
+  - API 클라이언트: `project/api/tutorLmsApi.ts`
+  - 백엔드 API: `GET public_html/tutor_lms/api/homework_template_list.jsp`, `POST public_html/tutor_lms/api/homework_template_save.jsp`, `POST public_html/tutor_lms/api/homework_template_delete.jsp`
+- 처리(핵심):
+  - 템플릿 탭의 `localStorage` 저장/조회 코드를 제거하고 API 기반 목록 로딩 + 저장 + 삭제로 교체
+  - 저장 API는 제목/설명/배점/제출방식/허용확장자/최대용량/지각설정을 검증 후 `LM_HOMEWORK_TEMPLATE`에 insert/update
+  - 삭제 API는 물리 삭제 대신 `status=-1` 소프트 삭제로 처리
+  - 목록 API는 로그인 사용자(`manager_id=userId`) 기준 템플릿만 반환해 계정별 격리 유지
+  - 기존 다중 업로드 동선(`course_ids` 기반 `homework_insert.jsp`)은 그대로 유지해 템플릿 저장소만 서버화
+- DB:
+  - DAO: `src/dao/HomeworkTemplateDao.java`
+  - 테이블: `LM_HOMEWORK_TEMPLATE` (`template_nm`, `description`, `submission_type`, `file_types`, `allow_late_submission_yn`, `late_penalty`, `status` 등)
+  - DDL: `public_html/ddl_homework_template.sql`
+- 출력:
+  - 목록: `rst_data` 템플릿 배열
+  - 저장: `rst_data` 저장된 템플릿 ID
+  - 삭제: `rst_data` 삭제된 템플릿 ID
+- 확인(근거):
+  - 정적 확인: `project/components/AssignmentTemplateTab.tsx`, `project/api/tutorLmsApi.ts`, `public_html/tutor_lms/api/homework_template_list.jsp`, `public_html/tutor_lms/api/homework_template_save.jsp`, `public_html/tutor_lms/api/homework_template_delete.jsp`
+  - 확인 경로(수동): `과제관리 > 과제 템플릿`에서 템플릿 생성/수정/삭제 후 새로고침 시 동일 계정 데이터 유지 확인
 - 최근 갱신: 2026-02-21

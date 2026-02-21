@@ -11,11 +11,11 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react';
-import { tutorLmsApi } from '../api/tutorLmsApi';
+import { tutorLmsApi, type TutorHomeworkTemplateRow } from '../api/tutorLmsApi';
 
 // ─── 템플릿 데이터 타입 ──────────────────────────────────────────
 type AssignmentTemplate = {
-  id: string;
+  id: number;
   title: string;
   description: string;
   totalScore: number;
@@ -25,21 +25,30 @@ type AssignmentTemplate = {
   allowLateSubmission: boolean;
   latePenalty: number;
   createdAt: string;
+  createdAtConv: string;
 };
 
-const STORAGE_KEY = 'assignment-templates';
-
-function loadTemplates(): AssignmentTemplate[] {
-  try {
-    const json = localStorage.getItem(STORAGE_KEY);
-    return json ? JSON.parse(json) : [];
-  } catch {
-    return [];
-  }
+function normalizeSubmissionType(value: string): 'file' | 'text' | 'both' {
+  if (value === 'text' || value === 'both') return value;
+  return 'file';
 }
 
-function saveTemplates(templates: AssignmentTemplate[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
+function toAssignmentTemplate(row: TutorHomeworkTemplateRow): AssignmentTemplate {
+  const rawRegDate = String(row.reg_date || '');
+  const regDateConv = String(row.reg_date_conv || '').trim();
+  return {
+    id: Number(row.id),
+    title: String(row.template_nm || '').trim(),
+    description: String(row.description || ''),
+    totalScore: Number(row.total_score ?? 0),
+    submissionType: normalizeSubmissionType(String(row.submission_type || 'file')),
+    fileTypes: String(row.file_types || ''),
+    maxFileSize: Number(row.max_file_size ?? 10),
+    allowLateSubmission: String(row.allow_late_submission_yn || 'N') === 'Y',
+    latePenalty: Number(row.late_penalty ?? 0),
+    createdAt: rawRegDate,
+    createdAtConv: regDateConv || rawRegDate || '-',
+  };
 }
 
 // ─── 과목 타입 (다중 업로드용) ──────────────────────────────────
@@ -51,16 +60,34 @@ type CourseOption = {
 
 // ─── 메인 탭 컴포넌트 ───────────────────────────────────────────
 export function AssignmentTemplateTab() {
-  const [templates, setTemplates] = useState<AssignmentTemplate[]>(() => loadTemplates());
+  const [templates, setTemplates] = useState<AssignmentTemplate[]>([]);
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<AssignmentTemplate | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadTarget, setUploadTarget] = useState<AssignmentTemplate | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // persist
+  const fetchTemplates = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await tutorLmsApi.getHomeworkTemplates();
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      const rows = Array.isArray(res.rst_data) ? res.rst_data : [];
+      setTemplates(rows.map(toAssignmentTemplate));
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : '과제 템플릿을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    saveTemplates(templates);
-  }, [templates]);
+    void fetchTemplates();
+  }, []);
 
   const handleCreate = () => {
     setEditingTemplate(null);
@@ -72,26 +99,45 @@ export function AssignmentTemplateTab() {
     setShowFormModal(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm('이 템플릿을 삭제하시겠습니까?')) return;
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    setDeletingId(id);
+    setErrorMessage(null);
+    try {
+      const res = await tutorLmsApi.deleteHomeworkTemplate({ id });
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : '템플릿 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
-  const handleSave = (data: Omit<AssignmentTemplate, 'id' | 'createdAt'>) => {
-    if (editingTemplate) {
-      setTemplates((prev) =>
-        prev.map((t) => (t.id === editingTemplate.id ? { ...t, ...data } : t)),
-      );
-    } else {
-      const newTpl: AssignmentTemplate = {
-        ...data,
-        id: `tpl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        createdAt: new Date().toISOString(),
-      };
-      setTemplates((prev) => [newTpl, ...prev]);
+  const handleSave = async (data: Omit<AssignmentTemplate, 'id' | 'createdAt' | 'createdAtConv'>) => {
+    setSaving(true);
+    setErrorMessage(null);
+    try {
+      const res = await tutorLmsApi.saveHomeworkTemplate({
+        id: editingTemplate?.id,
+        templateName: data.title,
+        description: data.description,
+        totalScore: data.totalScore,
+        submissionType: data.submissionType,
+        fileTypes: data.fileTypes,
+        maxFileSize: data.maxFileSize,
+        allowLateSubmission: data.allowLateSubmission,
+        latePenalty: data.latePenalty,
+      });
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      await fetchTemplates();
+      setShowFormModal(false);
+      setEditingTemplate(null);
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : '템플릿 저장 중 오류가 발생했습니다.');
+    } finally {
+      setSaving(false);
     }
-    setShowFormModal(false);
-    setEditingTemplate(null);
   };
 
   const handleOpenUpload = (tpl: AssignmentTemplate) => {
@@ -110,6 +156,12 @@ export function AssignmentTemplateTab() {
 
   return (
     <div className="space-y-6">
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {errorMessage}
+        </div>
+      )}
+
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
@@ -120,6 +172,7 @@ export function AssignmentTemplateTab() {
         </div>
         <button
           onClick={handleCreate}
+          disabled={loading || saving}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -128,7 +181,11 @@ export function AssignmentTemplateTab() {
       </div>
 
       {/* 템플릿 카드 목록 */}
-      {templates.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-16 border border-gray-200 rounded-lg text-gray-500">
+          템플릿을 불러오는 중...
+        </div>
+      ) : templates.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-lg">
           <BookOpen className="w-12 h-12 mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500 mb-1">저장된 과제 템플릿이 없습니다.</p>
@@ -170,18 +227,20 @@ export function AssignmentTemplateTab() {
 
               <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                 <span className="text-xs text-gray-400">
-                  {new Date(tpl.createdAt).toLocaleDateString('ko-KR')}
+                  {tpl.createdAtConv || '-'}
                 </span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleEdit(tpl)}
+                    disabled={saving || deletingId === tpl.id}
                     className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     title="수정"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(tpl.id)}
+                    onClick={() => { void handleDelete(tpl.id); }}
+                    disabled={saving || deletingId === tpl.id}
                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="삭제"
                   >
@@ -189,6 +248,7 @@ export function AssignmentTemplateTab() {
                   </button>
                   <button
                     onClick={() => handleOpenUpload(tpl)}
+                    disabled={saving || deletingId === tpl.id}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors ml-1"
                     title="여러 강의에 업로드"
                   >
@@ -207,6 +267,7 @@ export function AssignmentTemplateTab() {
         <TemplateFormModal
           initial={editingTemplate}
           onSave={handleSave}
+          saving={saving}
           onClose={() => {
             setShowFormModal(false);
             setEditingTemplate(null);
@@ -232,10 +293,12 @@ export function AssignmentTemplateTab() {
 function TemplateFormModal({
   initial,
   onSave,
+  saving,
   onClose,
 }: {
   initial: AssignmentTemplate | null;
-  onSave: (data: Omit<AssignmentTemplate, 'id' | 'createdAt'>) => void;
+  onSave: (data: Omit<AssignmentTemplate, 'id' | 'createdAt' | 'createdAtConv'>) => Promise<void>;
+  saving: boolean;
   onClose: () => void;
 }) {
   const [form, setForm] = useState({
@@ -251,7 +314,7 @@ function TemplateFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form);
+    void onSave(form);
   };
 
   return (
@@ -261,7 +324,7 @@ function TemplateFormModal({
           <h3 className="text-lg font-semibold text-gray-900">
             {initial ? '템플릿 수정' : '새 과제 템플릿'}
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} disabled={saving} className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -435,15 +498,17 @@ function TemplateFormModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={saving}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               취소
             </button>
             <button
               type="submit"
+              disabled={saving}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {initial ? '수정' : '저장'}
+              {saving ? '저장 중...' : initial ? '수정' : '저장'}
             </button>
           </div>
         </form>

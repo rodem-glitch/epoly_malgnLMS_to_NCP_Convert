@@ -784,6 +784,22 @@ export type TutorHomeworkFeedbackTemplateRow = {
   mod_date_conv?: string;
 };
 
+export type TutorHomeworkTemplateRow = {
+  id: number;
+  template_nm: string;
+  description: string;
+  total_score: number;
+  submission_type: 'file' | 'text' | 'both' | string;
+  file_types?: string;
+  max_file_size?: number;
+  allow_late_submission_yn?: 'Y' | 'N' | string;
+  late_penalty?: number;
+  reg_date?: string;
+  mod_date?: string;
+  reg_date_conv?: string;
+  mod_date_conv?: string;
+};
+
 export type TutorSurveyRow = {
   survey_id: number;
   module_nm?: string;
@@ -2582,6 +2598,53 @@ export const tutorLmsApi = {
     body.set('faq_id', String(payload.faqId));
 
     return requestJson<number>(`/tutor_lms/api/qna_faq_notice_delete.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async getHomeworkTemplates(params: { limit?: number } = {}) {
+    const url = `/tutor_lms/api/homework_template_list.jsp${buildQuery({
+      limit: params.limit,
+    })}`;
+    return requestJson<TutorHomeworkTemplateRow[]>(url);
+  },
+
+  async saveHomeworkTemplate(payload: {
+    id?: number;
+    templateName: string;
+    description: string;
+    totalScore: number;
+    submissionType: 'file' | 'text' | 'both';
+    fileTypes?: string;
+    maxFileSize?: number;
+    allowLateSubmission?: boolean;
+    latePenalty?: number;
+  }) {
+    const body = new URLSearchParams();
+    if (payload.id) body.set('id', String(payload.id));
+    body.set('template_nm', payload.templateName);
+    body.set('description', payload.description);
+    body.set('total_score', String(Math.max(0, Number(payload.totalScore ?? 0))));
+    body.set('submission_type', payload.submissionType);
+    body.set('file_types', payload.fileTypes ?? '');
+    body.set('max_file_size', String(Math.max(0, Number(payload.maxFileSize ?? 10))));
+    body.set('allow_late_submission_yn', payload.allowLateSubmission ? 'Y' : 'N');
+    body.set('late_penalty', String(Math.max(0, Math.min(100, Number(payload.latePenalty ?? 0)))));
+
+    return requestJson<number>(`/tutor_lms/api/homework_template_save.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async deleteHomeworkTemplate(payload: { id: number }) {
+    const body = new URLSearchParams();
+    body.set('id', String(payload.id));
+
+    return requestJson<number>(`/tutor_lms/api/homework_template_delete.jsp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,

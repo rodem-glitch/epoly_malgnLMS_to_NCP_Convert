@@ -5,7 +5,7 @@
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-21 19:05
+최근 자동 갱신: 2026-02-21 19:29
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -256,6 +256,12 @@
   - 유사도 분석은 `run`과 `list`가 분리된 API입니다. 목록만 호출하면 최신 결과가 아닐 수 있으므로 `run -> list` 순서를 유지해야 회귀를 막을 수 있습니다.
   - 제출 상세 API(`homework_user_submission.jsp`)의 `feedback_files`와 별도 목록 API(`homework_feedback_file_list.jsp`)의 응답 구조를 프론트에서 동일하게 매핑해야 모달 간 표시 불일치가 발생하지 않습니다.
   - 관련 코드: `project/api/tutorLmsApi.ts`, `project/components/CourseManagement.tsx`, `project/components/HomeworkTaskDetailModal.tsx`, `project/components/HomeworkSubmissionDetailModal.tsx`, `public_html/tutor_lms/api/course_copy.jsp`, `public_html/tutor_lms/api/course_delete.jsp`, `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`, `public_html/tutor_lms/api/homework_similarity_run.jsp`, `public_html/tutor_lms/api/homework_similarity_list.jsp`
+- 교수자 과제 템플릿(localStorage → 서버 DB) 전환 주의:
+  - 템플릿 저장소가 브라우저 localStorage에서 `LM_HOMEWORK_TEMPLATE`로 바뀌었으므로, 화면은 API 실패 시 임시 저장으로 조용히 폴백하면 안 됩니다(서버오류를 즉시 노출).
+  - 템플릿 목록/저장/삭제는 `manager_id=userId` 기준으로만 처리해야 하며, 관리자 계정도 다른 교수 템플릿을 기본 조회하지 않도록 유지해야 계정 간 데이터 혼선을 막을 수 있습니다.
+  - 템플릿 삭제는 소프트 삭제(`status=-1`)이므로 운영 중 복구/감사 추적이 가능하지만, 목록 API에서 `status=1` 필터가 빠지면 삭제 데이터가 다시 노출됩니다.
+  - 템플릿의 허용파일형식(`file_types`)은 과제 생성 시 `submit_file_ext_*`로 전달되는 입력원본입니다. 저장 단계에서 길이/형식 검증이 없으면 과제 등록 API 검증 실패가 후속 화면에서 반복될 수 있습니다.
+  - 관련 코드: `project/components/AssignmentTemplateTab.tsx`, `project/api/tutorLmsApi.ts`, `src/dao/HomeworkTemplateDao.java`, `public_html/tutor_lms/api/homework_template_list.jsp`, `public_html/tutor_lms/api/homework_template_save.jsp`, `public_html/tutor_lms/api/homework_template_delete.jsp`, `public_html/ddl_homework_template.sql`
 - Spring Boot 통계(SGIS) 전국 코드 주의:
   - 산업별 통계에서 전국 전체(`admCd=00`)는 응답 시점에 따라 값이 비는 경우가 있어, 시도 코드 합산 경로를 유지해야 합니다.
   - 시도코드 체계(SGIS/로컬) 불일치 가능성이 있어, 합계가 0이면 대체 코드 체계로 재합산하는 방어가 필요합니다.
