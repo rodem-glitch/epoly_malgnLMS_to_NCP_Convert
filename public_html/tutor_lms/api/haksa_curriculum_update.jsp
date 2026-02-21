@@ -180,8 +180,8 @@ try {
 					JSONObject sessionObj = sessions.optJSONObject(s);
 					if(sessionObj == null) continue;
 					oldSeq++;
-					int oldSessionNo = sessionObj.optInt("sessionNo", 0);
-					if(oldSessionNo <= 0) oldSessionNo = oldSeq;
+					int oldChapterNo = sessionObj.optInt("chapterNo", 0);
+					if(oldChapterNo <= 0) oldChapterNo = oldSeq;
 					JSONArray contents = sessionObj.optJSONArray("contents");
 					if(contents == null) continue;
 					for(int c = 0; c < contents.length(); c++) {
@@ -206,7 +206,7 @@ try {
 							if(lid > 0) oldLibraryIds.add(lid);
 						} else if("video".equalsIgnoreCase(t)) {
 							int lessonId = content.optInt("lessonId", 0);
-							if(lessonId > 0) oldVideoKeys.add(lessonId + ":" + oldSessionNo);
+							if(lessonId > 0) oldVideoKeys.add(lessonId + ":" + oldChapterNo);
 						}
 					}
 				}
@@ -232,7 +232,7 @@ try {
 					if(lid > 0) oldLibraryIds.add(lid);
 				} else if("video".equalsIgnoreCase(t)) {
 					int lessonId = content.optInt("lessonId", 0);
-					if(lessonId > 0) oldVideoKeys.add(lessonId + ":1");
+					if(lessonId > 0) oldVideoKeys.add(lessonId + ":" + (i + 1));
 				}
 			}
 		}
@@ -255,8 +255,21 @@ if(mappedCourseId > 0) {
 				JSONObject sessionObj = sessions.optJSONObject(s);
 				if(sessionObj == null) continue;
 				seq++;
+				int weekNumber = w.optInt("weekNumber", i + 1);
+				if(weekNumber <= 0) weekNumber = i + 1;
 				int sessionNo = sessionObj.optInt("sessionNo", 0);
-				if(sessionNo <= 0) sessionNo = seq;
+				if(sessionNo <= 0) {
+					sessionNo = s + 1;
+					sessionObj.put("sessionNo", sessionNo);
+					curriculumChanged = true;
+				}
+				// 왜: 정규(주차>차시)에서는 같은 sessionNo(예: 각 주차 1차시)가 반복될 수 있어,
+				//     DB chapter는 "전체 순서" 기준 고유값으로 저장해야 차시가 한 곳으로 몰리지 않습니다.
+				int chapterNo = seq;
+				if(sessionObj.optInt("chapterNo", 0) != chapterNo) {
+					sessionObj.put("chapterNo", chapterNo);
+					curriculumChanged = true;
+				}
 
 				// 차시 기간(없으면 빈 값)
 				String sDate = sessionObj.optString("startDate", "");
@@ -599,13 +612,13 @@ if(mappedCourseId > 0) {
 							}
 						}
 						if(lessonId <= 0) {
-							m.log("haksa_curriculum", "[update] unresolved video lessonId course_id=" + mappedCourseId + ", session_no=" + sessionNo + ", raw_lesson_id=" + rawLessonId);
+							m.log("haksa_curriculum", "[update] unresolved video lessonId course_id=" + mappedCourseId + ", week_no=" + weekNumber + ", session_no=" + sessionNo + ", chapter_no=" + chapterNo + ", raw_lesson_id=" + rawLessonId);
 							continue;
 						}
 						if(content.optInt("lessonId", 0) != lessonId) {
 							content.put("lessonId", lessonId);
 							curriculumChanged = true;
-							m.log("haksa_curriculum", "[update] lessonId normalized course_id=" + mappedCourseId + ", session_no=" + sessionNo + ", lesson_id=" + lessonId);
+							m.log("haksa_curriculum", "[update] lessonId normalized course_id=" + mappedCourseId + ", week_no=" + weekNumber + ", session_no=" + sessionNo + ", chapter_no=" + chapterNo + ", lesson_id=" + lessonId);
 						}
 
 						// 1) 인정시간(completeTime) → LM_LESSON.complete_time 동기화
@@ -627,13 +640,15 @@ if(mappedCourseId > 0) {
 						}
 
 						// 2) 차시 구성(LM_COURSE_LESSON) 동기화
-						newVideoKeys.add(lessonId + ":" + sessionNo);
+						newVideoKeys.add(lessonId + ":" + chapterNo);
 
 						int exist = courseLesson.findCount(
-							"course_id = " + mappedCourseId + " AND lesson_id = " + lessonId + " AND chapter = " + sessionNo
+							"course_id = " + mappedCourseId + " AND lesson_id = " + lessonId + " AND site_id = " + siteId + " AND status != -1"
 						);
 						if(exist > 0) {
 							courseLesson.clear();
+							courseLesson.item("section_id", 0);
+							courseLesson.item("chapter", chapterNo);
 							courseLesson.item("start_date", sDate);
 							courseLesson.item("end_date", eDate);
 							courseLesson.item("start_time", sTime);
@@ -642,7 +657,6 @@ if(mappedCourseId > 0) {
 							courseLesson.update(
 								"course_id = " + mappedCourseId
 								+ " AND lesson_id = " + lessonId
-								+ " AND chapter = " + sessionNo
 								+ " AND site_id = " + siteId
 							);
 						} else {
@@ -651,7 +665,7 @@ if(mappedCourseId > 0) {
 							courseLesson.item("lesson_id", lessonId);
 							courseLesson.item("section_id", 0);
 							courseLesson.item("site_id", siteId);
-							courseLesson.item("chapter", sessionNo);
+							courseLesson.item("chapter", chapterNo);
 							courseLesson.item("start_day", 0);
 							courseLesson.item("period", 0);
 							courseLesson.item("start_date", sDate);

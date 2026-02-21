@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-11
+최근 갱신: 2026-02-20
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-20 12:08
+최근 자동 갱신: 2026-02-19 16:55
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -188,6 +188,22 @@
   - 출력 경로 확인: `public_html/html/main/search.html`, `public_html/html/main/search_detail.html`에서 추천영상 타이틀 카테고리 라벨 제거 + `course_block` 행의 `reco-video-row` 클래스 적용 + 요약/키워드 칩 슬롯 확인
 - 최근 갱신: 2026-02-11
 
+### FLOW-2102: GitHub Actions 배포 브랜치 가드(dev 배포 차단)
+- 사용자 동작(의도): GitHub Actions에서 `Deploy LMS to GCP + Firebase`를 수동 실행(`workflow_dispatch`)하거나 `main`에 push
+- 진입점: `.github/workflows/deploy-lms-gcp.yml` (`jobs.deploy`)
+- 처리(핵심):
+  - 자동 배포는 기존과 동일하게 `push.branches = main`에서만 실행
+  - 수동 배포(`workflow_dispatch`)는 `jobs.deploy.if`에서 `github.ref == 'refs/heads/main'`일 때만 실행
+  - `dev` 등 non-main 브랜치 수동 실행은 `deploy` job이 `skipped` 처리되어 운영 배포를 차단
+- DB: 없음(배포 워크플로우 제어)
+- 출력:
+  - `main`: 배포 job 실행
+  - `dev`: 배포 job 미실행(`skipped`)
+- 확인(근거):
+  - 파일 확인: `.github/workflows/deploy-lms-gcp.yml`의 `jobs.deploy.if`
+  - 명령 확인: `rg -n "workflow_dispatch|push:|branches:|- main|jobs:|deploy:|if:" .github/workflows/deploy-lms-gcp.yml`
+- 최근 갱신: 2026-02-20
+
 ### FLOW-1008: 강의실(학사 커리큘럼) 과제 `보기`는 차시 수강기간과 무관하게 이동
 - 사용자 동작(의도): 강의실의 학사(정규) 커리큘럼에서 과제 항목 `보기`를 눌러 과제 글로 바로 이동
 - 진입점:
@@ -230,6 +246,144 @@
   - 코드 분기 확인: `public_html/tutor_lms/index.jsp`, `public_html/member/login.jsp`, `public_html/mypage/new_main/index.jsp`
   - 로컬 응답 확인: `curl /tutor_lms/index.jsp`가 `top.location.replace('/member/login.jsp?returl=...')`를 반환하고, `curl /member/login.jsp?returl=%2Ftutor_lms%2Findex.jsp`가 `302 -> /mypage/new_main/?login_required=Y&returl=%2Ftutor_lms%2Findex.jsp`를 반환함
 - 최근 갱신: 2026-02-10
+
+### FLOW-2002: 교수자 담당과목(학사 탭) 학기 코드 표시 변환
+- 사용자 동작(의도): 교수자 `담당과목` 학사 탭에서 `10학기/20학기` 같은 코드형 학기 대신 사람이 읽는 학기명으로 확인
+- 진입점:
+  - 목록 API: `public_html/tutor_lms/api/course_list_combined.jsp`
+  - 단건 조회 API(딥링크/직접열기): `public_html/tutor_lms/api/course_resolve.jsp`
+- 처리(핵심):
+  - `open_term` 원본 코드는 저장/조회 키(`course_code/open_year/open_term/bunban_code/group_code`)로 계속 유지
+  - 표시 전용 변환 함수(`getHaksaOpenTermLabel`)를 추가해 `period_conv`만 학기명으로 변환
+  - 매핑 기준: `10/1=1학기`, `11=여름학기`, `20/2=2학기`, `21=겨울학기`, `30=기타`
+  - 미정의 코드는 숨기지 않고 원본값 그대로 노출해 데이터 이상을 확인 가능하게 유지
+- DB:
+  - 기존 동일: `LM_POLY_COURSE`(`open_year`, `open_term` 등) 및 연계 키 컬럼
+  - `open_term` DB 원본값은 변경하지 않음
+- 출력:
+  - 목록/단건 JSON의 `period_conv`가 `YYYY-학기명` 형식으로 반환
+  - 보조 표시 필드 `haksa_open_term_conv` 추가
+- 확인(근거):
+  - 코드 반영 위치 확인: `public_html/tutor_lms/api/course_list_combined.jsp`, `public_html/tutor_lms/api/course_resolve.jsp`
+  - 로컬 확인 경로: `http://localhost:8080/tutor_lms` 담당과목 > 학사 탭, 그리고 `/tutor_lms/api/course_list_combined.jsp?tab=haksa`
+- 최근 갱신: 2026-02-19
+
+### FLOW-2003: 교수자 LMS 수강생/학습자 상세 조회(API 단일 책임)
+- 사용자 동작(의도): 담당과목(수강생 탭) 또는 개설 단계(수강생 추가)에서 학생 1명을 눌렀을 때 상세 정보를 확인
+- 진입점: `public_html/tutor_lms/api/student_detail.jsp`
+- 처리(핵심):
+  - 입력값 검증: `user_id` 필수
+  - `course_id`가 있으면 과목 존재 여부 확인 후 권한을 수강생 목록 API와 동일 기준으로 검증
+    - 주강사(`LM_COURSE_TUTOR.type='major'`) 또는
+    - 과정담당자(`LM_COURSE_MANAGER`) 또는
+    - 개설자(`LM_COURSE.manager_id`) 또는
+    - 관리자(S/A)
+  - 상세 데이터는 `TB_USER` + `TB_USER_DEPT` + `LM_COURSE_USER(선택 조인)`로 구성
+  - 부서 경로(`dept_path`)를 `UserDeptDao.getTreeNames`로 계산
+  - 상세 API는 데이터 조회만 담당하고, 개인정보 로그는 기존 `privacy_log.jsp` 경로에서 별도로 기록
+- DB:
+  - 학습자 기본정보: `src/dao/UserDao.java` → `TB_USER`
+  - 부서/학과 정보: `src/dao/UserDeptDao.java` → `TB_USER_DEPT`
+  - 과목 수강 상태: `src/dao/CourseUserDao.java` → `LM_COURSE_USER` (`status NOT IN (-1, -4)`)
+- 출력:
+  - JSON: `rst_data`(학생 상세)
+- 확인(근거):
+  - 정적 확인: `public_html/tutor_lms/api/student_detail.jsp`에서 입력검증/권한검증/조회 순서 확인
+  - 호출 경로 기준: `/tutor_lms/api/student_detail.jsp?course_id={courseId}&user_id={userId}`
+- 최근 갱신: 2026-02-19
+
+### FLOW-2004: 교수자 담당과목 Q&A FAQ 공지 CRUD
+- 사용자 동작(의도): 교수자가 담당과목 Q&A에서 반복 질문을 FAQ 공지로 등록/수정/삭제하고 목록으로 관리
+- 진입점:
+  - 목록: `public_html/tutor_lms/api/qna_faq_notice_list.jsp`
+  - 저장(등록/수정): `public_html/tutor_lms/api/qna_faq_notice_save.jsp`
+  - 삭제: `public_html/tutor_lms/api/qna_faq_notice_delete.jsp`
+- 처리(핵심):
+  - 입력 검증: `course_id` 필수, 저장 시 `subject/content` 필수
+  - 권한 검증: 관리자(S/A) 또는 주강사(`LM_COURSE_TUTOR.type='major'`)만 허용
+  - 게시판 검증: 과목별 공지 게시판(`CL_BOARD.code='notice'`) 존재 필수
+  - FAQ 구분 기준: `CL_POST.board_cd='notice' AND notice_yn='Y' AND depth='A'`
+  - 저장 시 base64 이미지 차단 + 본문 60000바이트 제한 + `proc_status=1` 고정
+  - 삭제 시 물리삭제 없이 `status=-1`, `display_yn='N'` 처리
+- DB:
+  - 게시판: `src/dao/ClBoardDao.java` → `CL_BOARD`
+  - FAQ 공지: `src/dao/ClPostDao.java` → `CL_POST` (`subject`, `content`, `notice_yn`, `status`, `display_yn`)
+- 출력:
+  - JSON: `rst_data`(faq_id), `rst_count`, `rst_message`
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/qna_faq_notice_list.jsp`, `public_html/tutor_lms/api/qna_faq_notice_save.jsp`, `public_html/tutor_lms/api/qna_faq_notice_delete.jsp`
+  - 정적 점검: `git status --short`에서 신규 API 3개 추가 확인
+- 최근 갱신: 2026-02-20
+
+### FLOW-2005: 교수자 담당과목 성적분포 통계(비정규/정규)
+- 사용자 동작(의도): 교수자가 성적관리 화면에서 그래프로 볼 수 있는 분포 통계(점수구간/등급구간)를 조회
+- 진입점:
+  - 비정규(프리즘): `public_html/tutor_lms/api/grades_distribution.jsp`
+  - 정규(학사): `public_html/tutor_lms/api/haksa_grade_distribution.jsp`
+- 처리(핵심):
+  - 비정규:
+    - `course_id` 기준으로 `LM_COURSE_USER.status IN (1,3)` 학생의 `total_score`를 집계
+    - 점수구간(90~100/80~89/70~79/60~69/0~59) 분포 + 평균/최저/최고 + 합격/수료/미달 카운트 반환
+    - 합격/수료 판정은 기존 `grades_list.jsp`와 같은 기준(`limit_progress/limit_total_score`, `complete_limit_*`) 사용
+  - 정규(학사):
+    - 학사 5종 키(`course_code/open_year/open_term/bunban_code/group_code`) 기준으로 `LM_POLY_COURSE_GRADE` 집계
+    - 점수구간 분포 + 등급(A+~F, 기타) 분포 + 평균/최저/최고 반환
+    - 권한은 관리자 또는 `LM_POLY_COURSE_PROF(member_key)` 매핑 교수만 허용
+- DB:
+  - 비정규 성적: `src/dao/CourseUserDao.java` → `LM_COURSE_USER`
+  - 정규 성적/권한: `src/dao/PolyCourseGradeDao.java` → `LM_POLY_COURSE_GRADE`, `src/dao/PolyCourseProfDao.java` → `LM_POLY_COURSE_PROF`, `src/dao/PolyMemberKeyDao.java`
+- 출력:
+  - JSON: `rst_summary`(요약), `rst_data`(점수 분포), 정규는 `rst_grade_data`(등급 분포) 추가
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/grades_distribution.jsp`, `public_html/tutor_lms/api/haksa_grade_distribution.jsp`
+  - 정적 점검: 두 API 모두 `m.log(stats_start/stats_done)` 로깅과 권한 분기 포함 확인
+- 최근 갱신: 2026-02-20
+
+### FLOW-2011: 비정규 차시 일괄등록 + 단건 수정/삭제 안정화
+- 사용자 동작(의도): 비정규 과정 차시를 1건씩 반복 등록하지 않고, 1~15차시 구성을 한 번에 반영하거나 재반영
+- 진입점:
+  - 대량 등록: `public_html/tutor_lms/api/curriculum_lesson_bulk_add.jsp`
+  - 단건 추가/수정/삭제: `public_html/tutor_lms/api/curriculum_lesson_add.jsp`, `public_html/tutor_lms/api/curriculum_lesson_update.jsp`, `public_html/tutor_lms/api/curriculum_lesson_delete.jsp`
+- 처리(핵심):
+  - `curriculum_lesson_bulk_add.jsp`는 `lessons_json` 배열을 순회하며 `LM_COURSE_LESSON`을 insert/update 동시 처리(재실행 시 update)
+  - 단건 추가는 동일 레슨 중복/더블클릭을 에러가 아닌 성공 응답으로 처리(`rst_exists_yn`)
+  - 과거 숨김(status=0) 레슨은 PK 충돌 대신 재활성화(update)로 복구
+  - 수정/삭제 API는 `site_id` 범위를 강제하고, `source_chapter/source_section_id`, `chapter/section_id` 보조키로 대상 행을 좁힐 수 있음
+- DB:
+  - 차시: `src/dao/CourseLessonDao.java` → `LM_COURSE_LESSON` (PK: `course_id + lesson_id`)
+  - 레슨: `src/dao/LessonDao.java` → `LM_LESSON` (`complete_time`, 외부링크 레슨 생성)
+- 출력:
+  - JSON: `rst_inserted`, `rst_updated`, `rst_failed`, `rst_failed_indexes`(bulk)
+  - JSON: `rst_exists_yn`, `rst_reactivated_yn`(단건 add)
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/curriculum_lesson_bulk_add.jsp`, `public_html/tutor_lms/api/curriculum_lesson_add.jsp`, `public_html/tutor_lms/api/curriculum_lesson_update.jsp`, `public_html/tutor_lms/api/curriculum_lesson_delete.jsp`
+  - React API 연결 확인: `project/api/tutorLmsApi.ts`
+- 최근 갱신: 2026-02-19
+
+### FLOW-2012: 비정규 자동승인 + 학사 영상 검토/수정/삭제
+- 사용자 동작(의도):
+  - 비정규 과정에서 승인대기 학생을 즉시 승인해 영상 시청 불가를 방지
+  - 학사 연동 영상을 교수자가 목록 검토 후 항목 단위 수정/삭제
+- 진입점:
+  - 자동승인: `public_html/tutor_lms/api/course_students_list.jsp`, `public_html/tutor_lms/api/course_students_auto_approve.jsp`
+  - 학사 영상 검토/수정/삭제: `public_html/tutor_lms/api/haksa_video_list.jsp`, `public_html/tutor_lms/api/haksa_video_update.jsp`, `public_html/tutor_lms/api/haksa_video_delete.jsp`
+  - 학사 목차 동기화(차시 몰림 수정): `public_html/tutor_lms/api/haksa_curriculum_update.jsp`
+- 처리(핵심):
+  - 비정규(`course_type='A'`)는 조회 시 `LM_COURSE_USER.status IN (0,2)`를 `1`로 자동승인
+  - 학사 영상 API는 `curriculum_json`에서 `type=video`만 추출/수정/삭제
+  - 학사 목차 동기화에서 `sessionNo`(주차 내 번호)와 `chapterNo`(전체 순번)를 분리 저장
+  - `LM_COURSE_LESSON` 동기화 존재 체크를 `course_id+lesson_id` 기준으로 바꿔 chapter 변경 시 PK 충돌 삽입 실패를 방지
+- DB:
+  - 자동승인: `src/dao/CourseUserDao.java` → `LM_COURSE_USER.status/change_date`
+  - 학사 설정: `src/dao/PolyCourseSettingDao.java` → `LM_POLY_COURSE_SETTING.curriculum_json`
+  - 학사 영상 동기화: `src/dao/CourseLessonDao.java` / `LM_COURSE_LESSON`, `src/dao/LessonDao.java` / `LM_LESSON`
+- 출력:
+  - 자동승인 JSON: `rst_approved`
+  - 학사 영상 JSON: `content_id`, `week_number`, `session_no`, `chapter_no`, `lesson_id` 등
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/course_students_list.jsp`, `public_html/tutor_lms/api/course_students_auto_approve.jsp`, `public_html/tutor_lms/api/haksa_video_list.jsp`, `public_html/tutor_lms/api/haksa_video_update.jsp`, `public_html/tutor_lms/api/haksa_video_delete.jsp`, `public_html/tutor_lms/api/haksa_curriculum_update.jsp`
+  - 빌드 확인: `cd project && npm run build` 성공
+- 최근 갱신: 2026-02-19
 
 ### FLOW-3001: 교수자 통계 > 산업별 통계(산업분포 분석)
 - 사용자 동작(의도): 교수자 통계 화면에서 캠퍼스/행정구역/연도를 선택해 “행정구역(종사자) vs 캠퍼스(학생)” 산업 분포를 비교
@@ -351,19 +505,192 @@
   - 과목 권한: 관리자가 아니면 `LM_COURSE_TUTOR(type='major')`(주강사)만 조회 허용
   - 과제가 과목에 배치된 건인지 `LM_COURSE_MODULE(module='homework')`로 확인
   - 제출 본문: `LM_HOMEWORK_USER(subject/content/submit_yn/reg_date)` 조회(레코드가 없으면 빈값 반환)
-  - 첨부파일: `CL_FILE(module='homework_{homework_id}', module_id={course_user_id})` 목록을 배열로 내려줌
+  - 첨부파일: 학생 제출 파일(`CL_FILE.module='homework_{homework_id}'`)과 교수자 피드백 파일(`CL_FILE.module='homework_feedback_{homework_id}'`)을 각각 배열로 내려줌
 - DB:
   - 과제 배치: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE` (`course_id`, `module`, `module_id`, `status`)
   - 제출 본문: `src/dao/HomeworkUserDao.java` → `LM_HOMEWORK_USER` (`homework_id`, `course_user_id`, `subject`, `content`, `submit_yn`, `reg_date`, `status`)
-  - 첨부파일: `src/dao/ClFileDao.java` → `CL_FILE` (`module`, `module_id`, `filename`, `status`)
+  - 첨부파일: `src/dao/ClFileDao.java` → `CL_FILE` (`module`, `module_id`, `site_id`, `filename`, `status`)
 - 출력:
-  - JSON: 제출 제목/내용 + 파일 목록(`download_url=/classroom/download_cl.jsp?id=...&ek=...`)
+  - JSON: 제출 제목/내용 + 학생 제출 파일(`files`) + 교수자 피드백 파일(`feedback_files`) 목록
   - React 모달: `project/components/HomeworkSubmissionDetailModal.tsx` (Dialog/ScrollArea)
   - 표시 규칙: 제출 제목/내용은 HTML 태그가 있으면 제거 후 “텍스트만” 표시(`<p>` 등 태그가 화면에 노출되지 않도록)
 - 확인(근거):
-  - React에서 “제출물 보기” 버튼 클릭 시 API 호출 및 모달 렌더링 코드 확인(`CourseManagement.tsx`)
-  - 로컬 빌드: `cd project && npm run build` 성공(산출물 `public_html/tutor_lms/app/assets/*` 갱신)
-- 최근 갱신: 2026-02-10
+  - API 코드 확인: `public_html/tutor_lms/api/homework_user_submission.jsp`에서 `feedback_files` 추가 반환 및 `site_id` 조건 확인
+  - 정적 흐름 확인: `/classroom/download_cl.jsp`의 `ek` 규칙(`encrypt(id)` 허용)과 응답 링크 패턴 일치 확인
+- 최근 갱신: 2026-02-19
+
+### FLOW-4004: 교수자 LMS > 과제 관리(교수자 첨부파일 확인/다운로드/삭제/재업로드)
+- 사용자 동작(의도): 과제 부여 시 교수자가 올린 첨부파일을 과제 관리에서 확인하고, 다운로드/파일삭제/재업로드까지 수행
+- 진입점:
+  - 목록 API: `public_html/tutor_lms/api/homework_list.jsp`
+  - 수정 API: `public_html/tutor_lms/api/homework_modify.jsp`
+  - 삭제 API: `public_html/tutor_lms/api/homework_delete.jsp`
+  - 다운로드 엔드포인트: `public_html/main/download_file.jsp`
+- 처리(핵심):
+  - `homework_list.jsp`에서 `LM_HOMEWORK.homework_file`을 함께 조회하고, 다운로드용 `homework_file_conv/homework_file_ek/homework_file_download_url`을 응답에 포함
+  - `homework_modify.jsp`는 `delete_homework_file_yn=Y`를 받으면 첨부파일만 삭제(파일시스템+DB 컬럼 비움)
+  - `homework_modify.jsp`에 새 파일(`homework_file`)이 오면 기존 파일을 정리하고 새 파일로 교체(재업로드)
+  - `homework_delete.jsp`는 과제가 다른 과목에서 더 이상 참조되지 않을 때(`LM_COURSE_MODULE` 0건) 과제 상태 `-1` 처리와 함께 첨부파일 물리 삭제
+  - 다운로드는 `download_file.jsp`의 기존 보안 규칙(`ek = encrypt(file + yyyyMMdd)`)을 그대로 사용
+- DB:
+  - 과제 본문/첨부: `src/dao/HomeworkDao.java` → `LM_HOMEWORK` (`homework_file`, `status`)
+  - 과목 배치: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE`
+  - 제출내역 보호(삭제 차단): `src/dao/HomeworkUserDao.java` → `LM_HOMEWORK_USER`
+- 출력:
+  - `homework_list.jsp` JSON: 기존 과제 목록 + `homework_file_*` 다운로드 메타
+  - `homework_modify.jsp` JSON: 기존 성공코드 유지(`0000`)
+  - `homework_delete.jsp` JSON: 기존 성공코드 유지(`0000`)
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_list.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_delete.jsp`, `public_html/main/download_file.jsp`
+  - 로컬 호출 확인: 비로그인 상태에서 각 API가 `4010` JSON을 반환(컴파일/라우팅 정상)
+- 최근 갱신: 2026-02-19
+
+### FLOW-4005: 교수자 LMS > 과제 관리(동일 과제 다중 강의 동시 등록)
+- 사용자 동작(의도): 교수자가 동일한 과제를 여러 강의에 한 번에 등록
+- 진입점: `public_html/tutor_lms/api/homework_insert.jsp`
+- 처리(핵심):
+  - 입력: 단일 `course_id`와 복수 `course_ids`(쉼표 구분)를 함께 지원
+  - `course_id/course_ids`를 합쳐 중복 제거 후, 과목별로 권한/존재 여부를 개별 검증
+  - 권한/존재 검증 통과 과목만 `validCourseIds`로 분리
+  - 과제 본문(`LM_HOMEWORK`)은 1건 생성 후, 과목 배치(`LM_COURSE_MODULE`)를 유효 과목 수만큼 반복 생성
+  - 일부 과목 실패 시에도 성공 과목은 반영하고, 실패 과목은 `rst_failed_courses`로 반환(부분 성공)
+  - 전 과목 배치 실패면 과제 상태를 `-1`로 되돌리고 업로드 파일도 정리
+- DB:
+  - 과제 본문: `src/dao/HomeworkDao.java` → `LM_HOMEWORK`
+  - 과목 배치: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE`
+  - 권한 체크: `src/dao/CourseTutorDao.java` → `LM_COURSE_TUTOR` (`type='major'`)
+- 출력:
+  - JSON: `rst_data`(homework_id), `rst_inserted_course_count`, `rst_success_courses`, `rst_failed_courses`, `rst_invalid_tokens`
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_insert.jsp` (course_ids 파싱/과목별 검증/부분성공 응답)
+  - 로컬 호출 확인: 비로그인 상태에서 `4010` JSON 반환(컴파일/라우팅 정상)
+- 최근 갱신: 2026-02-19
+
+### FLOW-4006: 교수자 LMS > 과제 관리(제출첨부 허용 파일형식 옵션)
+- 사용자 동작(의도): 교수자가 과제별로 학생 제출 첨부파일 허용 형식(프리셋/직접입력)을 선택
+- 진입점:
+  - 교수자 등록/수정/조회 API: `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`
+  - 학생 실제 업로드 저장 API: `public_html/classroom/file_upload.jsp`
+- 처리(핵심):
+  - 과제 저장 시 `submit_file_ext_mode`(ALL/DOC/IMAGE/ARCHIVE/AUDIO/CUSTOM), `submit_file_exts`를 검증/정규화해 `LM_HOMEWORK`에 저장
+  - `CUSTOM` 모드는 기본 화이트리스트(레거시 업로드 허용 확장자 집합) 내부 값만 저장
+  - 과제 목록 조회에서 허용 모드/확장자(`submit_file_*`)를 함께 반환해 수정 모달 초기값으로 사용
+  - 학생 업로드(`file_upload.jsp`)는 `md=homework_{id}` / `md=homework_task_{tid}`를 해석해 과제 설정을 조회하고, 서버 `f.addElement(... allow:'...')`로 최종 차단
+  - 설정이 비정상(잘못된 모드/빈 custom)인 경우 업로드를 성공 처리하지 않고 즉시 오류 반환
+- DB:
+  - `src/dao/HomeworkDao.java` → `LM_HOMEWORK.submit_file_ext_mode`, `LM_HOMEWORK.submit_file_exts`
+  - DDL: `public_html/ddl_homework_submit_file_ext.sql`
+- 출력:
+  - 교수자 API JSON: `submit_file_ext_mode`, `submit_file_exts`, `submit_file_allow_ext`, `submit_file_allow_ext_conv`
+  - 업로드 API JSON: 기존 `{"success":true/false}` 포맷 유지
+- 확인(근거):
+  - 코드 확인: `src/dao/HomeworkDao.java`, `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`, `public_html/classroom/file_upload.jsp`
+  - 로컬 호출 확인: 비로그인 상태에서 `homework_insert.jsp`가 `4010` JSON 반환(라우팅/컴파일 정상)
+- 최근 갱신: 2026-02-19
+
+### FLOW-4009: 교수자 LMS > 과제 관리(지각 제출 허용/감점 반영)
+- 사용자 동작(의도): 과제 수정 시 "지각 제출 허용"과 "감점률(%)" 변경이 실제 저장/조회에 반영되어야 함
+- 진입점:
+  - 등록/수정/조회 API: `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`
+- 처리(핵심):
+  - 등록 API는 `allowLateSubmission`, `latePenalty` 입력을 검증해 `LM_HOMEWORK`에 저장
+  - 수정 API는 지각 제출 값이 요청에 포함된 경우만 변경하고, 형식 오류(`1107`)·범위 오류(`1108`)를 즉시 반환
+  - 지각 제출 비허용(`N`)이면 감점률은 서버에서 `0`으로 강제해 상태 불일치를 방지
+  - 목록 API는 저장값을 `allow_late_submission_yn`, `late_penalty`(및 camelCase 보조키)로 내려줘 수정 모달 초기값 재사용이 가능
+  - 과제는 정규/비정규 모두 동일하게 `LM_HOMEWORK` + `LM_COURSE_MODULE(module='homework')` 경로를 사용하므로 공통 반영
+- DB:
+  - `src/dao/HomeworkDao.java` → `LM_HOMEWORK.allow_late_submission_yn`, `LM_HOMEWORK.late_penalty`
+  - DDL: `public_html/ddl_homework_late_submission.sql`
+- 출력:
+  - 목록 API JSON: `allow_late_submission_yn`, `late_penalty`, `allowLateSubmission`, `latePenalty`
+  - 등록/수정 API JSON: 기존 성공코드(`0000`) 유지, 입력 오류 시 `1107`/`1108`
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_insert.jsp`, `public_html/tutor_lms/api/homework_modify.jsp`, `public_html/tutor_lms/api/homework_list.jsp`
+  - 실DB 확인: `LM_HOMEWORK` 컬럼 조회 후(`SHOW COLUMNS`) 신규 컬럼 DDL 필요성 확인
+- 최근 갱신: 2026-02-20
+
+### FLOW-4007: 교수자 LMS > 과제 > 피드백 템플릿(조회/저장/삭제)
+- 사용자 동작(의도): 교수자가 과제 피드백에서 자주 쓰는 문구를 템플릿으로 저장하고, 필요할 때 빠르게 불러와 재사용
+- 진입점:
+  - 조회 API: `public_html/tutor_lms/api/homework_feedback_template_list.jsp`
+  - 저장 API: `public_html/tutor_lms/api/homework_feedback_template_save.jsp`
+  - 삭제 API: `public_html/tutor_lms/api/homework_feedback_template_delete.jsp`
+- 처리(핵심):
+  - 세 API 모두 `tutor_lms/api/init.jsp`를 통해 로그인/교수자 권한을 먼저 검사
+  - 과목 존재(`LM_COURSE`) + 담당교수(`LM_COURSE_TUTOR.type='major'`) 권한을 재검증해 타 과목 접근을 차단
+  - 템플릿 저장은 단건 생성/수정 방식(`id` 유무)으로 처리하며, 서버에서 개수 제한은 두지 않음
+  - 템플릿 본문은 필수/길이 제한(2000자)과 base64 이미지 차단 검증을 수행
+  - 삭제는 물리 삭제가 아니라 `status=-1` 소프트 삭제
+  - 운영 추적을 위해 `tutor_homework_feedback_template` 로그에 시작/권한실패/성공 이벤트를 남김
+- DB:
+  - DAO: `src/dao/HomeworkFeedbackTemplateDao.java`
+  - 테이블: `LM_HOMEWORK_FEEDBACK_TEMPLATE` (`site_id`, `course_id`, `manager_id`, `sort`, `content`, `status`, `reg_date`, `mod_date`)
+  - DDL: `public_html/ddl_homework_feedback_template.sql`
+- 출력:
+  - 조회: `rst_data` 템플릿 목록(`id/sort/content/content_preview/...`)
+  - 저장: `rst_data` 저장된 템플릿 ID
+  - 삭제: `rst_data` 삭제된 템플릿 ID
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_feedback_template_list.jsp`, `public_html/tutor_lms/api/homework_feedback_template_save.jsp`, `public_html/tutor_lms/api/homework_feedback_template_delete.jsp`, `src/dao/HomeworkFeedbackTemplateDao.java`
+  - 정적 흐름 확인: 기존 과제 피드백 저장 API(`homework_feedback_update.jsp`)와 분리되어 템플릿 CRUD만 담당함
+- 최근 갱신: 2026-02-19
+
+### FLOW-4008: 교수자 LMS > 과제 > 피드백 파일 첨부(업로드/목록/삭제)
+- 사용자 동작(의도): 교수자가 학생 과제 피드백 시 첨삭 파일(문서/PDF 등)을 업로드하고, 목록 확인/삭제까지 수행
+- 진입점:
+  - 업로드 API: `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`
+  - 목록 API: `public_html/tutor_lms/api/homework_feedback_file_list.jsp`
+  - 삭제 API: `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`
+- 처리(핵심):
+  - 세 API 모두 `tutor_lms/api/init.jsp`를 통해 로그인/교수자 권한을 먼저 검사
+  - 과목 권한: 관리자가 아니면 `LM_COURSE_TUTOR(type='major')`만 허용
+  - 과제-과목 연결은 `LM_COURSE_MODULE(module='homework') + LM_HOMEWORK(site_id/status)` 조인으로 검증
+  - 수강자 범위는 `LM_COURSE_USER(id/course_id/site_id/status in (1,3))`로 검증
+  - 업로드는 `multipart/form-data`에서 `Form(f)` 우선 파싱, 확장자/용량(100MB) 검증 후 `CL_FILE(module='homework_feedback_{homework_id}', module_id=course_user_id)`에 저장
+  - 목록/삭제/상세 조회 모두 `site_id` 조건을 포함해 멀티사이트 교차 조회를 방지
+  - 운영 추적을 위해 `tutor_homework_feedback_file` 로그에 시작/권한실패/성공 이벤트를 남김
+- DB:
+  - 첨부파일 저장: `src/dao/ClFileDao.java` → `CL_FILE` (`module`, `module_id`, `site_id`, `filename`, `realname`, `filesize`, `status`, `reg_date`)
+  - 과목/수강 검증: `src/dao/CourseModuleDao.java`, `src/dao/HomeworkDao.java`, `src/dao/CourseUserDao.java`, `src/dao/CourseTutorDao.java`
+- 출력:
+  - 업로드: `rst_data` 단건 파일 메타(`id`, `filename`, `download_url`, `ek`)
+  - 목록: `rst_data` 파일 배열
+  - 삭제: `rst_data` 삭제된 `file_id`
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`
+  - 연계 확인: `public_html/tutor_lms/api/homework_user_submission.jsp`의 `feedback_files` 반환과 `/classroom/download_cl.jsp` 링크 규칙 일치 확인
+- 최근 갱신: 2026-02-19
+
+### FLOW-4009: 교수자 LMS > 과제 > 제출물 일치율 분석(수동 실행 + 자동 갱신)
+- 사용자 동작(의도): 교수자가 과제 피드백 전에 학생 제출물 간 일치율을 확인하고, 제출/취소/첨부변경 시 결과가 자동으로 최신화되길 원함
+- 진입점:
+  - 수동 실행 API: `public_html/tutor_lms/api/homework_similarity_run.jsp` (POST)
+  - 목록 API: `public_html/tutor_lms/api/homework_similarity_list.jsp` (GET)
+  - 상세 API: `public_html/tutor_lms/api/homework_similarity_detail.jsp` (GET)
+  - 자동화 트리거:
+    - 학생 제출/수정: `public_html/classroom/homework_view.jsp`
+    - 학생 제출첨부 업로드: `public_html/classroom/file_upload.jsp` (`md=homework_{id}`)
+    - 교수자 제출취소: `public_html/tutor_lms/api/homework_submit_cancel.jsp`
+- 처리(핵심):
+  - 분석 대상은 `LM_HOMEWORK_USER.submit_yn='Y' AND status=1` 제출건만 사용
+  - 전처리(HTML 제거/공백 정리/소문자화) 후 제목/본문/첨부 토큰 기반 Jaccard 점수 계산
+  - 최종점수: `subject*0.2 + content*0.7 + file*0.1`
+  - 저장 임계치(`threshold_score`, 기본 70) 이상인 쌍만 결과 테이블에 저장
+  - 전체 수동 실행은 해당 과제 결과를 전량 재생성, 자동 실행은 변경된 `course_user_id` 관련 쌍만 증분 갱신
+  - 실행 이력(`RUN`)에는 시작/종료/상태/비교건수/저장건수를 남겨 운영 추적 가능하게 유지
+- DB:
+  - 실행 이력: `src/dao/HomeworkSimilarityRunDao.java` → `LM_HOMEWORK_SIMILARITY_RUN`
+  - 비교 결과: `src/dao/HomeworkSimilarityResultDao.java` → `LM_HOMEWORK_SIMILARITY_RESULT`
+  - DDL: `public_html/ddl_homework_similarity.sql`
+- 출력:
+  - 실행 API: `run_id`, `pair_total`, `pair_saved`, `message`
+  - 목록 API: 의심쌍 목록 + 최신 실행 이력(`rst_run`)
+  - 상세 API: 쌍 점수 + 좌/우 학생 제출본문/첨부파일 목록
+- 확인(근거):
+  - 코드 확인: `src/dao/HomeworkSimilarityRunDao.java`, `src/dao/HomeworkSimilarityResultDao.java`
+  - 연계 확인: `public_html/classroom/homework_view.jsp`, `public_html/classroom/file_upload.jsp`, `public_html/tutor_lms/api/homework_submit_cancel.jsp`에서 자동 호출 연결
+  - 실행 환경 확인: 로컬 `localhost:8080` 서버 미기동 상태로 HTTP 실호출 검증은 미수행(코드 정적 검증 기준)
+- 최근 갱신: 2026-02-19
 
 ### FLOW-4002: 교수자 LMS > 차시관리 > 추천 탭 동영상 추가 시 시간/인정시간 자동 세팅
 - 사용자 동작(의도): 교수자가 차시관리의 콘텐츠 라이브러리 `추천` 탭에서 동영상을 추가할 때, 목록 시간 표시와 인정시간 기본값이 자동으로 들어가야 함
@@ -422,30 +749,172 @@
   - API 검증(빈 컨텍스트): `courseName/lessonTitle/lessonDescription/keywords` 모두 빈값이면 `NCS기반교육과정개발...`, `영어...`, `OTT...` 등 고정 패턴이 재현됨(입력 누락 시 동일 추천 원인)
 - 최근 갱신: 2026-02-11
 
-### FLOW-4004: 교수자 LMS > 담당과목 > 진도/출석 QR 출결 발급 + 수동 출결변경 UI(프론트 임시)
-- 사용자 동작(의도): 교수자가 담당과목의 `진도/출석` 화면에서 QR을 발급한 상태에서도 학생별 출석/결석을 수동으로 바꿔 출결을 보정
+### FLOW-4011: 교수자 LMS > 콘텐츠 라이브러리 영상 제목 수정(분류용)
+- 사용자 동작(의도): 교수자가 콘텐츠 라이브러리의 예전 영상을 제목으로 구분(예: 학기/주제 접두어)하고, 전체/찜 목록에서 동일한 수정 제목으로 확인하고 싶음
 - 진입점:
-  - React 라우팅: `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html`
-  - 화면 컴포넌트: `project/components/courseManagement/AttendanceTab.tsx`
+  - 전체 목록 API: `public_html/tutor_lms/api/kollus_list.jsp`
+  - 제목 수정 API: `public_html/tutor_lms/api/kollus_media_title_update.jsp` (POST)
 - 처리(핵심):
-  - 학사/비학사 공통으로 QR 패널(`renderAttendanceQrPanel`)을 표시
-  - 학사 과목은 `selectedSessionId`, 비학사 과목은 `selectedLessonId`를 QR 대상 식별자로 사용
-  - 과목 매핑 ID(`effectiveCourseId`)와 차시 선택이 완료되어야 `QR 생성` 버튼 활성화
-  - QR 생성 시 프론트에서 임시 payload(JSON)를 만들고 `token/issuedAt/expiresAt(10분)`를 포함
-  - QR 이미지는 외부 생성 URL(`api.qrserver.com`)로 미리보기하며, 로딩 실패 시 안내 문구로 대체
-  - 1초 타이머로 남은 시간을 표시하고, 만료 시 QR을 자동 제거(재사용 방지)
-  - 학사 출석표는 `출석` 칩 자체를 클릭하면 `출석↔결석`이 즉시 토글되고, 변경 건수/초기화 버튼을 제공
-  - 수동 변경은 `manualAttendanceOverrides` 프론트 상태에만 반영되며, 차시 변경 시 초기화됨
-  - 현재 단계에서는 백엔드 저장/API 호출 없이 UI + payload 미리보기만 제공
-- DB: 없음(프론트 임시 인터페이스만 구현)
+  - 제목 수정 API는 `media_content_key`와 `title`을 필수로 받아 `TB_KOLLUS_MEDIA`를 upsert
+  - 기존 행이 있으면 제목(`title`)과 수정시각(`mod_date`)을 갱신하고, 요청에 포함된 메타(`snapshot_url/category/파일명/시간/해상도`)만 선택 반영
+  - 기존 행이 없으면 `TB_KOLLUS_MEDIA` 신규 생성 후 제목/메타를 저장
+  - 전체 목록 조회(`kollus_list.jsp`)는 콜러스 원본 응답에 `TB_KOLLUS_MEDIA`를 매핑해, DB 제목이 있으면 원본 제목보다 우선 노출
+  - 같은 매핑 행에서 썸네일/카테고리/원본파일명/시간/해상도도 보강해 목록 표시 일관성을 유지
+  - 디버깅 로그(`kollus_media_title_update`)에 `site_id/user_id/media_id/media_key/title_len`을 남겨 수정 이력 추적 가능
+- DB:
+  - `src/dao/KollusMediaDao.java` → `TB_KOLLUS_MEDIA` (`id`, `site_id`, `media_content_key`, `title`, `mod_date`)
 - 출력:
-  - QR 발급 카드(생성/재생성/즉시 종료/남은 시간/만료 안내)
-  - QR 이미지 + 백엔드 연동용 payload 텍스트 미리보기
-  - 출석표 수동 변경(출석 칩 클릭 토글) + 변경건수/초기화 UI
+  - 제목 수정 API: `rst_data = media_id`
+  - 전체 목록 API: `rst_data[].title`이 사용자 수정 제목 우선으로 반환
 - 확인(근거):
-  - 코드 경로 확인: `project/components/courseManagement/AttendanceTab.tsx`
-  - 빌드 확인: `cd project && npm run build` 성공
+  - 코드 확인: `public_html/tutor_lms/api/kollus_media_title_update.jsp`, `public_html/tutor_lms/api/kollus_list.jsp`
+  - 정적 검증: `rg -n "kollus_media_title_update|media_content_key|title" public_html/tutor_lms/api/kollus_media_title_update.jsp public_html/tutor_lms/api/kollus_list.jsp`로 진입 파라미터/반영 위치 확인
+  - 실행 검증: 로컬 WAS 미기동 상태라 HTTP 실호출 검증은 이번 작업에서 미수행
 - 최근 갱신: 2026-02-20
+
+### FLOW-2004: 교수자 출석 기준(결석 n회) 자동 판정 + 통합 관리
+- 사용자 동작(의도):
+  - 교수자가 과목별 결석 기준을 저장하고, 결석 기준 초과자를 한 번에 자동 판정하고 싶음
+  - 출석 탭에서 과목 전체 위험 인원을 한 번에 보고 싶음
+- 진입점:
+  - 기준 저장: `public_html/tutor_lms/api/course_evaluation_update.jsp`
+  - 과목 요약: `public_html/tutor_lms/api/attendance_course_summary.jsp`
+  - 수강생 출석 상세: `public_html/tutor_lms/api/progress_students.jsp` (`lesson_id=-1` 전체보기)
+  - 일괄 자동 판정: `public_html/tutor_lms/api/attendance_absence_apply.jsp`
+  - 판정 결과 조회: `public_html/tutor_lms/api/completion_list.jsp`
+- 처리(핵심):
+  - 평가설정 저장 시 `limit_absence_yn`, `limit_absence_cnt`를 같이 저장
+  - `CourseUserDao.completeUser()/closeUser()`에서 결석 횟수(`총 진도차시 - 완료차시`)를 계산해, 기준 이상이면 즉시 `complete_status='F'`
+  - 정규(`course_type='R'`)는 결석 사유를 `absence_f`로 기록해 결과 화면 라벨을 `F`로 표기
+  - 비정규는 동일한 `F` 판정이지만 화면 라벨은 `미수료`로 표기
+  - `CourseProgressDao.attendUser()`에서 수동 출석 변경 직후 `completeUser()`를 호출해 판정 지연을 방지
+  - 과목 요약 API는 결석 기준 초과 인원(`at_risk_cnt`)을 과목 단위로 집계해 반환
+- DB:
+  - 과정 기준: `LM_COURSE.limit_absence_yn`, `LM_COURSE.limit_absence_cnt`
+  - 수강 상태: `LM_COURSE_USER.complete_status`, `LM_COURSE_USER.complete_yn`, `LM_COURSE_USER.fail_reason`
+  - 진도/출석 집계: `LM_COURSE_PROGRESS.complete_yn`, `LM_COURSE_LESSON.progress_yn`
+  - DDL: `public_html/ddl_course_absence_limit.sql`
+- 출력:
+  - 과목 요약 JSON: 결석 기준 사용여부/기준횟수/위험인원(`at_risk_cnt`)
+  - 수강생 JSON: `absence_cnt`, `absence_fail_yn`, `absence_status_label`
+  - 수료 목록 JSON: 정규 + 결석초과(`fail_reason=absence_f`)는 상태 `F`
+- 확인(근거):
+  - 코드 경로 확인: `src/dao/CourseUserDao.java`, `src/dao/CourseProgressDao.java`, `public_html/tutor_lms/api/course_evaluation_update.jsp`, `public_html/tutor_lms/api/attendance_course_summary.jsp`, `public_html/tutor_lms/api/attendance_absence_apply.jsp`, `public_html/tutor_lms/api/progress_students.jsp`, `public_html/tutor_lms/api/completion_list.jsp`
+  - 수동 출석 변경 후 판정 재계산 호출 확인: `CourseProgressDao.attendUser()` 내부 `courseUser.completeUser(...)`
+- 최근 갱신: 2026-02-19
+
+### FLOW-2005: 교수자 문제은행 공개/비공개 + 시험 템플릿 문제 선택 권한
+- 사용자 동작(의도):
+  - 교수가 문제를 등록할 때 공개/비공개를 정하고, 다른 교수 문제를 사용할 때는 공개된 문제만 조회/선택하고 싶음
+- 진입점:
+  - 문제 목록/등록/수정/삭제: `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`
+  - 시험 템플릿 등록/수정(문제 선택 검증): `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp`
+- 처리(핵심):
+  - 문제 등록 시 `open_yn`을 저장하고, 파라미터가 없으면 기본 `Y`(공개)로 저장
+  - 문제 목록은 비관리자 기준 `내 문제 OR 공개문제(open_yn='Y')`만 조회
+  - 문제 수정/삭제는 작성자(`manager_id=user_id`) 또는 관리자만 허용(공개문제라도 타인 수정/삭제 불가)
+  - 시험 템플릿 등록/수정에서 `question_ids`를 검증할 때도 동일 규칙(`내 문제 OR 공개문제`)으로 재검증해, 직접 ID 입력 우회를 차단
+  - 우회/누락 추적을 위해 템플릿 검증 로그에 `visibility_checked=Y`를 남김
+- DB:
+  - 문제은행: `src/dao/QuestionDao.java` → `LM_QUESTION` (`open_yn`, `manager_id`, `site_id`, `status`)
+  - DDL: `public_html/ddl_question_open_yn.sql` (`LM_QUESTION.open_yn CHAR(1) DEFAULT 'Y'`)
+- 출력:
+  - 문제 목록/템플릿 API 응답 포맷은 기존 유지(`rst_code`, `rst_message`, `rst_data`)
+  - 권한 미충족/우회 선택 시 기존 실패 코드(`4030`, `1003`)로 명확히 차단
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`, `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp`
+  - 정적 검증: `rg -n "open_yn|visibility_checked"`로 목록/저장/출제 검증 경로 반영 확인
+- 최근 갱신: 2026-02-19
+
+### FLOW-2006: 교수자 출석 탭 부분 출결(다중 차시) 백엔드 API
+- 사용자 동작(의도):
+  - "1주 1차시 2시간, 2차시 1시간" 같은 구성에서 학생이 일부 시간만 듣고 가면 차시별로 다른 상태(Y/N)를 빠르게 반영하고 싶음
+  - 출석 화면에서 주차별 차시 목록과 학생×차시 매트릭스를 한 번에 보고 싶음
+- 진입점:
+  - 다중 차시 일괄 저장: `public_html/tutor_lms/api/attendance_batch_update.jsp` (POST)
+  - 주차(섹션)별 차시 조회: `public_html/tutor_lms/api/attendance_week_lessons.jsp` (GET)
+  - 학생×차시 매트릭스 조회: `public_html/tutor_lms/api/attendance_student_matrix.jsp` (GET)
+- 처리(핵심):
+  - 세 API 모두 `course_id` 기준으로 과목 존재/권한(관리자 또는 담당 교수/과정담당/개설자) 확인 후 처리
+  - 일괄 저장 API는 `lesson_ids` + `attend_statuses(Y/N)` + `course_user_ids`를 받아 차시별 상태를 분리 적용
+  - 저장은 `CourseProgressDao.attendUser()`를 차시 단위로 반복 호출해 기존 출결 저장 로직/수료판정 연동을 재사용
+  - 주차 조회 API는 `LM_COURSE_LESSON + LM_COURSE_SECTION + LM_LESSON`을 묶어 `section(주차) -> lesson(차시)` 목록 반환
+  - 매트릭스 API는 `LM_COURSE_USER × LM_COURSE_LESSON` 기준으로 `LM_COURSE_PROGRESS.complete_yn`을 붙여 학생별 차시 상태를 평탄화 행으로 반환
+  - 운영 추적을 위해 세 API 모두 요청/결과 건수를 `m.log(...)`로 기록
+- DB:
+  - 출결 저장: `src/dao/CourseProgressDao.java` → `LM_COURSE_PROGRESS`
+  - 차시/주차: `src/dao/CourseLessonDao.java` → `LM_COURSE_LESSON`, `src/dao/CourseSectionDao.java` → `LM_COURSE_SECTION`
+  - 수강생: `src/dao/CourseUserDao.java` → `LM_COURSE_USER`
+- 출력:
+  - 일괄 저장: `rst_requested_count`, `rst_success_count`, `rst_lesson_count`, `rst_student_count`
+  - 주차 조회: `rst_sections`(주차 목록), `rst_data`(차시 목록)
+  - 매트릭스 조회: `rst_students`, `rst_lessons`, `rst_data`(학생×차시 행 데이터)
+- 확인(근거):
+  - 코드 확인: `public_html/tutor_lms/api/attendance_batch_update.jsp`, `public_html/tutor_lms/api/attendance_week_lessons.jsp`, `public_html/tutor_lms/api/attendance_student_matrix.jsp`
+  - 정적 검증: `rg -n "attendance_batch_update|attendance_week_lessons|attendance_student_matrix" public_html/tutor_lms/api` 결과로 신규 API 진입점 확인
+- 최근 갱신: 2026-02-20
+
+### FLOW-2007: 교수자 담당과목 설문관리(익명/실명, 정규/비정규 공통)
+- 사용자 동작(의도):
+  - 교수가 담당과목에서 의견 수렴 설문을 만들고, 익명/실명을 선택해 운영하고 싶음
+  - 과목 유형이 정규/비정규여도 같은 화면에서 설문을 관리하고 결과를 보고 싶음
+- 진입점:
+  - 목록: `public_html/tutor_lms/api/survey_list.jsp` (GET)
+  - 등록: `public_html/tutor_lms/api/survey_insert.jsp` (POST)
+  - 수정: `public_html/tutor_lms/api/survey_modify.jsp` (POST)
+  - 삭제: `public_html/tutor_lms/api/survey_delete.jsp` (POST)
+  - 결과: `public_html/tutor_lms/api/survey_result.jsp` (GET)
+- 처리(핵심):
+  - 공통 권한: 관리자 또는 과목 주강사(`LM_COURSE_TUTOR.type='major'`) 또는 과정담당(`LM_COURSE_MANAGER`) 또는 개설자(`LM_COURSE.manager_id`)만 허용
+  - 등록 시 `LM_SURVEY` + `LM_SURVEY_QUESTION` + `LM_SURVEY_ITEM` 생성 후 과목 배치(`LM_COURSE_MODULE`) 연결
+  - 익명/실명 설정은 과목 배치 컬럼 `LM_COURSE_MODULE.result_yn`에 저장해 과목마다 다르게 운영
+  - 정규(`course_type='R'`)는 기간형(`apply_type=1`, `start_date/end_date`)으로 저장, 비정규는 차시형(`apply_type=2`, `chapter`)으로 저장
+  - 결과 API는 문항 통계(응답 수/선택지 카운트)와 상세 응답을 제공하고, 익명 모드면 작성자 정보(`user_nm/login_id/course_user_id`)를 마스킹
+  - 삭제 API는 해당 과목 참여내역(`LM_SURVEY_USER`)이 있으면 차단하고, 다른 과목에서 미사용일 때만 설문/문항을 `status=-1`로 정리
+- DB:
+  - 설문 본문: `src/dao/SurveyDao.java` → `LM_SURVEY`
+  - 문항/연결: `src/dao/SurveyQuestionDao.java` → `LM_SURVEY_QUESTION`, `src/dao/SurveyItemDao.java` → `LM_SURVEY_ITEM`
+  - 참여/응답: `src/dao/SurveyUserDao.java` → `LM_SURVEY_USER`, `src/dao/SurveyResultDao.java` → `LM_SURVEY_RESULT`
+  - 과목 배치/익명여부: `src/dao/CourseModuleDao.java` → `LM_COURSE_MODULE` (`module='survey'`, `result_yn`)
+- 출력:
+  - 공통 JSON 패턴(`rst_code/rst_message/rst_data`) 유지
+  - 목록: 참여율(`survey_rate`), 익명설정(`anonymous_yn`, `anonymous_type_conv`) 포함
+  - 결과: `rst_survey`(설문정보), `rst_stat`(전체참여통계), `rst_data`(문항통계), 선택 조회 시 `rst_responses` 포함
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/survey_list.jsp`, `public_html/tutor_lms/api/survey_insert.jsp`, `public_html/tutor_lms/api/survey_modify.jsp`, `public_html/tutor_lms/api/survey_delete.jsp`, `public_html/tutor_lms/api/survey_result.jsp`
+  - 정적 검증: `rg -n "anonymous_yn|result_yn|course_type|apply_type" public_html/tutor_lms/api/survey_*.jsp`로 익명/과정유형 분기 반영 확인
+- 최근 갱신: 2026-02-20
+
+### FLOW-4010: 학사(정규) 평가기준 저장 시 성적결과 즉시 반영 + 성적 CSV 다운로드
+- 사용자 동작(의도):
+  - 교수자가 학사 과목 `평가항목`을 저장하면, 성적 결과 조회에 즉시 반영되길 원함
+  - 연동 이슈가 있어도 학사 성적을 엑셀(CSV)로 내려받길 원함
+- 진입점:
+  - 평가 저장 API: `public_html/tutor_lms/api/haksa_course_eval_update.jsp`
+  - 성적 조회 API: `public_html/tutor_lms/api/haksa_grade_list.jsp`
+  - 성적 저장 API: `public_html/tutor_lms/api/haksa_grade_update.jsp`
+  - 성적 다운로드 API(신규): `public_html/tutor_lms/api/haksa_grade_export.jsp`
+- 처리(핵심):
+  - `haksa_course_eval_update.jsp`에서 `eval_json.weights`를 `attendance/midterm/final/assignment/etc/participation` 6개 항목으로 검증하고 합계 100을 강제
+  - `haksa_course_eval_update.jsp`에서 `eval_json.cutoffs`를 검증(A+~D)한 뒤 저장
+  - 저장 직후 `LM_POLY_COURSE_GRADE.score` 기준으로 등급을 서버에서 재계산해 `grade`를 즉시 갱신
+  - `haksa_grade_list.jsp`는 조회 시에도 같은 컷오프 기준으로 등급을 다시 계산해 반환(조회 일관성)
+  - `haksa_grade_update.jsp`는 프론트 전달 `grade`를 그대로 저장하지 않고, 서버 컷오프 기준으로 재계산해 저장
+  - `haksa_grade_export.jsp`는 현재 성적을 CSV로 내려주며, 컷오프가 있으면 서버 기준 등급으로 계산해 포함
+  - `haksa_grade_export.jsp`는 `TB_USER.login_id`와 `LM_POLY_COURSE_GRADE.member_key` 조인 시 컬레이션 충돌을 막기 위해 비교 컬레이션을 명시해 조회
+- DB:
+  - 평가 기준: `src/dao/PolyCourseSettingDao.java` → `LM_POLY_COURSE_SETTING.eval_json`
+  - 학사 성적: `src/dao/PolyCourseGradeDao.java` → `LM_POLY_COURSE_GRADE(score, grade)`
+  - 사용자명 조인(내보내기): `src/dao/UserDao.java` → `TB_USER(login_id, user_nm)`
+- 출력:
+  - 평가 저장: `rst_changed_count`, `rst_target_count`
+  - 성적 조회/저장: 컷오프 기준 등급 반환/저장
+  - 성적 다운로드: `text/csv` 첨부 응답(`haksa_grade_*.csv`)
+- 확인(근거):
+  - 코드 경로 확인: `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp`, `public_html/tutor_lms/api/haksa_grade_export.jsp`
+  - 정적 검증: 컷오프 검증/재계산/로그 분기와 CSV 헤더(`No,학번,이름,점수,등급`)를 파일에서 확인
+  - 실기동 검증(2026-02-19): `GET /tutor_lms/api/haksa_grade_export.jsp?course_code=T26PF12&open_year=2026&open_term=10&bunban_code=12&group_code=U` 호출 시 CSV 본문 1행(`haksa_st26_12`, `88`, `B`) 출력, 로그 `queried_count=1`, `row_count=1` 확인
+- 최근 갱신: 2026-02-19
 
 ### FLOW-5001: GCP Linux VM + Firebase Hosting 원클릭 자동 셋업
 - 사용자 동작(의도): 사용자가 스크립트 1회 실행으로 `www(Firebase 짧은 링크)`와 `VM(Resin JSP + Spring API + MySQL + Qdrant)`을 배포하고, 필요 시 기존 DB까지 자동 이관
@@ -543,3 +1012,93 @@
     - `resin-web.xml.tpl`에서 VM `src` 소스 컴파일 제거 후 `CourseSectionDao` 컴파일 오류 재발 방지
     - MySQL을 `--lower_case_table_names=1`로 재기동해 Linux 대소문자 충돌(`TB_RECO_CONTENT` 미인식) 재발 방지
 - 최근 갱신: 2026-02-11
+
+### FLOW-5002: 학사 미러(viewtable) 서버 단독 배치 동기화
+- 사용자 동작(의도): 운영 서버에서 `poly_sync`를 수동/자동(cron) 실행해 학사 미러 테이블을 주기적으로 최신화
+- 진입점:
+  - 실행 래퍼: `tools/poly_sync/run_poly_sync.sh`
+  - 배치 본체: `tools/poly_sync/run_poly_sync.py`
+  - 호출 대상: `public_html/main/poly_sync.jsp`
+- 처리(핵심):
+  - 쉘 래퍼가 Python 배치를 호출하고 기본 URL을 `http://127.0.0.1/main/poly_sync.jsp`로 고정
+  - Python 배치가 POST 파라미터(`mode`, `start_year`, `end_year`, `student_cnt` 등)를 전달
+  - 응답 JSON의 `rst_code`를 필수 검사하고, `0000`이 아니면 비정상 종료코드(`30`)로 즉시 실패 처리
+  - 운영 로그 추적을 위해 콘솔 로그 + 선택 로그파일(`--log-file`)에 시작/파라미터/응답을 기록
+- DB:
+  - 배치 스크립트 자체 DB 접근 없음
+  - 실제 동기화 저장은 `public_html/main/poly_sync.jsp` 내부 DAO 흐름(`LM_POLY_*`) 사용
+- 출력:
+  - 배치 실행 로그(표준출력/로그파일)
+  - 종료코드 기반 성공/실패 판별(성공 `0`, 실패 `10/11/12/20/30`)
+- 확인(근거):
+  - `python3 tools/poly_sync/run_poly_sync.py --help` 실행으로 CLI 진입 확인
+  - `python3 tools/poly_sync/run_poly_sync.py --base-url http://127.0.0.1:1` 실행 시 접속 오류와 비정상 종료코드 반환 확인
+  - `tools/poly_sync/README.md`에 cron 예시/운영 주의사항 반영 확인
+- 최근 갱신: 2026-02-20
+
+### FLOW-2013: 과목 문의 채팅(교수/학생 공통 스레드)
+- 사용자 동작(의도):
+  - 교수: 담당과목 학생 문의 채팅방 목록을 보고 스레드에 답변
+  - 학생: 수강신청/수강 관련 문의를 과목 기준으로 채팅 형태로 등록/추가 질문
+- 진입점:
+  - 교수 API: `public_html/tutor_lms/api/course_chat.jsp` (`mode=rooms/messages/send`)
+  - 학생 API: `public_html/api/course_chat.jsp` (`mode=rooms/messages/send`)
+- 처리(핵심):
+  - 공통: 과목별 `CL_BOARD(code='qna')` + `CL_POST(thread/depth)`를 재사용해 채팅 스레드로 처리
+  - 교수 권한:
+    - 관리자(S/A) 또는 과목 권한자(주/보조강사 + 과정담당자 + 개설자)만 접근
+    - 메시지 전송 시 `depth=getThreadDepth(thread,'A')`로 새 메시지를 추가하고 루트 질문(`depth='A'`)의 `proc_status=1`로 갱신
+  - 학생 권한:
+    - 본인 로그인 필수, 본인 루트 스레드(`depth='A' and user_id=userId`)만 조회/전송 가능
+    - 신규 문의 생성은 `course_id + subject + content` 필수, `LM_COURSE_USER` 수강 이력(`status != -1`) 확인 후 스레드 생성
+    - 학생 추가 메시지 전송 시 루트 질문 `proc_status=0`으로 갱신
+  - 보안/품질:
+    - POST 강제(`send`), base64 이미지 본문 차단, 60000바이트 초과 차단
+    - 민감정보 없는 운영 로그(`m.log`)로 권한거부/저장실패/성공 추적
+- DB:
+  - 게시판/메시지: `src/dao/ClBoardDao.java` → `CL_BOARD`, `src/dao/ClPostDao.java` → `CL_POST`
+  - 과목 권한: `src/dao/CourseTutorDao.java`, `src/dao/CourseManagerDao.java`, `src/dao/CourseDao.java`
+  - 학생 수강 확인: `src/dao/CourseUserDao.java` → `LM_COURSE_USER`
+- 출력:
+  - JSON: `rst_code`, `rst_message`, `rst_data`, `rst_count`, `rst_thread`
+  - 목록(`rooms`): 최근 메시지 미리보기/응답상태
+  - 상세(`messages`): 스레드 전체 메시지 + 발신자 역할(`student/professor`) + 내 메시지 여부(`mine`)
+- 확인(근거):
+  - 정적 확인: `public_html/tutor_lms/api/course_chat.jsp`, `public_html/api/course_chat.jsp`에서 모드별 분기/권한/상태 갱신 로직 확인
+  - 문서 반영 확인: `docs/rpg/map.md`, `docs/rpg/hotspots.md` 동시 갱신
+- 최근 갱신: 2026-02-20
+
+### FLOW-2014: 교수자 담당과목 비정규 과목 복사/삭제
+- 사용자 동작(의도):
+  - 과목 세부 관리 화면 상단 액션에서 비정규(프리즘) 과목을 복사하거나 삭제
+- 진입점:
+  - 복사: `POST public_html/tutor_lms/api/course_copy.jsp`
+  - 삭제: `POST public_html/tutor_lms/api/course_delete.jsp`
+  - 복사 모달 교수목록: `GET public_html/tutor_lms/api/tutor_list.jsp`
+- 처리(핵심):
+  - 공통:
+    - 로그인/교수자 검증은 `tutor_lms/api/init.jsp` 공통 규칙 사용
+    - 학사연동 과목(`LM_COURSE.etc2='HAKSA_MAPPED'`)은 복사/삭제 모두 차단
+  - 복사(`course_copy.jsp`):
+    - 기존 관리자 전용 제한을 완화해, 비관리자도 본인 담당 과목(주/보조강사 + 과정담당자 + 개설자)인 경우 복사 허용
+    - 비관리자는 `tutor_id`를 본인 ID로만 허용해 타인 계정 지정 차단
+    - 과목/차시/섹션/담당자/과정담당자를 복제하고, 실패 시 신규 과목을 `status=-1`로 비활성 처리
+  - 삭제(`course_delete.jsp`):
+    - 비관리자도 본인 담당 과목(주/보조강사 + 과정담당자 + 개설자)만 삭제 허용
+    - 수강생(`LM_COURSE_USER.status NOT IN (-1,-4)`)이 있거나 선행과정 참조(`LM_COURSE_PRECEDE.precede_id`)가 있으면 삭제 차단
+    - 성공 시 과목 `status=-1`, 차시 `status=-1`, 선행과정 매핑(`course_id`측) 정리
+  - 교수목록(`tutor_list.jsp`):
+    - 관리자는 전체 교수/강사 목록
+    - 비관리자는 본인 1명만 반환(복사 권한 범위와 일치)
+- DB:
+  - 과목 본문/상태: `src/dao/CourseDao.java` → `LM_COURSE` (`status`, `etc2`, `manager_id`)
+  - 권한/담당자: `src/dao/CourseTutorDao.java`, `src/dao/CourseManagerDao.java`
+  - 삭제 제한: `src/dao/CourseUserDao.java`(`LM_COURSE_USER.status`), `src/dao/CoursePrecedeDao.java`(`LM_COURSE_PRECEDE`)
+  - 차시 정리: `src/dao/CourseLessonDao.java`(`LM_COURSE_LESSON.status`)
+- 출력:
+  - JSON: `rst_code`, `rst_message`, `rst_data`
+  - 운영 추적 로그: `m.log("course_copy"...), m.log("course_delete"...), m.log("tutor_list"...)`
+- 확인(근거):
+  - 정적 확인: `public_html/tutor_lms/api/course_copy.jsp`, `public_html/tutor_lms/api/course_delete.jsp`, `public_html/tutor_lms/api/tutor_list.jsp`에서 권한/차단/삭제 분기 확인
+  - 확인 경로(수동): 교수 계정으로 `담당과목 > 과목 세부 관리 > 복사/삭제` 호출 시 권한/차단 메시지 확인
+- 최근 갱신: 2026-02-20

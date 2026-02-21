@@ -1,17 +1,17 @@
 ﻿# RPG-라이트: 저장소 지도 (`map.md`)
 
-최근 갱신: 2026-02-11
+최근 갱신: 2026-02-20
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-20 12:08
+최근 자동 갱신: 2026-02-19 16:55
 
-- JSP 총합(전체): 1227
-- JSP(public_html): 1226 (sysop: 715, api: 18)
+- JSP 총합(전체): 1245
+- JSP(public_html): 1244 (sysop: 715, api: 18)
 - 템플릿 HTML(public_html/**/html): 928
-- DAO(src/dao): 178
-- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 113
+- DAO(src/dao): 181
+- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 106
 - polytech-lms-api(Java/Spring Boot) Java 파일 수: 147
 
 생성된 인덱스:
@@ -75,13 +75,65 @@
 | 교수자 LMS UI를 학생 메인 톤으로 통일 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/styles/globals.css`, `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 학생 메인(/mypage/new_main) 팔레트(#f9fafb, #2b58e6, #e5e7eb)로 토큰/레이아웃 정리 후 `cd project && npm run build`로 반영 |
 | (UI 미세조정) 좌측 메뉴 폰트 1단계 축소 | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/App.tsx` | `public_html/tutor_lms/app/assets/*` | 사이드바 메뉴 영역에 `text-sm` 적용(메뉴만 한 단계 작게) |
 | 과제 > 피드백 관리: 학생 제출물(제목/내용/첨부) 모달 확인 추가 | `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `project/components/HomeworkSubmissionDetailModal.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | “제출물 보기” 버튼으로 제출 본문/첨부파일을 모달에서 확인(파일은 `CL_FILE(module='homework_{homework_id}', module_id=course_user_id)` 기반) |
-| 담당과목 > 진도/출석: QR 출결 발급 + 출석 칩 토글 수동변경 UI(10분 만료) | `public_html/tutor_lms/index.jsp` → `public_html/tutor_lms/app/index.html` | `project/components/courseManagement/AttendanceTab.tsx` | `public_html/tutor_lms/app/assets/*` | 학사/비학사 공통 QR 생성·재생성·즉시종료·10분 타이머 + 학사 출석표 출석 칩 클릭 시 `출석↔결석` 토글(프론트 임시 상태, 백엔드 미연동) |
+| 과제 > 피드백 관리: 교수자 피드백 템플릿(조회/저장/삭제) 백엔드 추가 | `GET public_html/tutor_lms/api/homework_feedback_template_list.jsp`, `POST public_html/tutor_lms/api/homework_feedback_template_save.jsp`, `POST public_html/tutor_lms/api/homework_feedback_template_delete.jsp` | `src/dao/HomeworkFeedbackTemplateDao.java` (`LM_HOMEWORK_FEEDBACK_TEMPLATE`) | `public_html/ddl_homework_feedback_template.sql` | 과목/교수자별 템플릿 CRUD 제공. 서버 개수 제한 없음(프론트에서 필요한 개수만 조회) |
+| 과제 > 피드백 관리: 교수자 피드백 첨부파일(업로드/목록/삭제) 백엔드 추가 | `POST public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `GET public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `POST public_html/tutor_lms/api/homework_feedback_file_delete.jsp`, `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `src/dao/ClFileDao.java`(`CL_FILE`), `src/dao/CourseTutorDao.java`, `src/dao/CourseModuleDao.java`, `src/dao/HomeworkDao.java`, `src/dao/CourseUserDao.java` | (React API 응답 JSON) | 피드백 파일은 `CL_FILE(module='homework_feedback_{homework_id}', module_id=course_user_id)`로 저장. 제출 상세 API에 `feedback_files` 배열을 포함해 정규/비정규 공통 조회 |
+| 과제 > 피드백 관리: 제출물 일치율 분석(수동/자동) 백엔드 추가 | `POST public_html/tutor_lms/api/homework_similarity_run.jsp`, `GET public_html/tutor_lms/api/homework_similarity_list.jsp`, `GET public_html/tutor_lms/api/homework_similarity_detail.jsp`, `POST public_html/classroom/homework_view.jsp`, `POST public_html/classroom/file_upload.jsp`, `POST public_html/tutor_lms/api/homework_submit_cancel.jsp` | `src/dao/HomeworkSimilarityRunDao.java`(`LM_HOMEWORK_SIMILARITY_RUN`), `src/dao/HomeworkSimilarityResultDao.java`(`LM_HOMEWORK_SIMILARITY_RESULT`) | `public_html/ddl_homework_similarity.sql` | 제목/본문/첨부 기반 일치율 저장. 제출/취소/첨부변경 시 자동 증분 갱신, 수동 실행은 전체 재계산 |
+| 담당과목 > 과제관리: 교수자 첨부파일 확인/다운로드/삭제/재업로드 백엔드 보강 | `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `POST public_html/tutor_lms/api/homework_delete.jsp`, `GET public_html/main/download_file.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.homework_file`), `src/dao/CourseModuleDao.java` | (React API 응답 JSON) | 목록 API에 `homework_file_*`(conv/ek/download_url) 추가, 수정 API에 `delete_homework_file_yn` 지원, 과제 최종 삭제 시 물리 파일 정리 |
+| 담당과목 > 과제관리: 동일 과제 다중 강의 동시 등록 | `POST public_html/tutor_lms/api/homework_insert.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK`), `src/dao/CourseModuleDao.java`(`LM_COURSE_MODULE`) | (React API 응답 JSON) | `course_id`(단일) + `course_ids`(복수, 쉼표) 동시 지원. 과목별 권한/존재 검증 후 가능한 강의에만 배치하고 실패 과목 목록(`rst_failed_courses`) 반환 |
+| 담당과목 > 과제관리: 과제별 제출첨부 허용 파일형식 옵션 | `POST public_html/tutor_lms/api/homework_insert.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `GET public_html/tutor_lms/api/homework_list.jsp`, `POST public_html/classroom/file_upload.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.submit_file_ext_mode/submit_file_exts`) | `public_html/ddl_homework_submit_file_ext.sql` | 과제별 프리셋/직접입력 확장자 저장 후 학생 제출 업로드에서 서버 강제 검증(우회 업로드 차단) |
+| 담당과목 > 과제관리: 지각 제출 허용/감점 저장 반영 | `POST public_html/tutor_lms/api/homework_insert.jsp`, `POST public_html/tutor_lms/api/homework_modify.jsp`, `GET public_html/tutor_lms/api/homework_list.jsp` | `src/dao/HomeworkDao.java`(`LM_HOMEWORK.allow_late_submission_yn/late_penalty`) | `public_html/ddl_homework_late_submission.sql` | 과제 수정 시 지각 제출 설정(허용 여부/감점률)이 저장되고, 재조회/재수정 화면에서도 동일 값으로 확인 가능(정규/비정규 공통) |
+
+## 최근 작업(교수자 출석 자동 판정)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 결석 n회 이상 자동 판정(F/미수료) + 출석 통합 요약 API | `POST public_html/tutor_lms/api/course_evaluation_update.jsp`, `GET public_html/tutor_lms/api/attendance_course_summary.jsp`, `POST public_html/tutor_lms/api/attendance_absence_apply.jsp`, `GET public_html/tutor_lms/api/progress_students.jsp`, `GET public_html/tutor_lms/api/completion_list.jsp` | `src/dao/CourseUserDao.java`(`LM_COURSE_USER.complete_status/fail_reason`, `LM_COURSE.limit_absence_yn/limit_absence_cnt`), `src/dao/CourseProgressDao.java`(`LM_COURSE_PROGRESS.complete_yn`), `LM_COURSE_LESSON.progress_yn` | (React API 응답 JSON) | 정규(`course_type='R'`) + 결석 초과는 상태 라벨 `F`, 비정규는 `미수료`로 표시. 수동 출석 변경 시 즉시 자동 판정 재계산 |
+| 출석 탭 부분 출결(다중 차시 일괄저장 + 주차 그룹 + 학생×차시 매트릭스) API 추가 | `POST public_html/tutor_lms/api/attendance_batch_update.jsp`, `GET public_html/tutor_lms/api/attendance_week_lessons.jsp`, `GET public_html/tutor_lms/api/attendance_student_matrix.jsp` | `src/dao/CourseProgressDao.java`(`LM_COURSE_PROGRESS.complete_yn`), `src/dao/CourseLessonDao.java`(`LM_COURSE_LESSON.section_id/chapter`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER`), `src/dao/CourseSectionDao.java`(`LM_COURSE_SECTION`) | (React API 응답 JSON) | 한 번 요청으로 `여러 차시 × 여러 학생` 상태를 저장하고, 주차별 차시/매트릭스 조회를 같이 제공해 교수자 출결 입력 클릭 수를 줄임 |
+
+## 최근 작업(교수자 수강생 상세 조회)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 담당과목/수강생추가 화면용 학생 상세 조회(API 단일 책임) | `public_html/tutor_lms/api/student_detail.jsp` | `src/dao/UserDao.java`(`TB_USER`), `src/dao/UserDeptDao.java`(`TB_USER_DEPT`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER`) | (React API 응답 JSON) | 상세 API는 데이터 조회만 수행. 개인정보 로그는 기존 `public_html/tutor_lms/api/privacy_log.jsp`(가려진 정보 보기) 경로를 그대로 사용 |
+
+## 최근 작업(교수자 문제은행 공개/비공개)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 문제은행 공개/비공개 저장 + 조회/출제 권한 통일 | `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`, `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp` | `src/dao/QuestionDao.java`(`LM_QUESTION.open_yn/manager_id/site_id/status`) | (React API 응답 JSON) | 비관리자는 `내 문제 OR 공개문제`만 조회/출제 가능, 수정/삭제는 작성자만 허용. DDL: `public_html/ddl_question_open_yn.sql` |
+
+## 최근 작업(학사 성적 연동/다운로드)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 학사 평가기준 저장 시 성적결과 즉시 반영 | `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp` | `src/dao/PolyCourseSettingDao.java`(`LM_POLY_COURSE_SETTING.eval_json`), `src/dao/PolyCourseGradeDao.java`(`LM_POLY_COURSE_GRADE.score/grade`) | (React API 응답 JSON) | `weights(attendance/midterm/final/assignment/etc/participation)` 합계 100 검증 후 저장, 평가 저장 직후 등급 재계산 + 조회/저장 시 서버 컷오프 기준 재판정 |
+| 학사 성적 CSV 다운로드 API 추가 | `public_html/tutor_lms/api/haksa_grade_export.jsp` | `src/dao/PolyCourseGradeDao.java`, `src/dao/PolyCourseSettingDao.java`, `src/dao/UserDao.java` | (CSV 첨부 다운로드) | 연동 상태와 무관하게 `No/학번/이름/점수/등급` CSV 즉시 다운로드 제공. `login_id/member_key` 조인 컬레이션 충돌 방지를 위해 비교 컬레이션 명시 |
+
+## 최근 작업(교수자 Q&A FAQ 공지/성적분포)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 담당과목 > Q&A: FAQ 공지(자주 묻는 질문) CRUD API 추가 | `GET public_html/tutor_lms/api/qna_faq_notice_list.jsp`, `POST public_html/tutor_lms/api/qna_faq_notice_save.jsp`, `POST public_html/tutor_lms/api/qna_faq_notice_delete.jsp` | `src/dao/ClBoardDao.java`(`CL_BOARD.code='notice'`), `src/dao/ClPostDao.java`(`CL_POST.notice_yn/subject/content/status`) | (React API 응답 JSON) | FAQ 공지는 공지게시판 데이터 중 `notice_yn='Y'`로 구분. 일반 공지와 분리해 목록/수정/삭제하며, 관리자/주강사 권한 검증 적용 |
+| 담당과목 > 성적관리: 그래프용 분포 통계 API 추가(비정규/정규) | `GET public_html/tutor_lms/api/grades_distribution.jsp`, `GET public_html/tutor_lms/api/haksa_grade_distribution.jsp` | `src/dao/CourseUserDao.java`(`LM_COURSE_USER.total_score/progress_ratio`), `src/dao/PolyCourseGradeDao.java`(`LM_POLY_COURSE_GRADE.score/grade`), `src/dao/PolyCourseProfDao.java` | (React API 응답 JSON) | 점수구간(90~100/80~89/...)과 요약 통계(평균/최저/최고/인원수) 제공. 학사는 등급(A+~F) 분포도 함께 제공 |
+| 담당과목 > 학생 문의 채팅: 교수/학생 스레드형 메시지 API 추가 | `GET/POST public_html/tutor_lms/api/course_chat.jsp`, `GET/POST public_html/api/course_chat.jsp` | `src/dao/ClBoardDao.java`(`CL_BOARD.code='qna'`), `src/dao/ClPostDao.java`(`CL_POST.thread/depth/proc_status`), `src/dao/CourseTutorDao.java`, `src/dao/CourseManagerDao.java`, `src/dao/CourseUserDao.java` | (React/프론트 API 응답 JSON) | DB 추가 없이 Q&A 스레드를 채팅으로 재사용. 교수는 담당과목(주/보조강사+과정담당+개설자)만 접근, 학생은 본인 스레드만 접근 |
+
+## 최근 작업(교수자 담당과목 설문)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 담당과목 > 설문관리: 설문 등록/목록/수정/삭제/결과 API 추가 | `GET public_html/tutor_lms/api/survey_list.jsp`, `POST public_html/tutor_lms/api/survey_insert.jsp`, `POST public_html/tutor_lms/api/survey_modify.jsp`, `POST public_html/tutor_lms/api/survey_delete.jsp`, `GET public_html/tutor_lms/api/survey_result.jsp` | `src/dao/SurveyDao.java`(`LM_SURVEY`), `src/dao/SurveyQuestionDao.java`(`LM_SURVEY_QUESTION`), `src/dao/SurveyItemDao.java`(`LM_SURVEY_ITEM`), `src/dao/SurveyUserDao.java`(`LM_SURVEY_USER`), `src/dao/SurveyResultDao.java`(`LM_SURVEY_RESULT`), `src/dao/CourseModuleDao.java`(`LM_COURSE_MODULE.result_yn`) | (React API 응답 JSON) | 정규(`course_type='R'`)는 기간(`apply_type=1`), 비정규는 차시(`apply_type=2`)로 배치. 익명/실명은 `LM_COURSE_MODULE.result_yn`으로 과목별 저장 |
+
+## 최근 작업(교수자 담당과목 복사/삭제)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
+|---|---|---|---|---|
+| 담당과목 > 과목 세부관리 상단 액션 대비: 과목 복사 권한 보강 + 과목 삭제 API 추가 | `POST public_html/tutor_lms/api/course_copy.jsp`, `POST public_html/tutor_lms/api/course_delete.jsp`, `GET public_html/tutor_lms/api/tutor_list.jsp` | `src/dao/CourseDao.java`(`LM_COURSE.status/etc2/manager_id`), `src/dao/CourseTutorDao.java`(`LM_COURSE_TUTOR.type`), `src/dao/CourseManagerDao.java`(`LM_COURSE_MANAGER`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER.status`), `src/dao/CoursePrecedeDao.java`(`LM_COURSE_PRECEDE`), `src/dao/CourseLessonDao.java`(`LM_COURSE_LESSON.status`) | (React API 응답 JSON) | 비관리자도 본인 담당 과목은 복사 가능(타인 지정 차단), 학사연동(`etc2='HAKSA_MAPPED'`) 복사/삭제 차단, 삭제 시 수강생/선행과정 참조 검사 후 soft delete |
 
 ## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
 |---|---|---|---|---|
 | 차시관리 > 콘텐츠 라이브러리 추천 탭에서 동영상 시간/인정시간 자동세팅 복구 | `POST public_html/tutor_lms/api/content_recommend.jsp`, `POST public_html/tutor_lms/api/kollus_lesson_upsert.jsp` | `src/dao/LessonDao.java` / `LM_LESSON`, `src/dao/KollusMediaDao.java` / `TB_KOLLUS_MEDIA`, `TB_KOLLUS_TRANSCRIPT(duration_seconds)` | `project/components/ContentLibraryModal.tsx` | `lessonId`가 숫자(`LM_LESSON.id`)로 들어오는 추천 데이터는 `start_url(media key)`로 정규화하고, DB 메타가 비면 `TB_KOLLUS_TRANSCRIPT` 시간을 분 단위로 보강. 업서트 단계에서도 `total_time` 미전달 시 전사시간으로 1회 보강해 인정시간 기본값 누락을 방지 |
 | 콘텐츠 라이브러리 추천 탭 자연어 검색 정렬(학생 검색형) | `POST public_html/tutor_lms/api/content_recommend.jsp` → `POST /tutor/content-recommend/lessons` | `TB_RECO_CONTENT` (`title`, `summary`, `keywords`, `lesson_id`) | `polytech-lms-api/src/main/java/kr/polytech/lms/tutorcontentrecommend/service/TutorContentRecommendService.java`, `project/components/courseManagement/CurriculumTab.tsx`, `project/components/CurriculumEditor.tsx`, `project/components/courseManagement/WeeklyContentModal.tsx`, `project/components/courseManagement/EditContentModal.tsx` | 교수자 추천은 `courseName`만 질의로 사용(차시명/설명 제외)하고, 내부는 `키워드 DB 검색 + RETRIEVAL_QUERY 벡터검색 + 제목 매칭 재정렬` 구조를 유지. 학사/비정규 경로 모두 `recommendContext.courseName` 전달 강제, 프록시(`content_recommend.jsp`)는 `request_context` 로그로 유입 확인 |
+| 콘텐츠 라이브러리 전체/찜 목록 영상 제목 사용자 수정(구분용) | `GET public_html/tutor_lms/api/kollus_list.jsp`, `POST public_html/tutor_lms/api/kollus_media_title_update.jsp` | `src/dao/KollusMediaDao.java` / `TB_KOLLUS_MEDIA(title, media_content_key, site_id)` | `project/components/ContentLibraryPage.tsx`(API 연동 대상) | 제목 수정 API는 `media_content_key + title`을 기준으로 upsert하고, 전체 목록 조회는 DB 제목을 우선 노출해 예전 영상을 사용자 규칙(분류명)으로 즉시 구분 가능 |
+
+## 최근 작업(교수자 차시관리 일괄등록/학사영상관리)
+| 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |
+|---|---|---|---|---|
+| 비정규 차시 일괄등록 + 더블클릭/중복요청 안정화 + 수정/삭제 키 보강 | `POST public_html/tutor_lms/api/curriculum_lesson_bulk_add.jsp`, `POST public_html/tutor_lms/api/curriculum_lesson_add.jsp`, `POST public_html/tutor_lms/api/curriculum_lesson_update.jsp`, `POST public_html/tutor_lms/api/curriculum_lesson_delete.jsp` | `src/dao/CourseLessonDao.java` / `LM_COURSE_LESSON`, `src/dao/LessonDao.java` / `LM_LESSON` | `project/api/tutorLmsApi.ts` | 대량 등록은 `lessons_json` 배열로 insert/update를 함께 처리(재실행 안전). 단건 추가는 중복/재활성화를 성공 응답으로 통일해 더블클릭 시 실패 오인 방지 |
+| 비정규 수강생 자동승인 + 학사 영상 검토/수정/삭제 API | `GET public_html/tutor_lms/api/course_students_list.jsp`, `POST public_html/tutor_lms/api/course_students_auto_approve.jsp`, `GET public_html/tutor_lms/api/haksa_video_list.jsp`, `POST public_html/tutor_lms/api/haksa_video_update.jsp`, `POST public_html/tutor_lms/api/haksa_video_delete.jsp`, `POST public_html/tutor_lms/api/haksa_curriculum_update.jsp` | `src/dao/CourseUserDao.java` / `LM_COURSE_USER`, `src/dao/PolyCourseSettingDao.java` / `LM_POLY_COURSE_SETTING`, `src/dao/CourseLessonDao.java` / `LM_COURSE_LESSON`, `src/dao/LessonDao.java` / `LM_LESSON` | `project/api/tutorLmsApi.ts` | 학사 업데이트는 `sessionNo`(주차 내 차시)와 DB `chapter`(전체 순번)를 분리해 "차시 몰림" 회귀를 차단. 확인 근거: `cd project && npm run build` 성공 |
 
 ## 최근 작업(교수자 통계/산업별 통계)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
@@ -104,9 +156,15 @@
 |---|---|---|---|---|
 | `/mypage/*` 흰화면(200 + 빈 본문) 복구 | `public_html/init.jsp`, `public_html/mypage/new_main/index.jsp`, `public_html/member/login.jsp` | `public_html/WEB-INF/resin-web.xml`, `public_html/init.jsp`, `C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml` | 로컬 Resin JNDI(`jdbc/malgn`, `jdbc/lms`) + src 자동 컴파일 | 확인 근거: `curl -i /mypage/new_main/index.jsp`가 `Content-Length: 12/0` 빈 응답에서 HTML 본문 응답으로 변경, `/mypage/index.jsp`와 `/member/login.jsp`가 `302 -> /mypage/new_main/?login_required=Y...` 정상 확인 |
 
+## 최근 작업(학사 미러 배치 실행)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
+|---|---|---|---|---|
+| viewtable 동기화를 서버 단독 배치로 실행 | `tools/poly_sync/run_poly_sync.sh` → `POST /main/poly_sync.jsp` | `tools/poly_sync/run_poly_sync.py`, `tools/poly_sync/README.md` | 서버 배치/cron 실행 스크립트 | `rst_code` 검사로 실패를 종료코드로 반환. 로컬 호출 제한(`127.0.0.1`)을 유지한 상태에서 자동 동기화 가능 |
+
 ## 최근 작업(GCP/Firebase 원클릭 자동화)
 | 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
 |---|---|---|---|---|
+| GitHub Actions dev 배포 차단(main 전용 배포 가드) | `Deploy LMS to GCP + Firebase` 워크플로의 `deploy` job | `.github/workflows/deploy-lms-gcp.yml` | 수동 실행(`workflow_dispatch`) 시 `main`만 배포 수행 | 확인 근거: `jobs.deploy.if`에 `workflow_dispatch + refs/heads/main` 조건 추가 후 `rg -n "workflow_dispatch|jobs:|deploy:|if:" .github/workflows/deploy-lms-gcp.yml`로 반영 확인 |
 | GCP Linux VM + Firebase Hosting + DB/Qdrant 전량 이관 운영 검증 | 실행: `tools/gcp/start-one-click.bat` → `tools/gcp/one-click-setup.ps1` + `tools/gcp/firebase-proxy-deploy` | `tools/gcp/one-click-setup.ps1`, `tools/gcp/templates/docker-compose.yml.tpl`, `tools/gcp/templates/deploy-stack.sh.tpl`, `tools/gcp/templates/nginx-api.conf.tpl`, `tools/gcp/templates/resin-web.xml.tpl`, `tools/gcp/firebase-proxy-deploy/*`, `tools/gcp/README.md`, `.github/workflows/deploy-lms-gcp.yml` | `tools/gcp/generated/*`(실행 시 생성) | 확인 근거: 소스/타깃 MySQL row count 일치(`tb_user=1064`, `lm_course=165`, `tb_reco_content=3000`, `tb_kollus_transcript=3000`), Qdrant point count 일치(`video_summary_vectors_gemini=3014`, `video_summary_vectors=131`), `curl -I https://epoly-kopo.web.app/mypage/new_main/index.jsp` 200, 추천 API(`POST /tutor/content-recommend/lessons`) 200 확인, CI 경로는 `one-click -SkipFirebaseDeploy` 후 `vmproxy` 별도 배포로 검증 |
 | Firebase `web.app` 로그인 세션/추천영상 복구 | Hosting rewrite + Functions 프록시 + 신규메인 추천 JSP | `tools/gcp/firebase-proxy-deploy/functions/index.js`, `tools/gcp/firebase-proxy-deploy/firebase.json`, `public_html/mypage/new_main/reco_video_list.jsp`, `tools/gcp/templates/docker-compose.yml.tpl`, `tools/gcp/templates/nginx-api.conf.tpl`, `tools/gcp/templates/deploy-stack.sh.tpl` | 운영 반영: `vmproxy` 재배포 + `lms-resin` 재생성 + nginx reload | 확인 근거: `Cookie: __session=...`로 `GET /mypage/new_main/reco_prompt.jsp`가 `{\"ok\":true}` 응답, `GET /mypage/new_main/reco_video_list.jsp` 추천 타이틀 4건 반환, `lms-resin` env에 `POLYTECH_LMS_API_BASE=http://api:8081` 확인, `curl -I /tutor_lms/app/index.html` charset UTF-8 확인, `virtualclass-2ee22`의 Generative Language API 활성화 후 `/student/content-recommend/home` 200 확인 |
 | GCP 통계 폴더(`통계/`) 운영 반영 | 통계 API: `/statistics/api/internal/*` | `tools/gcp/one-click-setup.ps1`, `tools/gcp/templates/docker-compose.yml.tpl`, `tools/gcp/README.md` | VM 경로 `/opt/polytech-lms/statistics_data` + API 컨테이너 `/data/statistics` | 확인 근거: 반영 전 `GET /statistics/api/internal/employment/top` 500(`통계 파일을 찾을 수 없습니다`), 반영 후 `GET /statistics/api/internal/employment/top?top=3` 200 및 JSON 응답 확인 |

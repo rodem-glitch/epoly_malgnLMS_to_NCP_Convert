@@ -43,6 +43,14 @@ if(!cinfo.next()) {
 	return;
 }
 
+DataSet hinfo = homework.find("id = " + homeworkId + " AND site_id = " + siteId + " AND status != -1");
+if(!hinfo.next()) {
+	result.put("rst_code", "4042");
+	result.put("rst_message", "과제 정보가 없습니다.");
+	result.print();
+	return;
+}
+
 DataSet minfo = courseModule.find("course_id = " + courseId + " AND module = 'homework' AND module_id = " + homeworkId + " AND status = 1");
 if(!minfo.next()) {
 	result.put("rst_code", "4041");
@@ -58,6 +66,8 @@ if(0 < homeworkUser.findCount("homework_id = " + homeworkId + " AND course_id = 
 	return;
 }
 
+m.log("tutor_homework", "delete course_id=" + courseId + ", homework_id=" + homeworkId + ", user_id=" + userId);
+
 if(!courseModule.delete("course_id = " + courseId + " AND module = 'homework' AND module_id = " + homeworkId + "")) {
 	result.put("rst_code", "2000");
 	result.put("rst_message", "삭제 중 오류가 발생했습니다.");
@@ -67,8 +77,14 @@ if(!courseModule.delete("course_id = " + courseId + " AND module = 'homework' AN
 
 try {
 	if(0 >= courseModule.findCount("module = 'homework' AND module_id = " + homeworkId + "")) {
+		// 왜: 다른 과목에서도 더 이상 쓰지 않는 과제라면, 첨부파일도 함께 정리해 고아 파일을 남기지 않습니다.
+		if(!"".equals(hinfo.s("homework_file"))) m.delFileRoot(m.getUploadPath(hinfo.s("homework_file")));
+		homework.item("homework_file", "");
 		homework.item("status", -1);
 		homework.update("id = " + homeworkId + " AND site_id = " + siteId);
+		m.log("tutor_homework", "delete_finalized course_id=" + courseId + ", homework_id=" + homeworkId + ", file_deleted=" + ("".equals(hinfo.s("homework_file")) ? "N" : "Y"));
+	} else {
+		m.log("tutor_homework", "delete_detached_only course_id=" + courseId + ", homework_id=" + homeworkId + ", user_id=" + userId);
 	}
 } catch(Exception ignore) {}
 

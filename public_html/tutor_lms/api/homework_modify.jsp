@@ -27,6 +27,11 @@ f.addElement("dueTime", null, "hname:'마감 시간', required:'Y'");
 f.addElement("totalScore", 100, "hname:'배점', required:'Y', option:'number'");
 f.addElement("onoff_type", "N", "hname:'온오프라인구분'");
 f.addElement("homework_file", null, "hname:'첨부파일'");
+f.addElement("delete_homework_file_yn", "N", "hname:'첨부파일삭제여부'");
+f.addElement("submit_file_ext_mode", null, "hname:'제출첨부허용형식모드'");
+f.addElement("submit_file_exts", null, "hname:'제출첨부허용확장자'");
+f.addElement("allowLateSubmission", null, "hname:'지각제출허용여부'");
+f.addElement("latePenalty", null, "hname:'지각제출감점'");
 
 if(!f.validate()) {
 	result.put("rst_code", "1000");
@@ -82,6 +87,85 @@ String title = f.get("title").trim();
 String content = f.get("description");
 int assignScore = Math.max(0, f.getInt("totalScore"));
 String onoffType = !"".equals(f.get("onoff_type")) ? f.get("onoff_type") : hinfo.s("onoff_type");
+boolean deleteHomeworkFile = "Y".equals(f.get("delete_homework_file_yn"));
+boolean hasNewHomeworkFile = null != f.getFileName("homework_file");
+String oldHomeworkFile = hinfo.s("homework_file");
+
+// 왜: 구버전 프론트(필드 미전송)와 호환하려고, 허용 형식 옵션은 값이 왔을 때만 변경합니다.
+String currentSubmitFileExtMode = homework.normalizeSubmitFileExtMode(hinfo.s("submit_file_ext_mode"));
+if("".equals(currentSubmitFileExtMode)) currentSubmitFileExtMode = "ALL";
+String currentSubmitFileExts = homework.normalizeSubmitFileExts(hinfo.s("submit_file_exts"));
+String submitFileExtModeInput = f.get("submit_file_ext_mode");
+if(null == submitFileExtModeInput) submitFileExtModeInput = "";
+String submitFileExtMode = currentSubmitFileExtMode;
+String submitFileExts = currentSubmitFileExts;
+if(!"".equals(submitFileExtModeInput)) {
+	submitFileExtMode = homework.normalizeSubmitFileExtMode(submitFileExtModeInput);
+	if("".equals(submitFileExtMode)) {
+		result.put("rst_code", "1104");
+		result.put("rst_message", "허용 파일 형식 옵션이 올바르지 않습니다.");
+		result.print();
+		return;
+	}
+	if("CUSTOM".equals(submitFileExtMode)) {
+		submitFileExts = homework.normalizeSubmitFileExts(f.get("submit_file_exts"));
+		if("".equals(submitFileExts)) {
+			result.put("rst_code", "1105");
+			result.put("rst_message", "직접입력 모드에서는 허용 확장자를 1개 이상 입력해야 합니다.");
+			result.print();
+			return;
+		}
+	} else {
+		submitFileExts = "";
+	}
+}
+String resolvedSubmitAllowExt = homework.resolveSubmitFileExts(submitFileExtMode, submitFileExts);
+if("".equals(resolvedSubmitAllowExt)) {
+	result.put("rst_code", "1106");
+	result.put("rst_message", "허용 확장자 설정을 확인해 주세요.");
+	result.print();
+	return;
+}
+
+// 왜: 수정 API는 화면/클라이언트 버전에 따라 지각 제출 값이 누락될 수 있어, 값이 온 경우에만 변경합니다.
+String currentAllowLateSubmissionYn = "Y".equals(hinfo.s("allow_late_submission_yn")) ? "Y" : "N";
+int currentLatePenalty = Math.max(0, Math.min(100, hinfo.i("late_penalty")));
+String allowLateSubmissionInput = f.get("allowLateSubmission");
+if(null == allowLateSubmissionInput) allowLateSubmissionInput = "";
+String latePenaltyInput = f.get("latePenalty");
+if(null == latePenaltyInput) latePenaltyInput = "";
+String allowLateSubmissionYn = currentAllowLateSubmissionYn;
+if(!"".equals(allowLateSubmissionInput)) {
+	String allowLateSubmissionNormalized = allowLateSubmissionInput.trim().toUpperCase();
+	if("Y".equals(allowLateSubmissionNormalized) || "TRUE".equals(allowLateSubmissionNormalized) || "1".equals(allowLateSubmissionNormalized)) {
+		allowLateSubmissionYn = "Y";
+	} else if("N".equals(allowLateSubmissionNormalized) || "FALSE".equals(allowLateSubmissionNormalized) || "0".equals(allowLateSubmissionNormalized)) {
+		allowLateSubmissionYn = "N";
+	} else {
+		result.put("rst_code", "1107");
+		result.put("rst_message", "지각 제출 허용 값이 올바르지 않습니다.");
+		result.print();
+		return;
+	}
+}
+int latePenalty = currentLatePenalty;
+if(!"".equals(latePenaltyInput)) {
+	try {
+		latePenalty = Integer.parseInt(latePenaltyInput.trim());
+	} catch(Exception ex) {
+		result.put("rst_code", "1108");
+		result.put("rst_message", "지각 제출 감점은 0~100 사이 숫자여야 합니다.");
+		result.print();
+		return;
+	}
+	if(latePenalty < 0 || latePenalty > 100) {
+		result.put("rst_code", "1108");
+		result.put("rst_message", "지각 제출 감점은 0~100 사이로 입력해 주세요.");
+		result.print();
+		return;
+	}
+}
+if(!"Y".equals(allowLateSubmissionYn)) latePenalty = 0;
 
 if(-1 < content.indexOf("<img") && -1 < content.indexOf("data:image/") && -1 < content.indexOf("base64")) {
 	result.put("rst_code", "1101");
@@ -124,17 +208,38 @@ if(m.parseLong(startDateTime) > m.parseLong(endDateTime)) {
 }
 
 m.log("tutor_homework", "modify course_id=" + courseId + ", homework_id=" + homeworkId + ", start=" + startDateTime + ", end=" + endDateTime + ", user_id=" + userId);
+m.log(
+	"tutor_homework",
+	"modify_file course_id=" + courseId + ", homework_id=" + homeworkId + ", delete_file=" + (deleteHomeworkFile ? "Y" : "N")
+	+ ", has_new_file=" + (hasNewHomeworkFile ? "Y" : "N")
+	+ ", submit_ext_mode=" + submitFileExtMode + ", submit_ext_cnt=" + resolvedSubmitAllowExt.split("\\|").length
+	+ ", allow_late_submission_yn=" + allowLateSubmissionYn + ", late_penalty=" + latePenalty
+	+ ", user_id=" + userId
+);
 
 //과제 수정
 homework.item("homework_nm", title);
 homework.item("onoff_type", onoffType);
 homework.item("content", content);
-if(null != f.getFileName("homework_file")) {
+homework.item("submit_file_ext_mode", submitFileExtMode);
+homework.item("submit_file_exts", "CUSTOM".equals(submitFileExtMode) ? submitFileExts : "");
+homework.item("allow_late_submission_yn", allowLateSubmissionYn);
+homework.item("late_penalty", latePenalty);
+boolean oldFileDeleted = false;
+if(deleteHomeworkFile) {
+	// 왜: "파일만 삭제" 요구가 있어, 수정 요청에서 명시적으로 첨부를 비울 수 있어야 합니다.
+	homework.item("homework_file", "");
+	if(!"".equals(oldHomeworkFile)) {
+		m.delFileRoot(m.getUploadPath(oldHomeworkFile));
+		oldFileDeleted = true;
+	}
+}
+if(hasNewHomeworkFile) {
 	File f1 = f.saveFile("homework_file");
 	if(f1 != null) {
 		homework.item("homework_file", f.getFileName("homework_file"));
 		// 왜: 새 파일로 교체되면 기존 파일은 정리해 저장소를 지킵니다.
-		if(!"".equals(hinfo.s("homework_file"))) m.delFileRoot(m.getUploadPath(hinfo.s("homework_file")));
+		if(!oldFileDeleted && !"".equals(oldHomeworkFile)) m.delFileRoot(m.getUploadPath(oldHomeworkFile));
 	}
 }
 // 왜: 일부 환경(DB 스키마)에는 LM_HOMEWORK에 mod_date 컬럼이 없어 UPDATE가 통째로 실패합니다.
@@ -165,4 +270,3 @@ result.put("rst_data", homeworkId);
 result.print();
 
 %>
-

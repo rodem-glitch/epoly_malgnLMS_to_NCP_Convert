@@ -2,6 +2,7 @@
 
 //왜 필요한가:
 //- 과목관리 > 과제 등록(모달)에서, 과제(LM_HOMEWORK)와 과목 배치(LM_COURSE_MODULE)를 함께 생성해야 합니다.
+//- 동일 과제를 여러 강의에 한 번에 등록할 수 있도록, 단일 course_id와 복수 course_ids를 함께 지원합니다.
 
 if(!m.isPost()) {
 	result.put("rst_code", "4050");
@@ -16,7 +17,8 @@ CourseModuleDao courseModule = new CourseModuleDao();
 HomeworkDao homework = new HomeworkDao();
 
 //필수값
-f.addElement("course_id", null, "hname:'course_id', required:'Y'");
+f.addElement("course_id", null, "hname:'course_id'"); //단일 등록 호환용
+f.addElement("course_ids", null, "hname:'course_ids'"); //복수 등록용(쉼표 구분)
 f.addElement("title", null, "hname:'과제 제목', required:'Y'");
 f.addElement("description", null, "hname:'과제 설명', required:'Y', allowhtml:'Y'");
 f.addElement("startDate", null, "hname:'제출 시작 날짜'");
@@ -28,6 +30,10 @@ f.addElement("homework_file", null, "hname:'첨부파일'");
 
 //선택값
 f.addElement("onoff_type", "N", "hname:'온오프라인구분'"); //왜: 과제는 기본적으로 온라인 제출을 가정합니다.
+f.addElement("submit_file_ext_mode", "ALL", "hname:'제출첨부허용형식모드'"); //ALL/DOC/IMAGE/ARCHIVE/AUDIO/CUSTOM
+f.addElement("submit_file_exts", null, "hname:'제출첨부허용확장자'");
+f.addElement("allowLateSubmission", "N", "hname:'지각제출허용여부'"); //Y/N, true/false, 1/0 허용
+f.addElement("latePenalty", "0", "hname:'지각제출감점'");
 
 if(!f.validate()) {
 	result.put("rst_code", "1000");
@@ -36,28 +42,74 @@ if(!f.validate()) {
 	return;
 }
 
-int courseId = f.getInt("course_id");
-if(0 == courseId) {
+int singleCourseId = f.getInt("course_id");
+String courseIdsRaw = f.get("course_ids");
+if(null == courseIdsRaw) courseIdsRaw = "";
+
+java.util.LinkedHashSet<Integer> targetCourseIdSet = new java.util.LinkedHashSet<Integer>();
+java.util.ArrayList<String> invalidCourseTokens = new java.util.ArrayList<String>();
+
+if(singleCourseId > 0) targetCourseIdSet.add(singleCourseId);
+
+if(!"".equals(courseIdsRaw)) {
+	String[] parts = m.split(",", courseIdsRaw);
+	if(parts != null) {
+		for(int i = 0; i < parts.length; i++) {
+			String token = m.replace(parts[i], "\n", "").trim();
+			if("".equals(token)) continue;
+			int parsedCourseId = m.parseInt(token);
+			if(parsedCourseId > 0) targetCourseIdSet.add(parsedCourseId);
+			else invalidCourseTokens.add(token);
+		}
+	}
+}
+
+if(targetCourseIdSet.size() == 0) {
 	result.put("rst_code", "1001");
-	result.put("rst_message", "course_id가 필요합니다.");
+	result.put("rst_message", "course_id 또는 course_ids가 필요합니다.");
 	result.print();
 	return;
 }
 
-//권한
-if(!isAdmin) {
-	if(0 >= courseTutor.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId)) {
-		result.put("rst_code", "4031");
-		result.put("rst_message", "해당 과목에 과제를 등록할 권한이 없습니다.");
-		result.print();
-		return;
+java.util.ArrayList<Integer> validCourseIds = new java.util.ArrayList<Integer>();
+DataSet failedCourses = new DataSet();
+
+//왜: 다중 등록에서는 과목별 권한/존재 여부를 따로 판정해서, 어느 과목이 실패했는지 운영자가 확인할 수 있어야 합니다.
+java.util.Iterator<Integer> courseIter = targetCourseIdSet.iterator();
+while(courseIter.hasNext()) {
+	int courseId = courseIter.next().intValue();
+
+	//권한
+	if(!isAdmin) {
+		if(0 >= courseTutor.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId)) {
+			failedCourses.addRow();
+			failedCourses.put("course_id", courseId);
+			failedCourses.put("reason_code", "NO_PERMISSION");
+			failedCourses.put("reason", "해당 과목에 과제를 등록할 권한이 없습니다.");
+			continue;
+		}
 	}
+
+	if(0 >= course.findCount("id = " + courseId + " AND site_id = " + siteId + " AND status != -1")) {
+		failedCourses.addRow();
+		failedCourses.put("course_id", courseId);
+		failedCourses.put("reason_code", "NO_COURSE");
+		failedCourses.put("reason", "해당 과목이 없습니다.");
+		continue;
+	}
+
+	validCourseIds.add(courseId);
 }
 
-DataSet cinfo = course.find("id = " + courseId + " AND site_id = " + siteId + " AND status != -1");
-if(!cinfo.next()) {
-	result.put("rst_code", "4040");
-	result.put("rst_message", "해당 과목이 없습니다.");
+if(validCourseIds.size() == 0) {
+	result.put("rst_code", "4032");
+	result.put("rst_message", "등록 가능한 과목이 없습니다.");
+	result.put("rst_fail_count", failedCourses.size());
+	result.put("rst_failed_courses", failedCourses);
+	if(invalidCourseTokens.size() > 0) {
+		result.put("rst_invalid_token_count", invalidCourseTokens.size());
+		result.put("rst_invalid_tokens", m.join(",", invalidCourseTokens.toArray()));
+	}
 	result.print();
 	return;
 }
@@ -66,6 +118,54 @@ String title = f.get("title").trim();
 String content = f.get("description");
 int assignScore = Math.max(0, f.getInt("totalScore"));
 String onoffType = !"".equals(f.get("onoff_type")) ? f.get("onoff_type") : "N";
+String allowLateSubmissionInput = f.get("allowLateSubmission");
+if(null == allowLateSubmissionInput) allowLateSubmissionInput = "";
+String allowLateSubmissionNormalized = allowLateSubmissionInput.trim().toUpperCase();
+String allowLateSubmissionYn = ("Y".equals(allowLateSubmissionNormalized) || "TRUE".equals(allowLateSubmissionNormalized) || "1".equals(allowLateSubmissionNormalized)) ? "Y" : "N";
+String latePenaltyRaw = f.get("latePenalty");
+if(null == latePenaltyRaw || "".equals(latePenaltyRaw.trim())) latePenaltyRaw = "0";
+int latePenalty = 0;
+try {
+	latePenalty = Integer.parseInt(latePenaltyRaw.trim());
+} catch(Exception ex) {
+	result.put("rst_code", "1108");
+	result.put("rst_message", "지각 제출 감점은 0~100 사이 숫자여야 합니다.");
+	result.print();
+	return;
+}
+if(latePenalty < 0 || latePenalty > 100) {
+	result.put("rst_code", "1108");
+	result.put("rst_message", "지각 제출 감점은 0~100 사이로 입력해 주세요.");
+	result.print();
+	return;
+}
+if(!"Y".equals(allowLateSubmissionYn)) latePenalty = 0;
+String submitFileExtModeInput = f.get("submit_file_ext_mode");
+if(null == submitFileExtModeInput) submitFileExtModeInput = "";
+String submitFileExtMode = homework.normalizeSubmitFileExtMode("".equals(submitFileExtModeInput) ? "ALL" : submitFileExtModeInput);
+if("".equals(submitFileExtMode)) {
+	result.put("rst_code", "1104");
+	result.put("rst_message", "허용 파일 형식 옵션이 올바르지 않습니다.");
+	result.print();
+	return;
+}
+String submitFileExts = "";
+if("CUSTOM".equals(submitFileExtMode)) {
+	submitFileExts = homework.normalizeSubmitFileExts(f.get("submit_file_exts"));
+	if("".equals(submitFileExts)) {
+		result.put("rst_code", "1105");
+		result.put("rst_message", "직접입력 모드에서는 허용 확장자를 1개 이상 입력해야 합니다.");
+		result.print();
+		return;
+	}
+}
+String resolvedSubmitAllowExt = homework.resolveSubmitFileExts(submitFileExtMode, submitFileExts);
+if("".equals(resolvedSubmitAllowExt)) {
+	result.put("rst_code", "1106");
+	result.put("rst_message", "허용 확장자 설정을 확인해 주세요.");
+	result.print();
+	return;
+}
 
 //왜: base64 이미지는 DB에 누적되면 용량 폭증/오류가 나기 쉽습니다.
 if(-1 < content.indexOf("<img") && -1 < content.indexOf("data:image/") && -1 < content.indexOf("base64")) {
@@ -106,7 +206,14 @@ if(m.parseLong(startDateTime) > m.parseLong(endDateTime)) {
 	return;
 }
 
-m.log("tutor_homework", "insert course_id=" + courseId + ", start=" + startDateTime + ", end=" + endDateTime + ", user_id=" + userId);
+m.log(
+	"tutor_homework",
+	"insert_multi requested=" + targetCourseIdSet.size() + ", valid=" + validCourseIds.size()
+	+ ", start=" + startDateTime + ", end=" + endDateTime
+	+ ", submit_ext_mode=" + submitFileExtMode + ", submit_ext_cnt=" + resolvedSubmitAllowExt.split("\\|").length
+	+ ", allow_late_submission_yn=" + allowLateSubmissionYn + ", late_penalty=" + latePenalty
+	+ ", user_id=" + userId
+);
 
 //과제(LM_HOMEWORK) 생성
 int newId = homework.getSequence();
@@ -116,12 +223,20 @@ homework.item("onoff_type", onoffType);
 homework.item("category_id", 0);
 homework.item("homework_nm", title);
 homework.item("content", content);
+homework.item("submit_file_ext_mode", submitFileExtMode);
+homework.item("submit_file_exts", "CUSTOM".equals(submitFileExtMode) ? submitFileExts : "");
+homework.item("allow_late_submission_yn", allowLateSubmissionYn);
+homework.item("late_penalty", latePenalty);
 homework.item("manager_id", userId);
 homework.item("reg_date", m.time("yyyyMMddHHmmss"));
 homework.item("status", 1);
+String savedHomeworkFile = "";
 if(null != f.getFileName("homework_file")) {
 	File f1 = f.saveFile("homework_file");
-	if(f1 != null) homework.item("homework_file", f.getFileName("homework_file"));
+	if(f1 != null) {
+		savedHomeworkFile = f.getFileName("homework_file");
+		homework.item("homework_file", savedHomeworkFile);
+	}
 }
 if(!homework.insert()) {
 	result.put("rst_code", "2000");
@@ -130,40 +245,74 @@ if(!homework.insert()) {
 	return;
 }
 
-//과목 배치(LM_COURSE_MODULE) 생성
-courseModule.item("course_id", courseId);
-courseModule.item("site_id", siteId);
-courseModule.item("module", "homework");
-courseModule.item("module_id", newId);
-courseModule.item("module_nm", title);
-courseModule.item("parent_id", 0);
-courseModule.item("item_type", "R");
-courseModule.item("assign_score", assignScore);
-courseModule.item("apply_type", "1");
-courseModule.item("start_day", 0);
-courseModule.item("period", 0);
-courseModule.item("start_date", startDateTime);
-courseModule.item("end_date", endDateTime);
-courseModule.item("chapter", 0);
-courseModule.item("retry_yn", "N");
-courseModule.item("retry_score", 0);
-courseModule.item("retry_cnt", 0);
-courseModule.item("review_yn", "N");
-courseModule.item("result_yn", "Y");
-courseModule.item("status", 1);
+DataSet successCourses = new DataSet();
+int insertedCourseCount = 0;
 
-if(!courseModule.insert()) {
+for(int i = 0; i < validCourseIds.size(); i++) {
+	int courseId = validCourseIds.get(i).intValue();
+
+	//과목 배치(LM_COURSE_MODULE) 생성
+	courseModule.item("course_id", courseId);
+	courseModule.item("site_id", siteId);
+	courseModule.item("module", "homework");
+	courseModule.item("module_id", newId);
+	courseModule.item("module_nm", title);
+	courseModule.item("parent_id", 0);
+	courseModule.item("item_type", "R");
+	courseModule.item("assign_score", assignScore);
+	courseModule.item("apply_type", "1");
+	courseModule.item("start_day", 0);
+	courseModule.item("period", 0);
+	courseModule.item("start_date", startDateTime);
+	courseModule.item("end_date", endDateTime);
+	courseModule.item("chapter", 0);
+	courseModule.item("retry_yn", "N");
+	courseModule.item("retry_score", 0);
+	courseModule.item("retry_cnt", 0);
+	courseModule.item("review_yn", "N");
+	courseModule.item("result_yn", "Y");
+	courseModule.item("status", 1);
+
+	if(courseModule.insert()) {
+		insertedCourseCount++;
+		successCourses.addRow();
+		successCourses.put("course_id", courseId);
+	} else {
+		failedCourses.addRow();
+		failedCourses.put("course_id", courseId);
+		failedCourses.put("reason_code", "MODULE_INSERT_FAIL");
+		failedCourses.put("reason", "과목 배치 저장 중 오류가 발생했습니다.");
+	}
+}
+
+if(insertedCourseCount <= 0) {
+	if(!"".equals(savedHomeworkFile)) m.delFileRoot(m.getUploadPath(savedHomeworkFile));
+	homework.item("homework_file", "");
 	homework.item("status", -1);
-	homework.update("id = " + newId);
+	homework.update("id = " + newId + " AND site_id = " + siteId);
 	result.put("rst_code", "2001");
-	result.put("rst_message", "과목 배치 저장 중 오류가 발생했습니다.");
+	result.put("rst_message", "모든 과목 배치 저장에 실패했습니다.");
+	result.put("rst_fail_count", failedCourses.size());
+	result.put("rst_failed_courses", failedCourses);
+	if(invalidCourseTokens.size() > 0) {
+		result.put("rst_invalid_token_count", invalidCourseTokens.size());
+		result.put("rst_invalid_tokens", m.join(",", invalidCourseTokens.toArray()));
+	}
 	result.print();
 	return;
 }
 
 result.put("rst_code", "0000");
-result.put("rst_message", "성공");
+result.put("rst_message", failedCourses.size() > 0 || invalidCourseTokens.size() > 0 ? "일부 과목 등록 실패(부분 성공)" : "성공");
 result.put("rst_data", newId);
+result.put("rst_inserted_course_count", insertedCourseCount);
+result.put("rst_success_courses", successCourses);
+result.put("rst_fail_count", failedCourses.size());
+result.put("rst_failed_courses", failedCourses);
+if(invalidCourseTokens.size() > 0) {
+	result.put("rst_invalid_token_count", invalidCourseTokens.size());
+	result.put("rst_invalid_tokens", m.join(",", invalidCourseTokens.toArray()));
+}
 result.print();
 
 %>

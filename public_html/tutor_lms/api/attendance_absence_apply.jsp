@@ -1,0 +1,94 @@
+<%@ page pageEncoding="utf-8" %><%@ include file="init.jsp" %><%
+
+//왜 필요한가:
+//- 교수자 출석 통합 화면에서 "결석 기준 초과자"를 한 번에 자동 판정(F/미수료) 처리해야 운영이 빨라집니다.
+
+if(!m.isPost()) {
+	result.put("rst_code", "4050");
+	result.put("rst_message", "POST 방식만 허용됩니다.");
+	result.print();
+	return;
+}
+
+int courseId = m.ri("course_id");
+if(0 == courseId) {
+	result.put("rst_code", "1001");
+	result.put("rst_message", "course_id가 필요합니다.");
+	result.print();
+	return;
+}
+
+CourseDao course = new CourseDao();
+CourseTutorDao courseTutor = new CourseTutorDao();
+CourseManagerDao courseManager = new CourseManagerDao();
+CourseUserDao courseUser = new CourseUserDao();
+
+if(!isAdmin) {
+	int tutorAccessCount = courseTutor.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND type = 'major' AND site_id = " + siteId);
+	int managerAccessCount = courseManager.findCount("course_id = " + courseId + " AND user_id = " + userId + " AND site_id = " + siteId);
+	int ownerAccessCount = course.findCount("id = " + courseId + " AND manager_id = " + userId + " AND site_id = " + siteId + " AND status != -1");
+	if(0 >= tutorAccessCount && 0 >= managerAccessCount && 0 >= ownerAccessCount) {
+		result.put("rst_code", "4031");
+		result.put("rst_message", "해당 과목의 출석 자동 판정을 실행할 권한이 없습니다.");
+		result.print();
+		return;
+	}
+}
+
+DataSet cinfo = course.find("id = " + courseId + " AND site_id = " + siteId + " AND status != -1");
+if(!cinfo.next()) {
+	result.put("rst_code", "4040");
+	result.put("rst_message", "해당 과목이 없습니다.");
+	result.print();
+	return;
+}
+
+if(!"Y".equals(cinfo.s("limit_absence_yn")) || cinfo.i("limit_absence_cnt") <= 0) {
+	result.put("rst_code", "1002");
+	result.put("rst_message", "결석 기준이 활성화되지 않았습니다.");
+	result.print();
+	return;
+}
+
+m.log(
+	"attendance_absence_apply",
+	"apply_start manager_id=" + userId
+	+ ", site_id=" + siteId
+	+ ", course_id=" + courseId
+	+ ", limit_absence_cnt=" + cinfo.i("limit_absence_cnt")
+);
+
+DataSet culist = courseUser.find(
+	"site_id = " + siteId + " AND course_id = " + courseId + " AND status IN (1,3)",
+	"id, user_id"
+);
+
+int target = 0;
+int success = 0;
+
+while(culist.next()) {
+	int cuid = culist.i("id");
+	int absenceCnt = courseUser.getAbsenceCount(cuid, courseId);
+	if(absenceCnt < cinfo.i("limit_absence_cnt")) continue;
+
+	target++;
+	if(1 == courseUser.completeUser(cuid)) success++;
+}
+
+m.log(
+	"attendance_absence_apply",
+	"apply_done manager_id=" + userId
+	+ ", site_id=" + siteId
+	+ ", course_id=" + courseId
+	+ ", target_count=" + target
+	+ ", success_count=" + success
+);
+
+result.put("rst_code", "0000");
+result.put("rst_message", "성공");
+result.put("rst_target_count", target);
+result.put("rst_success_count", success);
+result.put("rst_data", success);
+result.print();
+
+%>

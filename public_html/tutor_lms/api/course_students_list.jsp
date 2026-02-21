@@ -30,6 +30,38 @@ if(!isAdmin) {
 	}
 }
 
+DataSet cinfo = course.find("id = " + courseId + " AND site_id = " + siteId + " AND status != -1", "id, course_type");
+if(!cinfo.next()) {
+	result.put("rst_code", "4040");
+	result.put("rst_message", "해당 과목이 없습니다.");
+	result.print();
+	return;
+}
+
+//왜: 비정규(A) 과정은 승인대기 상태면 영상 재생/진도 처리 화면에서 제외되는 케이스가 있어,
+//     수강생 목록 조회 시점에 대기건을 자동 승인해 학습 불가 상태를 즉시 해소합니다.
+if("A".equals(cinfo.s("course_type"))) {
+	int pendingCnt = courseUser.findCount(
+		"course_id = " + courseId
+		+ " AND site_id = " + siteId
+		+ " AND status IN (0, 2)"
+	);
+	if(pendingCnt > 0) {
+		courseUser.clear();
+		courseUser.item("status", 1);
+		courseUser.item("change_date", m.time("yyyyMMddHHmmss"));
+		if(courseUser.update(
+			"course_id = " + courseId
+			+ " AND site_id = " + siteId
+			+ " AND status IN (0, 2)"
+		)) {
+			m.log("course_students_list", "auto_approve_non_regular course_id=" + courseId + ", approved_cnt=" + pendingCnt + ", user_id=" + userId);
+		} else {
+			m.log("course_students_list", "auto_approve_non_regular_failed course_id=" + courseId + ", pending_cnt=" + pendingCnt + ", user_id=" + userId);
+		}
+	}
+}
+
 String keyword = m.rs("s_keyword");
 
 ArrayList<Object> params = new ArrayList<Object>();

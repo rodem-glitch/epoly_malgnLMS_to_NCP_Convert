@@ -61,14 +61,32 @@ f.addElement("assign_etc", 0, "hname:'기타 배점', option:'number'");
 f.addElement("limit_progress", 60, "hname:'진도 기준', option:'number'");
 f.addElement("limit_total_score", 60, "hname:'총점 기준', option:'number'");
 
-//수료(완료) 기준 - 선택적 (컬럼이 없을 수 있음)
+//수료(완료)/결석 기준
 f.addElement("complete_limit_progress", 60, "hname:'수료 진도 기준', option:'number'");
 f.addElement("complete_limit_total_score", 60, "hname:'수료 총점 기준', option:'number'");
+f.addElement("limit_absence_yn", "N", "hname:'결석 기준 사용'");
+f.addElement("limit_absence_cnt", 0, "hname:'결석 허용 횟수', option:'number'");
 
 //기타 옵션
 f.addElement("assign_survey_yn", "N", "hname:'설문참여 포함'");
 f.addElement("push_survey_yn", "N", "hname:'설문독려'");
 f.addElement("pass_yn", "N", "hname:'합격 상태 사용'");
+
+if("Y".equals(f.get("limit_absence_yn")) && f.getInt("limit_absence_cnt") <= 0) {
+	result.put("rst_code", "1002");
+	result.put("rst_message", "결석 기준을 사용하면 허용 횟수는 1회 이상이어야 합니다.");
+	result.print();
+	return;
+}
+
+m.log(
+	"course_evaluation_update",
+	"update_start manager_id=" + userId
+	+ ", site_id=" + siteId
+	+ ", course_id=" + courseId
+	+ ", limit_absence_yn=" + f.get("limit_absence_yn", "N")
+	+ ", limit_absence_cnt=" + f.getInt("limit_absence_cnt")
+);
 
 course.item("assign_progress", f.getInt("assign_progress"));
 course.item("assign_exam", f.getInt("assign_exam"));
@@ -78,36 +96,34 @@ course.item("assign_etc", f.getInt("assign_etc"));
 
 course.item("limit_progress", f.getInt("limit_progress"));
 course.item("limit_total_score", f.getInt("limit_total_score"));
+course.item("complete_limit_progress", f.getInt("complete_limit_progress"));
+course.item("complete_limit_total_score", f.getInt("complete_limit_total_score"));
+course.item("limit_absence_yn", f.get("limit_absence_yn", "N"));
+course.item("limit_absence_cnt", f.getInt("limit_absence_cnt"));
 
 course.item("assign_survey_yn", f.get("assign_survey_yn", "N"));
 course.item("push_survey_yn", f.get("push_survey_yn", "N"));
 course.item("pass_yn", f.get("pass_yn", "N"));
 // course.item("mod_date", m.time("yyyyMMddHHmmss")); // LM_COURSE 테이블에 mod_date 컬럼 없음
 
-// 1단계: 기본 필드 업데이트 시도
 String whereClause = "id = " + courseId + " AND site_id = " + siteId;
 try {
+	// 왜: DataObject.update()는 "변경 건수 0건"일 때 false를 반환할 수 있습니다.
+	//     과목 존재/권한은 위에서 이미 검증했으므로, 예외가 없으면 정상 처리로 봅니다.
 	course.update(whereClause);
-    // 맑은 프레임워크의 update()는 변경된 행이 0일 경우 false를 반환할 수 있습니다.
-    // 위에서 과목 존재 여부(courseInfo.next())를 이미 확인했으므로, 
-    // 여기서 예외가 발생하지 않았다면 성공으로 간주합니다.
 } catch(Exception e) {
-	// 여기서 에러가 나면 특정 컬럼(아마도 새로 추가한 것들)이 없을 가능성이 큼
 	result.put("rst_code", "2001");
-	result.put("rst_message", "DB 오류 (기본필드): " + e.getMessage());
+	result.put("rst_message", "DB 오류: " + e.getMessage());
 	result.print();
 	return;
 }
 
-// 2단계: 수료 기준 필드 업데이트 시도 (별도로 시도하여 실패해도 전체가 실패하지 않게 함)
-try {
-    CourseDao course2 = new CourseDao();
-    course2.item("complete_limit_progress", f.getInt("complete_limit_progress"));
-    course2.item("complete_limit_total_score", f.getInt("complete_limit_total_score"));
-    course2.update(whereClause); 
-} catch(Exception e) {
-    // 수료 기준 컬럼이 없을 경우 여기서 에러 발생 시 무시
-}
+m.log(
+	"course_evaluation_update",
+	"update_done manager_id=" + userId
+	+ ", site_id=" + siteId
+	+ ", course_id=" + courseId
+);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "성공");

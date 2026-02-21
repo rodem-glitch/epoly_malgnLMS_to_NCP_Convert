@@ -372,6 +372,9 @@ public class CourseProgressDao extends DataObject {
 
 				courseUser.setProgressRatio(ulist.i("course_user_id"));
 				courseUser.setCourseUserScore(ulist.i("course_user_id"), "progress"); //점수일괄업데이트
+				// 왜: 출석 수동변경 직후 결석 기준(자동 F/미수료)도 즉시 반영되어야
+				//     교수자 출석 탭과 수료 탭의 상태가 서로 어긋나지 않습니다.
+				courseUser.completeUser(ulist.i("course_user_id"));
 			}
 		}
 
