@@ -27,6 +27,7 @@ CourseUserDao courseUser = new CourseUserDao();
 HomeworkUserDao homeworkUser = new HomeworkUserDao();
 HomeworkTaskDao homeworkTask = new HomeworkTaskDao();
 ClFileDao file = new ClFileDao();
+HomeworkSimilarityResultDao homeworkSimilarity = new HomeworkSimilarityResultDao();
 
 //권한
 if(!isAdmin) {
@@ -67,6 +68,25 @@ if(!homeworkUser.delete("homework_id = " + homeworkId + " AND course_user_id = "
 homeworkTask.delete("homework_id = " + homeworkId + " AND course_user_id = " + courseUserId);
 file.execute("DELETE FROM " + file.table + " WHERE module = 'homework_" + homeworkId + "' AND module_id = " + courseUserId);
 file.execute("DELETE FROM " + file.table + " WHERE module = 'homework_feedback_" + homeworkId + "' AND module_id = " + courseUserId);
+
+// 왜: 제출 취소되면 해당 학생이 포함된 유사도 쌍을 즉시 정리해야 목록이 최신 상태를 유지합니다.
+Hashtable<String, Object> similarityOut = homeworkSimilarity.runIncrementalAnalysis(
+	siteId,
+	courseId,
+	homeworkId,
+	courseUserId,
+	userId,
+	70.0,
+	"AUTO_CANCEL"
+);
+if(!"Y".equals(similarityOut.get("success"))) {
+	m.log(
+		"tutor_homework_similarity",
+		"auto_cancel_failed course_id=" + courseId + ", homework_id=" + homeworkId + ", course_user_id=" + courseUserId + ", run_id=" + similarityOut.get("run_id")
+		+ ", pair_total=" + similarityOut.get("pair_total") + ", pair_saved=" + similarityOut.get("pair_saved")
+		+ ", request_user_id=" + userId + ", site_id=" + siteId + ", message=" + similarityOut.get("message")
+	);
+}
 
 //성적 반영
 courseUser.setCourseUserScore(courseUserId, "homework");

@@ -25,7 +25,8 @@ if(!info.next()) {
 }
 
 // 권한 확인
-if(!isAdmin && info.i("manager_id") != userId && info.i("manager_id") != -99) {
+if(!isAdmin && info.i("manager_id") != userId) {
+	m.log("question_bank_delete", "forbidden id=" + questionId + ", manager_id=" + info.i("manager_id") + ", user_id=" + userId);
 	result.put("rst_code", "4030");
 	result.put("rst_message", "해당 문제를 삭제할 권한이 없습니다.");
 	result.print();
@@ -38,11 +39,13 @@ if(!isAdmin && info.i("manager_id") != userId && info.i("manager_id") != -99) {
 question.item("status", -1);
 
 if(!question.update("id = " + questionId + " AND site_id = " + siteId)) {
+	m.log("question_bank_delete", "delete_failed id=" + questionId + ", user_id=" + userId);
 	result.put("rst_code", "5000");
 	result.put("rst_message", "문제 삭제 중 오류가 발생했습니다.");
 	result.print();
 	return;
 }
+m.log("question_bank_delete", "delete_ok id=" + questionId + ", user_id=" + userId);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "문제가 삭제되었습니다.");

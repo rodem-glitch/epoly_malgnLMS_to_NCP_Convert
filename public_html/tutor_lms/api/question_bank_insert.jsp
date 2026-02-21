@@ -48,6 +48,8 @@ String answer = m.rs("answer");
 String description = m.rs("description");
 String pointsRaw = m.rs("points");
 int score = "".equals(pointsRaw) ? 5 : m.parseInt(pointsRaw);
+// 왜: 요구사항이 "기본 공유"이므로 별도 선택이 없으면 공개(Y)로 저장합니다.
+String openYn = "N".equals(m.rs("open_yn")) ? "N" : "Y";
 
 // 검증
 if(questionType < 1 || questionType > 4) {
@@ -83,6 +85,7 @@ question.item("score", score);
 question.item("answer", answer);
 question.item("description", description);
 question.item("manager_id", userId);
+question.item("open_yn", openYn);
 question.item("reg_date", m.time("yyyyMMddHHmmss"));
 question.item("status", 1);
 
@@ -112,13 +115,13 @@ if(isChoice) {
 }
 
 if(!question.insert()) {
-	m.log("question_bank_insert", "insert_failed id=" + newId + ", manager_id=" + userId + ", category_id=" + categoryId + ", grade=" + grade + ", score=" + score);
+	m.log("question_bank_insert", "insert_failed id=" + newId + ", manager_id=" + userId + ", category_id=" + categoryId + ", grade=" + grade + ", score=" + score + ", open_yn=" + openYn);
 	result.put("rst_code", "5000");
 	result.put("rst_message", "문제 등록 중 오류가 발생했습니다.");
 	result.print();
 	return;
 }
-m.log("question_bank_insert", "insert_ok id=" + newId + ", manager_id=" + userId + ", category_id=" + categoryId + ", grade=" + grade + ", score=" + score);
+m.log("question_bank_insert", "insert_ok id=" + newId + ", manager_id=" + userId + ", category_id=" + categoryId + ", grade=" + grade + ", score=" + score + ", open_yn=" + openYn);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "문제가 등록되었습니다.");

@@ -38,7 +38,7 @@ if(!cinfo.next()) {
 
 DataSet list = courseModule.query(
 	" SELECT a.module_id homework_id, a.module_nm, a.apply_type, a.start_date, a.end_date, a.chapter, a.assign_score "
-	+ " , h.homework_nm, h.onoff_type, h.content "
+	+ " , h.homework_nm, h.onoff_type, h.content, h.homework_file, h.submit_file_ext_mode, h.submit_file_exts, h.allow_late_submission_yn, h.late_penalty "
 	+ " , (SELECT COUNT(*) FROM " + courseUser.table + " cu "
 		+ " WHERE cu.site_id = " + siteId + " AND cu.course_id = a.course_id AND cu.status IN (1,3)) total_cnt "
 	+ " , (SELECT COUNT(*) FROM " + homeworkUser.table + " hu "
@@ -62,6 +62,40 @@ while(list.next()) {
 	list.put("total_cnt", list.i("total_cnt"));
 	list.put("submitted_cnt", list.i("submitted_cnt"));
 	list.put("confirmed_cnt", list.i("confirmed_cnt"));
+
+	// 왜: 교수자가 과제 첨부를 바로 확인/다운로드할 수 있어야 하므로,
+	//      목록 응답에 다운로드 링크 계산값을 함께 내려줍니다.
+	String homeworkFile = list.s("homework_file");
+	if(!"".equals(homeworkFile)) {
+		String homeworkFileConv = m.encode(homeworkFile);
+		String homeworkFileEk = m.encrypt(homeworkFile + m.time("yyyyMMdd"));
+		list.put("homework_file_conv", homeworkFileConv);
+		list.put("homework_file_ek", homeworkFileEk);
+		list.put("homework_file_download_url", "/main/download_file.jsp?file=" + homeworkFileConv + "&ek=" + homeworkFileEk);
+	} else {
+		list.put("homework_file_conv", "");
+		list.put("homework_file_ek", "");
+		list.put("homework_file_download_url", "");
+	}
+
+	String submitFileExtMode = homework.normalizeSubmitFileExtMode(list.s("submit_file_ext_mode"));
+	if("".equals(submitFileExtMode)) submitFileExtMode = "ALL";
+	String submitFileExts = homework.normalizeSubmitFileExts(list.s("submit_file_exts"));
+	if(!"CUSTOM".equals(submitFileExtMode)) submitFileExts = "";
+	String submitFileAllowExt = homework.resolveSubmitFileExts(submitFileExtMode, submitFileExts);
+	if("".equals(submitFileAllowExt)) submitFileAllowExt = homework.resolveSubmitFileExts("ALL", "");
+	list.put("submit_file_ext_mode", submitFileExtMode);
+	list.put("submit_file_exts", submitFileExts);
+	list.put("submit_file_allow_ext", submitFileAllowExt);
+	list.put("submit_file_allow_ext_conv", homework.toCommaSeparatedExts(submitFileAllowExt));
+
+	String allowLateSubmissionYn = "Y".equals(list.s("allow_late_submission_yn")) ? "Y" : "N";
+	int latePenalty = Math.max(0, Math.min(100, list.i("late_penalty")));
+	if(!"Y".equals(allowLateSubmissionYn)) latePenalty = 0;
+	list.put("allow_late_submission_yn", allowLateSubmissionYn);
+	list.put("allowLateSubmission", "Y".equals(allowLateSubmissionYn));
+	list.put("late_penalty", latePenalty);
+	list.put("latePenalty", latePenalty);
 }
 
 result.put("rst_code", "0000");
@@ -71,4 +105,3 @@ result.put("rst_data", list);
 result.print();
 
 %>
-

@@ -47,6 +47,7 @@ int grade = m.ri("grade");
 String answer = m.rs("answer");
 String description = m.rs("description");
 String pointsRaw = m.rs("points");
+String openYn = m.rs("open_yn");
 
 // 검증
 if(questionId <= 0) {
@@ -66,7 +67,7 @@ if(!info.next()) {
 }
 
 // 권한 확인
-if(!isAdmin && info.i("manager_id") != userId && info.i("manager_id") != -99) {
+if(!isAdmin && info.i("manager_id") != userId) {
 	result.put("rst_code", "4030");
 	result.put("rst_message", "해당 문제를 수정할 권한이 없습니다.");
 	result.print();
@@ -83,6 +84,15 @@ if(!"".equals(pointsRaw)) {
 		return;
 	}
 	question.item("score", score);
+}
+if(!"".equals(openYn)) {
+	if(!"Y".equals(openYn) && !"N".equals(openYn)) {
+		result.put("rst_code", "1003");
+		result.put("rst_message", "공개 여부는 Y 또는 N만 입력할 수 있습니다.");
+		result.print();
+		return;
+	}
+	question.item("open_yn", openYn);
 }
 
 // 수정
@@ -115,13 +125,13 @@ if(isChoice) {
 }
 
 if(!question.update("id = " + questionId + " AND site_id = " + siteId)) {
-	m.log("question_bank_modify", "update_failed id=" + questionId + ", manager_id=" + userId + ", points_raw=" + pointsRaw);
+	m.log("question_bank_modify", "update_failed id=" + questionId + ", manager_id=" + userId + ", points_raw=" + pointsRaw + ", open_yn=" + openYn);
 	result.put("rst_code", "5000");
 	result.put("rst_message", "문제 수정 중 오류가 발생했습니다.");
 	result.print();
 	return;
 }
-m.log("question_bank_modify", "update_ok id=" + questionId + ", manager_id=" + userId + ", points_raw=" + pointsRaw);
+m.log("question_bank_modify", "update_ok id=" + questionId + ", manager_id=" + userId + ", points_raw=" + pointsRaw + ", open_yn=" + openYn);
 
 result.put("rst_code", "0000");
 result.put("rst_message", "문제가 수정되었습니다.");

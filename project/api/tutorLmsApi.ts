@@ -511,6 +511,25 @@ export type HaksaResolveResult = {
   missing_students?: number;
 };
 
+export type HaksaVideoRow = {
+  content_id: string;
+  type: 'video' | string;
+  title?: string;
+  lesson_id?: number;
+  media_key?: string;
+  complete_time?: number;
+  week_number?: number;
+  week_title?: string;
+  session_id?: string;
+  session_name?: string;
+  session_no?: number;
+  chapter_no?: number;
+  start_date?: string;
+  start_time?: string;
+  end_date?: string;
+  end_time?: string;
+};
+
 export type TutorProgressSummaryRow = {
   chapter: number;
   section_id: number;
@@ -1589,13 +1608,25 @@ export const tutorLmsApi = {
     });
   },
 
-  async addCurriculumLesson(payload: { courseId: number; sectionId: number; lessonId?: number; url?: string; title?: string }) {
+  async addCurriculumLesson(payload: {
+    courseId: number;
+    sectionId: number;
+    lessonId?: number;
+    url?: string;
+    title?: string;
+    chapter?: number;
+    startDate?: string;
+    endDate?: string;
+  }) {
     const body = new URLSearchParams();
     body.set('course_id', String(payload.courseId));
     body.set('section_id', String(payload.sectionId));
     if (payload.lessonId) body.set('lesson_id', String(payload.lessonId));
     if (payload.url) body.set('url', payload.url);
     if (payload.title) body.set('title', payload.title);
+    if (payload.chapter !== undefined) body.set('chapter', String(payload.chapter));
+    if (payload.startDate !== undefined) body.set('start_date', payload.startDate);
+    if (payload.endDate !== undefined) body.set('end_date', payload.endDate);
 
     return requestJson<number>(`/tutor_lms/api/curriculum_lesson_add.jsp`, {
       method: 'POST',
@@ -1604,10 +1635,50 @@ export const tutorLmsApi = {
     });
   },
 
-  async deleteCurriculumLesson(payload: { courseId: number; lessonId: number }) {
+  async addCurriculumLessonsBulk(payload: {
+    courseId: number;
+    lessons: Array<{
+      sectionId?: number;
+      lessonId?: number;
+      url?: string;
+      title?: string;
+      chapter?: number;
+      startDate?: string;
+      endDate?: string;
+      completeTime?: number;
+    }>;
+  }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set(
+      'lessons_json',
+      JSON.stringify(
+        (payload.lessons || []).map((item) => ({
+          section_id: item.sectionId ?? 0,
+          lesson_id: item.lessonId,
+          url: item.url,
+          title: item.title,
+          chapter: item.chapter,
+          start_date: item.startDate,
+          end_date: item.endDate,
+          complete_time: item.completeTime,
+        }))
+      )
+    );
+
+    return requestJson<number>(`/tutor_lms/api/curriculum_lesson_bulk_add.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async deleteCurriculumLesson(payload: { courseId: number; lessonId: number; chapter?: number; sectionId?: number }) {
     const body = new URLSearchParams();
     body.set('course_id', String(payload.courseId));
     body.set('lesson_id', String(payload.lessonId));
+    if (payload.chapter !== undefined) body.set('chapter', String(payload.chapter));
+    if (payload.sectionId !== undefined) body.set('section_id', String(payload.sectionId));
 
     return requestJson<number>(`/tutor_lms/api/curriculum_lesson_delete.jsp`, {
       method: 'POST',
@@ -1625,6 +1696,8 @@ export const tutorLmsApi = {
     tutorId?: number;
     startDate?: string;
     endDate?: string;
+    sourceChapter?: number;
+    sourceSectionId?: number;
   }) {
     const body = new URLSearchParams();
     body.set('course_id', String(payload.courseId));
@@ -1635,6 +1708,8 @@ export const tutorLmsApi = {
     if (payload.tutorId !== undefined) body.set('tutor_id', String(payload.tutorId));
     if (payload.startDate !== undefined) body.set('start_date', payload.startDate);
     if (payload.endDate !== undefined) body.set('end_date', payload.endDate);
+    if (payload.sourceChapter !== undefined) body.set('source_chapter', String(payload.sourceChapter));
+    if (payload.sourceSectionId !== undefined) body.set('source_section_id', String(payload.sourceSectionId));
 
     return requestJson<number>(`/tutor_lms/api/curriculum_lesson_update.jsp`, {
       method: 'POST',
@@ -1647,6 +1722,17 @@ export const tutorLmsApi = {
   async getCourseStudents(params: { courseId: number; keyword?: string }) {
     const url = `/tutor_lms/api/course_students_list.jsp${buildQuery({ course_id: params.courseId, s_keyword: params.keyword })}`;
     return requestJson<TutorCourseStudentRow[]>(url);
+  },
+
+  async autoApproveCourseStudents(payload: { courseId: number }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+
+    return requestJson<number>(`/tutor_lms/api/course_students_auto_approve.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
   },
 
   // ----- 학사 수강생(읽기 전용) -----
@@ -1744,6 +1830,57 @@ export const tutorLmsApi = {
     body.set('curriculum_json', params.curriculumJson);
 
     return requestJson<number>(`/tutor_lms/api/haksa_curriculum_update.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async getHaksaVideos(params: HaksaCourseKey) {
+    const url = `/tutor_lms/api/haksa_video_list.jsp${buildQuery({
+      course_code: params.courseCode,
+      open_year: params.openYear,
+      open_term: params.openTerm,
+      bunban_code: params.bunbanCode,
+      group_code: params.groupCode,
+    })}`;
+    return requestJson<HaksaVideoRow[]>(url);
+  },
+
+  async updateHaksaVideo(params: HaksaCourseKey & {
+    contentId: string;
+    title?: string;
+    mediaKey?: string;
+    completeTime?: number;
+  }) {
+    const body = new URLSearchParams();
+    body.set('course_code', params.courseCode);
+    body.set('open_year', params.openYear);
+    body.set('open_term', params.openTerm);
+    body.set('bunban_code', params.bunbanCode);
+    body.set('group_code', params.groupCode);
+    body.set('content_id', params.contentId);
+    if (params.title !== undefined) body.set('title', params.title);
+    if (params.mediaKey !== undefined) body.set('media_key', params.mediaKey);
+    if (params.completeTime !== undefined) body.set('complete_time', String(params.completeTime));
+
+    return requestJson<number>(`/tutor_lms/api/haksa_video_update.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async deleteHaksaVideo(params: HaksaCourseKey & { contentId: string }) {
+    const body = new URLSearchParams();
+    body.set('course_code', params.courseCode);
+    body.set('open_year', params.openYear);
+    body.set('open_term', params.openTerm);
+    body.set('bunban_code', params.bunbanCode);
+    body.set('group_code', params.groupCode);
+    body.set('content_id', params.contentId);
+
+    return requestJson<number>(`/tutor_lms/api/haksa_video_delete.jsp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,

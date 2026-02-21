@@ -40,6 +40,11 @@ int completeTime = m.ri("complete_time");
 int tutorId = m.ri("tutor_id");
 String startDate = m.rs("start_date");
 String endDate = m.rs("end_date");
+int sourceChapter = m.ri("source_chapter");
+int sourceSectionId = m.ri("source_section_id");
+
+boolean hasSourceChapter = !"".equals(m.rs("source_chapter"));
+boolean hasSourceSectionId = !"".equals(m.rs("source_section_id"));
 
 boolean hasUpdate = false;
 
@@ -54,12 +59,14 @@ if(sectionId >= 0 && !"".equals(m.rs("section_id"))) {
 if(completeTime >= 0 && !"".equals(m.rs("complete_time"))) {
 	//인정시간은 레슨 테이블에 저장
 	lesson.item("complete_time", completeTime);
-	if(!lesson.update("id = " + lessonId + " AND site_id = " + siteId)) {
+	if(!lesson.update("id = " + lessonId + " AND site_id = " + siteId + " AND status != -1")) {
+		m.log("curriculum_lesson_update", "complete_time_update_failed course_id=" + courseId + ", lesson_id=" + lessonId + ", user_id=" + userId);
 		result.put("rst_code", "2000");
 		result.put("rst_message", "인정시간 업데이트 중 오류가 발생했습니다.");
 		result.print();
 		return;
 	}
+	m.log("curriculum_lesson_update", "complete_time_update_ok course_id=" + courseId + ", lesson_id=" + lessonId + ", complete_time=" + completeTime + ", user_id=" + userId);
 }
 if(tutorId > 0) {
 	courseLesson.item("tutor_id", tutorId);
@@ -75,12 +82,22 @@ if(!"".equals(endDate)) {
 }
 
 if(hasUpdate) {
-	if(!courseLesson.update("course_id = " + courseId + " AND lesson_id = " + lessonId)) {
+	String updateWhere =
+		"course_id = " + courseId
+		+ " AND lesson_id = " + lessonId
+		+ " AND site_id = " + siteId
+		+ " AND status != -1";
+	if(hasSourceChapter) updateWhere += " AND chapter = " + sourceChapter;
+	if(hasSourceSectionId) updateWhere += " AND section_id = " + sourceSectionId;
+
+	if(!courseLesson.update(updateWhere)) {
+		m.log("curriculum_lesson_update", "update_failed course_id=" + courseId + ", lesson_id=" + lessonId + ", source_chapter=" + sourceChapter + ", source_section_id=" + sourceSectionId + ", user_id=" + userId);
 		result.put("rst_code", "2000");
 		result.put("rst_message", "차시 업데이트 중 오류가 발생했습니다.");
 		result.print();
 		return;
 	}
+	m.log("curriculum_lesson_update", "update_ok course_id=" + courseId + ", lesson_id=" + lessonId + ", chapter=" + chapter + ", section_id=" + sectionId + ", source_chapter=" + sourceChapter + ", source_section_id=" + sourceSectionId + ", user_id=" + userId);
 }
 
 result.put("rst_code", "0000");

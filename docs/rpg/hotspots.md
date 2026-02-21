@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-12
+최근 갱신: 2026-02-20
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-12 20:41
+최근 자동 갱신: 2026-02-19 16:55
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -37,10 +37,115 @@
   - 교수자 과제 제출 첨부는 `TB_FILE`이 아니라 `CL_FILE`에 저장되는 흐름이 있습니다(과제 모듈).
   - 다운로드 링크는 `/classroom/download_cl.jsp?id=...&ek=...`를 사용하며, `ek`는 보통 `m.encrypt(id)` 또는 `m.encrypt(id + yyyyMMdd)` 패턴입니다.
   - 관련 코드: `public_html/tutor_lms/api/homework_user_submission.jsp`, `public_html/tutor_lms/api/homework_submit_cancel.jsp`, `public_html/classroom/download_cl.jsp`
+- 교수자 LMS 과제(과제 자체 첨부파일) 운영 주의:
+  - 과제 자체 첨부는 `LM_HOMEWORK.homework_file` 경로를 사용하고, 다운로드는 `/main/download_file.jsp?file=...&ek=...` 규칙을 따릅니다.
+  - `download_file.jsp`의 `ek`는 날짜(`yyyyMMdd`) 기반이라, 오래 보관한 URL은 다음날 무효가 될 수 있습니다(목록에서 매번 재생성된 URL 사용 필요).
+  - 파일만 삭제는 `homework_modify.jsp`의 `delete_homework_file_yn=Y`로 처리하고, 새 파일이 함께 오면 기존 파일을 먼저 정리한 뒤 교체합니다.
+  - 과제 삭제 시에는 과목 배치만 제거되는 경우가 있어, 첨부 물리 삭제는 “해당 과제가 더 이상 어떤 과목에도 연결되지 않았을 때”만 수행해야 안전합니다.
+  - `homework_insert.jsp` 다중 등록(`course_ids`)은 과제 본문(`LM_HOMEWORK`) 1건을 여러 과목 배치(`LM_COURSE_MODULE`)로 연결합니다. 즉, 같은 과제 ID를 공유하므로 한 강의에서 과제 본문/첨부를 수정하면 연결된 다른 강의에도 반영됩니다.
+  - 다중 등록은 부분 성공을 허용합니다. 응답의 `rst_success_courses`, `rst_failed_courses`, `rst_invalid_tokens`를 함께 확인하지 않으면 운영자가 “일부 과목 누락”을 놓칠 수 있습니다.
+  - 학생 제출 첨부는 `public_html/classroom/file_upload.jsp`에서 최종 차단되므로, 허용 파일형식 옵션(`submit_file_ext_mode`, `submit_file_exts`)을 프론트 검증만으로 믿으면 안 됩니다.
+  - 허용 파일형식 옵션은 과제 단위(`LM_HOMEWORK`) 설정입니다. 다중 강의에 연결된 동일 과제는 설정도 공유되므로, 한 강의에서 바꾸면 연결 강의 모두에 즉시 반영됩니다.
+  - 지각 제출 옵션도 과제 단위(`LM_HOMEWORK.allow_late_submission_yn`, `LM_HOMEWORK.late_penalty`)라서, 다중 강의에 연결된 동일 과제는 한 강의에서 수정하면 연결 강의 전체에 동시에 반영됩니다.
+  - 운영 DB에 지각 제출 컬럼이 없으면 등록/수정/조회 API가 즉시 실패하므로, 배포 전에 `public_html/ddl_homework_late_submission.sql` 반영 여부를 먼저 확인해야 합니다.
+- 교수자 LMS 과제 피드백 템플릿 운영 주의:
+  - 템플릿 API는 `LM_HOMEWORK_FEEDBACK_TEMPLATE`에 과목/교수자별로 저장하며, 서버 개수 제한은 없습니다(요구사항상 “5개”는 예시).
+  - 조회/저장/삭제 API 모두 과목 존재 + 담당교수(`LM_COURSE_TUTOR.type='major'`) 권한을 함께 확인하므로, 프론트에서 `course_id`를 잘못 보내면 `403/404`가 발생할 수 있습니다.
+  - 저장 API는 base64 이미지 본문을 차단합니다. 에디터에서 이미지가 data URI로 들어오면 템플릿 저장이 거절되므로, 텍스트 중심 템플릿으로 운영해야 합니다.
+  - 관련 코드: `public_html/tutor_lms/api/homework_feedback_template_list.jsp`, `public_html/tutor_lms/api/homework_feedback_template_save.jsp`, `public_html/tutor_lms/api/homework_feedback_template_delete.jsp`, `src/dao/HomeworkFeedbackTemplateDao.java`
+- 교수자 LMS 과제 피드백 첨부파일 운영 주의:
+  - 피드백 첨부는 `CL_FILE`에 `module='homework_feedback_{homework_id}'`, `module_id=course_user_id` 규칙으로 저장됩니다. 학생 제출 파일(`homework_{homework_id}`)과 모듈이 다르므로 혼동하면 목록/삭제가 어긋납니다.
+  - 업로드/목록/삭제 API는 모두 과목권한(`LM_COURSE_TUTOR.type='major'`) + 과목배치(`LM_COURSE_MODULE`) + 수강범위(`LM_COURSE_USER`)를 같이 검증합니다. 프론트에서 셋 중 하나라도 다른 과목 값으로 보내면 `403/404`가 정상입니다.
+  - `multipart/form-data` 업로드에서는 `m.ri()`만 쓰면 ID 파라미터가 비는 케이스가 있어 `Form(f)` 우선 파싱을 유지해야 합니다.
+  - 제출 상세 API(`homework_user_submission.jsp`)가 `feedback_files`를 함께 내려주므로, 프론트에서 별도 목록 API를 쓰더라도 모달 상세 응답과 데이터 구조를 동일하게 유지해야 회귀를 줄일 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`, `public_html/tutor_lms/api/homework_user_submission.jsp`
+- 교수자 LMS 과제 제출물 일치율 분석 운영 주의:
+  - 결과 저장은 임계치(`threshold_score`, 기본 70) 이상 쌍만 수행합니다. 임계치가 너무 높으면 결과가 0건으로 보일 수 있으니, 목록 조회 API의 `min_score`와 함께 조정해서 확인해야 합니다.
+  - 수동 실행(`homework_similarity_run.jsp`)은 해당 과제 결과를 전량 재생성합니다. 실행 중 동시 제출/취소가 많으면 자동 증분 실행과 순서가 엇갈릴 수 있어 최신 `run_id` 기준으로 화면 표시하는 것이 안전합니다.
+  - 자동화는 `classroom/homework_view.jsp`(제출/수정), `classroom/file_upload.jsp`(제출첨부 업로드), `tutor_lms/api/homework_submit_cancel.jsp`(제출취소)에서 증분 실행됩니다. 이 중 하나라도 빠지면 일치율이 오래된 값으로 남을 수 있습니다.
+  - 첨부 유사도는 `CL_FILE(module='homework_{homework_id}')` 파일명 토큰 기반입니다. 파일 해시 비교가 아니므로 “파일명만 바꾼 동일 파일”은 완전 탐지가 어려운 점을 운영에 안내해야 합니다.
+  - 관련 코드: `public_html/ddl_homework_similarity.sql`, `src/dao/HomeworkSimilarityRunDao.java`, `src/dao/HomeworkSimilarityResultDao.java`, `public_html/tutor_lms/api/homework_similarity_run.jsp`, `public_html/tutor_lms/api/homework_similarity_list.jsp`, `public_html/tutor_lms/api/homework_similarity_detail.jsp`
+- 교수자 LMS 수강생 상세 조회(개인정보) 주의:
+  - `public_html/tutor_lms/api/student_detail.jsp`는 `user_id`만 필수이며, 상세 조회 API 자체는 개인정보 로그를 남기지 않습니다(과도한 로그 방지).
+  - `course_id`가 있을 때 권한은 수강생 목록과 동일 기준(주강사/과정담당자/개설자/관리자)으로 검사합니다. 목록 API와 권한식이 달라지면 “목록은 보이는데 상세는 403” 회귀가 발생합니다.
+  - 개인정보 접근 이력은 기존 `public_html/tutor_lms/api/privacy_log.jsp`(가려진 정보 보기/다운로드) 경로를 기준으로 운영합니다.
+- 교수자 LMS 문제은행 공개/비공개(주의):
+  - `LM_QUESTION.open_yn`은 조회/출제 권한과 직접 연결됩니다. 비관리자 조회/선택 조건은 반드시 `manager_id = user_id OR open_yn = 'Y'`를 같이 유지해야 합니다.
+  - 시험 템플릿(`exam_template_insert/modify`)은 문제 목록 화면과 별개 경로라서, `question_ids` 재검증에서 같은 공개 조건을 빼면 URL/요청 우회로 비공개 문제가 출제될 수 있습니다.
+  - 공개(`open_yn='Y'`)는 “조회/출제 허용” 의미이고, 수정/삭제 권한까지 열어주면 안 됩니다. 수정/삭제는 작성자 또는 관리자만 허용해야 데이터 오염을 막을 수 있습니다.
+  - 신규 컬럼이 없는 DB에서는 `Unknown column 'open_yn'`이 발생하므로 배포 전에 `public_html/ddl_question_open_yn.sql` 적용 여부를 먼저 확인해야 합니다.
+  - 관련 코드: `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`, `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp`
 - 학사(정규) 커리큘럼 차시 수강기간 vs 과제 `보기`(주의):
   - 차시 수강기간은 동영상/시험은 기존대로 차단하지만, 과제는 차시 기간 밖이어도 `보기` 이동을 허용합니다(사용성 이슈로 예외).
   - 서버에서도 동일 예외가 적용되므로, “차시 기간 밖 과제 차단”이 필요해지면 이 정책부터 재검토해야 합니다.
   - 관련 코드: `public_html/html/classroom/index.html`, `public_html/classroom/haksa_module.jsp`
+- 학사(정규) 커리큘럼 동영상 동기화(주의):
+  - `LM_COURSE_LESSON` PK는 `course_id + lesson_id`라서, 존재 체크를 `chapter`까지 묶으면 chapter 변경 시 insert가 PK 충돌로 실패할 수 있습니다.
+  - 학사 JSON의 `sessionNo`는 주차마다 반복될 수 있습니다. DB `chapter`는 전체 순번(`chapterNo`)으로 따로 관리해야 “한 차시에 몰림” 회귀를 막을 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/haksa_curriculum_update.jsp`
+- 학사 미러(viewtable) 배치 동기화(주의):
+  - `public_html/main/poly_sync.jsp`는 로컬 IP만 허용하므로, 배치는 반드시 서버 내부(`127.0.0.1`)에서 호출해야 합니다.
+  - 배치 실패를 숨기면 다음 화면에서 “학사 데이터 미동기화”가 누적되므로, `rst_code` 검사와 종료코드 기반 알림을 유지해야 합니다.
+  - 자동 실행(cron)에서는 중복 실행 충돌을 막기 위해 `flock` 잠금 사용을 권장합니다.
+  - 관련 코드: `tools/poly_sync/run_poly_sync.sh`, `tools/poly_sync/run_poly_sync.py`, `public_html/main/poly_sync.jsp`
+- 비정규 자동승인(주의):
+  - 비정규(`course_type='A'`)에서 `LM_COURSE_USER.status=0/2`가 남으면 영상 재생/진도 계산 경로(`status IN (1,3)`)에서 제외되어 학습 불가가 발생할 수 있습니다.
+  - 자동승인은 과정유형 `A`로 제한해 정규 승인정책과 섞이지 않게 유지해야 합니다.
+  - 관련 코드: `public_html/tutor_lms/api/course_students_list.jsp`, `public_html/tutor_lms/api/course_students_auto_approve.jsp`
+- 교수자 담당과목 과목 복사/삭제(주의):
+  - `course_copy.jsp`와 `tutor_list.jsp` 권한식이 다르면(예: 복사는 허용인데 tutor 목록이 403) 화면에서는 버튼이 떠도 실제 동작이 막힐 수 있습니다. 두 API를 같은 권한 모델로 유지해야 합니다.
+  - 비관리자 복사에서 `tutor_id`를 타인으로 허용하면 계정 오남용이 생길 수 있으므로, 본인 ID만 허용하는 제약을 유지해야 합니다.
+  - 학사연동 과목(`LM_COURSE.etc2='HAKSA_MAPPED'`)은 복사/삭제를 차단해야 학사 원천 데이터와 LMS 운영 데이터의 기준 불일치를 막을 수 있습니다.
+  - 삭제 API는 반드시 수강생(`LM_COURSE_USER.status NOT IN (-1,-4)`)과 선행과정 참조(`LM_COURSE_PRECEDE.precede_id`)를 먼저 검사해야 하며, 실패를 무시한 하드삭제/강제삭제를 넣으면 운영 데이터가 깨질 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/course_copy.jsp`, `public_html/tutor_lms/api/course_delete.jsp`, `public_html/tutor_lms/api/tutor_list.jsp`
+- 교수자 차시 대량등록(주의):
+  - 대량 반영은 재실행 시 update 중심(멱등)으로 처리해야 중복/PK 충돌 없이 운영 가능합니다.
+  - 외부 링크 레슨 자동생성에서 필수값 누락 항목은 실패 인덱스를 응답으로 노출해, 조용히 건너뛰는 fallback을 만들지 않도록 유지해야 합니다.
+  - 관련 코드: `public_html/tutor_lms/api/curriculum_lesson_bulk_add.jsp`
+- 학사(정규) 평가기준/성적연동(주의):
+  - 평가항목 구성은 `weights.attendance/midterm/final/assignment/etc/participation` 6개 키와 합계 100을 강제합니다. 키 누락/합계 불일치면 저장이 차단됩니다.
+  - `eval_json.cutoffs`(A+~D)가 잘못 저장되면 성적 조회/저장/다운로드가 모두 실패할 수 있으므로 저장 API에서 즉시 검증해야 합니다.
+  - 학사 성적 저장 API는 프론트 전달 `grade`를 그대로 저장하지 않고 서버 컷오프로 다시 계산합니다. 프론트 컷오프와 서버 컷오프가 다르면 저장 직후 표시가 달라질 수 있습니다.
+  - 평가기준 저장 시 `LM_POLY_COURSE_GRADE` 전체를 즉시 재판정하므로, 수강생 수가 많은 반은 저장 응답시간이 늘어날 수 있습니다.
+  - 연동 장애 대비 다운로드 경로는 `haksa_grade_export.jsp`를 유지하고, 조회 API와 같은 컷오프 규칙으로 등급을 계산해야 합니다.
+  - `haksa_grade_export.jsp`에서 `TB_USER.login_id`와 `LM_POLY_COURSE_GRADE.member_key`는 운영 DB 컬레이션이 다를 수 있습니다. 조인 비교식에 컬레이션을 명시하지 않으면 SQL 에러로 CSV 데이터 행이 모두 누락될 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/haksa_course_eval_update.jsp`, `public_html/tutor_lms/api/haksa_grade_list.jsp`, `public_html/tutor_lms/api/haksa_grade_update.jsp`, `public_html/tutor_lms/api/haksa_grade_export.jsp`
+- 교수자 Q&A FAQ 공지(주의):
+  - FAQ 공지는 일반 공지와 같은 테이블(`CL_POST`)을 사용하지만, 반드시 `board_cd='notice' + notice_yn='Y'` 조건으로만 조회/수정/삭제해야 일반 공지와 섞이지 않습니다.
+  - 저장 API는 base64 이미지/본문 용량(60000바이트)을 차단하므로, 프론트 에디터에서 이미지 data URI를 넣으면 저장이 거절됩니다.
+  - 삭제는 물리삭제가 아니라 `status=-1`, `display_yn='N'`로 처리합니다. 운영 이력 추적을 위해 hard delete로 바꾸지 않아야 합니다.
+  - 권한은 관리자(S/A) 또는 과목 주강사(`LM_COURSE_TUTOR.type='major'`)만 허용합니다. 목록/저장/삭제 권한식을 다르게 두면 일부 화면만 403이 발생할 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/qna_faq_notice_list.jsp`, `public_html/tutor_lms/api/qna_faq_notice_save.jsp`, `public_html/tutor_lms/api/qna_faq_notice_delete.jsp`
+- 교수자 성적분포 통계 API(주의):
+  - 비정규 분포(`grades_distribution.jsp`)의 합격/수료/미달 판정은 `grades_list.jsp`와 같은 기준으로 계산해야 목록과 그래프 수치 불일치를 막을 수 있습니다.
+  - 정규 분포(`haksa_grade_distribution.jsp`)는 학사 5종 키 기반이며, 권한 검증을 `LM_POLY_COURSE_PROF(member_key)`로 강제해야 타 과목 성적 노출을 방지할 수 있습니다.
+  - 점수는 집계 전에 0~100으로 보정(clamp)합니다. 원천 데이터 이상값을 그대로 쓰면 분포 구간이 깨질 수 있습니다.
+  - 정규 분포의 `grade` 값은 운영 데이터 오염 가능성이 있어 `A+~F` 외 값을 `ETC`로 별도 집계합니다.
+  - 관련 코드: `public_html/tutor_lms/api/grades_distribution.jsp`, `public_html/tutor_lms/api/haksa_grade_distribution.jsp`
+- 교수/학생 과목 문의 채팅 API(주의):
+  - 채팅은 신규 테이블이 아니라 `CL_POST` Q&A 스레드를 재사용합니다. `depth='A'`는 루트 문의, 답글은 `getThreadDepth(thread, 'A')`로 같은 레벨(`AA/AB/...`)에 누적하는 규칙을 유지해야 합니다.
+  - 교수 API(`public_html/tutor_lms/api/course_chat.jsp`)와 학생 API(`public_html/api/course_chat.jsp`)의 `proc_status` 갱신 기준이 다릅니다. 교수 전송은 `1(답변완료)`, 학생 전송은 `0(답변대기)`로 맞춰야 목록 상태가 뒤틀리지 않습니다.
+  - 교수 권한식은 담당과목 화면과 같은 기준(주/보조강사 + 과정담당자 + 개설자 + 관리자)을 사용해야 하며, 학생은 본인 루트 스레드만 조회/전송하도록 `user_id` 조건을 반드시 유지해야 합니다.
+  - 신규 학생 문의 생성은 `LM_COURSE_USER.status != -1` 수강 이력 확인이 없으면 임의 과목 문의가 가능해질 수 있어 권한 검증을 제거하면 안 됩니다.
+  - 본문은 base64 이미지/60000바이트를 차단합니다. 동일 제한이 빠지면 DB 용량 급증과 편집기 렌더 오류가 운영에서 반복될 수 있습니다.
+  - 관련 코드: `public_html/tutor_lms/api/course_chat.jsp`, `public_html/api/course_chat.jsp`
+- 교수자 담당과목 설문 API(주의):
+  - 설문 API 권한식(관리자/주강사/과정담당/개설자)을 목록/등록/수정/삭제/결과에서 동일하게 유지해야, 화면별 403 불일치 회귀를 막을 수 있습니다.
+  - 익명 설문(`LM_COURSE_MODULE.result_yn='Y'`)은 결과 상세에서 `user_nm/login_id/course_user_id`까지 함께 마스킹해야 실명 추적 단서를 차단할 수 있습니다.
+  - 익명 설정은 설문 본문(`LM_SURVEY`)이 아니라 과목 배치(`LM_COURSE_MODULE`) 값이 기준입니다. 같은 설문 ID를 여러 과목에 배치하면 과목별 익명여부가 달라질 수 있습니다.
+  - 정규/비정규 분기는 `LM_COURSE.course_type` 기준으로 처리해야 하며, 정규(`R`)는 기간(`apply_type=1`), 비정규는 차시(`apply_type=2`)를 섞지 않도록 주의해야 합니다.
+  - 설문 삭제는 해당 과목 참여내역(`LM_SURVEY_USER`)이 있으면 차단해야 하며, 무리한 삭제 허용은 통계/감사 추적 단절로 이어집니다.
+  - 관련 코드: `public_html/tutor_lms/api/survey_list.jsp`, `public_html/tutor_lms/api/survey_insert.jsp`, `public_html/tutor_lms/api/survey_modify.jsp`, `public_html/tutor_lms/api/survey_delete.jsp`, `public_html/tutor_lms/api/survey_result.jsp`
+- 교수자 출석 자동 판정(주의):
+  - 결석 기준은 `LM_COURSE.limit_absence_yn/limit_absence_cnt`로 저장됩니다. DDL(`public_html/ddl_course_absence_limit.sql`) 반영 전에는 평가설정 저장 API가 DB 오류로 실패합니다.
+  - 자동 판정은 `CourseUserDao.completeUser()` 기준이므로, 수동 출석 변경(`CourseProgressDao.attendUser`) 직후에도 `completeUser()`를 같이 호출해 상태 지연을 막아야 합니다.
+  - 정규과정(`course_type='R'`)은 결석 초과 사유를 `absence_f`로 기록하고 결과 라벨을 `F`로 노출합니다. 비정규는 같은 `F` 판정이라도 라벨은 `미수료`로 유지합니다.
+  - 결석 횟수 계산은 `LM_COURSE_LESSON(progress_yn='Y') - LM_COURSE_PROGRESS(complete_yn='Y')` 기준입니다. `progress_yn` 조건이 빠지면 출석 기준이 과대 계산될 수 있습니다.
+  - 다중 차시 일괄 저장(`attendance_batch_update.jsp`)은 `lesson_ids`와 `attend_statuses` 길이가 다르면 즉시 차단해야 합니다. 이 검증이 빠지면 차시별 상태 매핑이 어긋나 잘못 저장될 수 있습니다.
+  - 다중 차시 API는 기존 `CourseProgressDao.attendUser()`를 재사용하므로, 저장 후 수료/미수료 재판정 연동이 유지됩니다. 이 호출 경로를 우회하면 출석 탭과 수료 탭 상태가 불일치할 수 있습니다.
+  - 학생×차시 매트릭스(`attendance_student_matrix.jsp`)는 `수강생 수 × 차시 수`로 응답 건수가 커질 수 있어, 필요 시 `section_id` 조건으로 조회 범위를 줄여야 운영 부하를 줄일 수 있습니다.
+  - 주차 그룹 API(`attendance_week_lessons.jsp`)와 매트릭스 API(`attendance_student_matrix.jsp`)는 둘 다 `section_id/section_nm` 기준을 공유합니다. 한쪽만 기준을 바꾸면 프론트 매핑이 깨질 수 있습니다.
+  - 관련 코드: `src/dao/CourseUserDao.java`, `src/dao/CourseProgressDao.java`, `public_html/tutor_lms/api/attendance_course_summary.jsp`, `public_html/tutor_lms/api/attendance_absence_apply.jsp`, `public_html/tutor_lms/api/progress_students.jsp`, `public_html/tutor_lms/api/completion_list.jsp`, `public_html/tutor_lms/api/attendance_batch_update.jsp`, `public_html/tutor_lms/api/attendance_week_lessons.jsp`, `public_html/tutor_lms/api/attendance_student_matrix.jsp`
 - Resin 실행 conf 경로:
   - IntelliJ 실행 기준은 `.idea/runConfigurations/Resin.xml`의 `SCRIPT_OPTIONS`입니다.
   - 현재 기준값은 `console --conf C:\Users\newkl\Desktop\resin-4.0.67\resin-4.0.67\conf\resin.xml`입니다.

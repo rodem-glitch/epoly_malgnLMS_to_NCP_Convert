@@ -611,12 +611,33 @@ public class CourseUserDao extends DataObject {
 		return this.update("id = " + id + "");
 	}
 
-	private String getCompleteStatus(DataSet cuinfo, DataSet cinfo, boolean meetModulePass) {
+	public int getAbsenceCount(int courseUserId, int courseId) {
+		if(courseUserId <= 0 || courseId <= 0) return 0;
+
+		int lessonCnt = new CourseLessonDao().findCount(
+			"course_id = " + courseId + " AND progress_yn = 'Y' AND status = 1"
+		);
+		if(lessonCnt <= 0) return 0;
+
+		int completedCnt = new CourseProgressDao().findCount(
+			"course_user_id = " + courseUserId + " AND complete_yn = 'Y' AND status = 1"
+		);
+		return Math.max(0, lessonCnt - completedCnt);
+	}
+
+	private boolean isAbsenceFail(DataSet cinfo, int absenceCnt) {
+		return cinfo.b("limit_absence_yn")
+			&& cinfo.i("limit_absence_cnt") > 0
+			&& absenceCnt >= cinfo.i("limit_absence_cnt");
+	}
+
+	private String getCompleteStatus(DataSet cuinfo, DataSet cinfo, boolean meetModulePass, boolean absenceFail) {
 
 		double progress = cuinfo.d("progress_ratio");
 		double totalScore = cuinfo.d("total_score");
 
 		boolean usePass = cinfo.b("pass_yn");
+		if(absenceFail) return "F"; //결석 기준 초과 시 자동 미수료
 
 		boolean meetProgComplete = progress >= cinfo.d("complete_limit_progress");
 		boolean meetProgPass = progress >= cinfo.d("limit_progress");
@@ -631,7 +652,11 @@ public class CourseUserDao extends DataObject {
 		return "F"; //미수료
 	}
 
-	private String getFailReason(DataSet cuinfo, DataSet cinfo) {
+	private String getFailReason(DataSet cuinfo, DataSet cinfo, boolean absenceFail) {
+		if(absenceFail) {
+			// 왜: 정규과정은 교수자 화면에서 F로 명확히 보여야 하므로 사유코드를 별도로 남깁니다.
+			return "R".equals(cinfo.s("course_type")) ? "absence_f" : "absence";
+		}
 		if(cuinfo.d("progress_ratio") < cinfo.d("complete_limit_progress")) return "progress";
 		if(cinfo.i("complete_limit_total_score") > 0 && cuinfo.d("total_score") < cinfo.d("complete_limit_total_score")) return "total_score";
 
@@ -662,6 +687,7 @@ public class CourseUserDao extends DataObject {
 			"SELECT a.*, a.progress_ratio progress_value "
 			+ ", c.assign_survey_yn, c.limit_progress, c.limit_exam, c.limit_homework, c.limit_forum, c.limit_etc, c.limit_total_score, c.complete_auto_yn "
 			+ ", c.complete_limit_progress, c.complete_limit_total_score "
+			+ ", c.limit_absence_yn, c.limit_absence_cnt "
 			+ ", c.year, c.step, c.course_type, c.complete_no_yn, c.complete_prefix, c.postfix_cnt, c.postfix_type, c.postfix_ord "
 			+ ", c.pass_yn "
 			+ " FROM " + this.table + " a "
@@ -699,8 +725,22 @@ public class CourseUserDao extends DataObject {
 		}
 		info.put("meet_module_pass", meetModulePass);
 
-		String status = getCompleteStatus(info, info, meetModulePass);
-		String failStr = "F".equals(status) ? getFailReason(info, info) : "";
+		int absenceCnt = getAbsenceCount(id, info.i("course_id"));
+		boolean absenceFail = isAbsenceFail(info, absenceCnt);
+		info.put("absence_cnt", absenceCnt);
+		info.put("absence_fail", absenceFail);
+		if(absenceFail) {
+			Malgn.errorLog(
+				"{CourseUser.completeUser.absence} cuid:" + id
+				+ ", course_id:" + info.i("course_id")
+				+ ", absence_cnt:" + absenceCnt
+				+ ", limit_absence_cnt:" + info.i("limit_absence_cnt")
+				+ ", course_type:" + info.s("course_type")
+			);
+		}
+
+		String status = getCompleteStatus(info, info, meetModulePass, absenceFail);
+		String failStr = "F".equals(status) ? getFailReason(info, info, absenceFail) : "";
 
 		item("complete_status", status);
 		item("complete_yn", "F".equals(status) ? "N" : "Y");
@@ -734,7 +774,8 @@ public class CourseUserDao extends DataObject {
 			"SELECT a.*, a.progress_ratio progress_value "
 			+ ", c.assign_survey_yn, c.limit_progress, c.limit_exam, c.limit_homework, c.limit_forum, c.limit_etc, c.limit_total_score, c.complete_auto_yn "
 			+ ", c.complete_limit_progress, c.complete_limit_total_score "
-			+ ", c.year, c.step, c.complete_no_yn, c.complete_prefix, c.postfix_cnt, c.postfix_type, c.postfix_ord  "
+			+ ", c.limit_absence_yn, c.limit_absence_cnt "
+			+ ", c.year, c.step, c.course_type, c.complete_no_yn, c.complete_prefix, c.postfix_cnt, c.postfix_type, c.postfix_ord  "
 			+ ", c.pass_yn "
 			+ " FROM " + this.table + " a "
 			+ " INNER JOIN " + course.table + " c ON a.course_id = c.id "
@@ -767,8 +808,22 @@ public class CourseUserDao extends DataObject {
 		}
 		info.put("meet_module_pass", meetModulePass);
 
-		String status = getCompleteStatus(info, info, meetModulePass);
-		String failStr = "F".equals(status) ? getFailReason(info, info) : "";
+		int absenceCnt = getAbsenceCount(id, info.i("course_id"));
+		boolean absenceFail = isAbsenceFail(info, absenceCnt);
+		info.put("absence_cnt", absenceCnt);
+		info.put("absence_fail", absenceFail);
+		if(absenceFail) {
+			Malgn.errorLog(
+				"{CourseUser.closeUser.absence} cuid:" + id
+				+ ", course_id:" + info.i("course_id")
+				+ ", absence_cnt:" + absenceCnt
+				+ ", limit_absence_cnt:" + info.i("limit_absence_cnt")
+				+ ", course_type:" + info.s("course_type")
+			);
+		}
+
+		String status = getCompleteStatus(info, info, meetModulePass, absenceFail);
+		String failStr = "F".equals(status) ? getFailReason(info, info, absenceFail) : "";
 
 //		boolean isEnd = "Y".equals(endYn) && isComplete ? true : (info.i("end_date") < Malgn.parseInt(Malgn.time("yyyyMMdd")));
 //		boolean isEnd = "Y".equals(endYn) ? true : (info.b("complete_auto_yn") && isComplete);

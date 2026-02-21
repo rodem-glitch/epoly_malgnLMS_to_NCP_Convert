@@ -16,6 +16,7 @@ if(0 == courseId || (0 == lessonId && !isOverallView)) {
 }
 
 CourseTutorDao courseTutor = new CourseTutorDao();
+CourseDao course = new CourseDao();
 CourseUserDao courseUser = new CourseUserDao();
 CourseProgressDao courseProgress = new CourseProgressDao(siteId);
 UserDao user = new UserDao();
@@ -31,6 +32,14 @@ if(!isAdmin) {
 	}
 }
 
+DataSet cinfo = course.find("id = " + courseId + " AND site_id = " + siteId + " AND status != -1");
+if(!cinfo.next()) {
+	result.put("rst_code", "4040");
+	result.put("rst_message", "해당 과목이 없습니다.");
+	result.print();
+	return;
+}
+
 DataSet list;
 if(isOverallView) {
 	// 왜: 전체 보기 모드에서는 차시별 진도가 아닌 과정 전체 진도율만 조회합니다.
@@ -40,6 +49,8 @@ if(isOverallView) {
 		+ " , u.login_id, u.user_nm, u.email "
 		+ " , IFNULL(cu.progress_ratio, 0) ratio "
 		+ " , (SELECT SUM(IFNULL(cp2.study_time, 0)) FROM LM_COURSE_PROGRESS cp2 WHERE cp2.course_user_id = cu.id AND cp2.site_id = " + siteId + " AND cp2.status = 1) study_time "
+		+ " , (SELECT COUNT(*) FROM LM_COURSE_LESSON cl WHERE cl.course_id = cu.course_id AND cl.progress_yn = 'Y' AND cl.status = 1) lesson_cnt "
+		+ " , (SELECT COUNT(*) FROM LM_COURSE_PROGRESS cp3 WHERE cp3.course_user_id = cu.id AND cp3.site_id = " + siteId + " AND cp3.complete_yn = 'Y' AND cp3.status = 1) complete_cnt "
 		+ " , cu.complete_yn, cu.complete_date, '' last_date "
 		+ " FROM " + courseUser.table + " cu "
 		+ " INNER JOIN " + user.table + " u ON u.id = cu.user_id "
@@ -52,6 +63,8 @@ if(isOverallView) {
 		+ " , cu.progress_ratio total_progress_ratio "
 		+ " , u.login_id, u.user_nm, u.email "
 		+ " , IFNULL(cp.ratio, 0) ratio, IFNULL(cp.study_time, 0) study_time, IFNULL(cp.view_cnt, 0) view_cnt "
+		+ " , (SELECT COUNT(*) FROM LM_COURSE_LESSON cl WHERE cl.course_id = cu.course_id AND cl.progress_yn = 'Y' AND cl.status = 1) lesson_cnt "
+		+ " , (SELECT COUNT(*) FROM LM_COURSE_PROGRESS cp3 WHERE cp3.course_user_id = cu.id AND cp3.site_id = " + siteId + " AND cp3.complete_yn = 'Y' AND cp3.status = 1) complete_cnt "
 		+ " , IFNULL(cp.complete_yn, 'N') complete_yn, IFNULL(cp.complete_date, '') complete_date, IFNULL(cp.last_date, '') last_date "
 		+ " FROM " + courseUser.table + " cu "
 		+ " INNER JOIN " + user.table + " u ON u.id = cu.user_id "
@@ -75,12 +88,30 @@ while(list.next()) {
 
 	String lastDate = list.s("last_date");
 	list.put("last_date_conv", !"".equals(lastDate) ? m.time("yyyy.MM.dd HH:mm", lastDate) : "-");
+
+	int lessonCnt = list.i("lesson_cnt");
+	int completeCnt = list.i("complete_cnt");
+	int absenceCnt = Math.max(0, lessonCnt - completeCnt);
+	boolean absenceFail = "Y".equals(cinfo.s("limit_absence_yn"))
+		&& cinfo.i("limit_absence_cnt") > 0
+		&& absenceCnt >= cinfo.i("limit_absence_cnt");
+
+	list.put("absence_cnt", absenceCnt);
+	list.put("absence_fail_yn", absenceFail ? "Y" : "N");
+	list.put("limit_absence_yn", cinfo.s("limit_absence_yn"));
+	list.put("limit_absence_cnt", cinfo.i("limit_absence_cnt"));
+	if(absenceFail) {
+		list.put("absence_status_label", "R".equals(cinfo.s("course_type")) ? "F" : "미수료");
+	} else {
+		list.put("absence_status_label", "-");
+	}
 }
 
 result.put("rst_code", "0000");
 result.put("rst_message", "성공");
 result.put("rst_count", list.size());
 result.put("rst_data", list);
+result.put("rst_course", cinfo);
 result.print();
 
 %>

@@ -87,9 +87,10 @@ Vector<String> gradeScoreMismatchLogs = new Vector<String>();
 
 if(questionIdList.size() > 0) {
 	String[] idArr = (String[]) questionIdList.toArray(new String[0]);
-	DataSet qlist = question.find(
-		"site_id = " + siteId + " AND status != -1 AND id IN (" + m.join(",", idArr) + ")"
-	);
+	// 왜: 공개/비공개 정책이 있어도 직접 question_ids를 넣어 비공개 문제를 우회 선택하지 못하게 차단합니다.
+	String questionWhere = "site_id = " + siteId + " AND status != -1 AND id IN (" + m.join(",", idArr) + ")";
+	if(!isAdmin) questionWhere += " AND (manager_id = " + userId + " OR open_yn = 'Y')";
+	DataSet qlist = question.find(questionWhere);
 	while(qlist.next()) {
 		questionCntFinal++;
 		int grade = qlist.i("grade");
@@ -117,7 +118,7 @@ if(questionIdList.size() > 0) {
 }
 
 if(questionCntFinal != questionIdList.size()) {
-	m.log("exam_template_insert", "invalid_question_selection manager_id=" + userId + ", selected_cnt=" + questionIdList.size() + ", found_cnt=" + questionCntFinal + ", question_ids=" + m.join(",", (String[]) questionIdList.toArray(new String[0])));
+	m.log("exam_template_insert", "invalid_question_selection manager_id=" + userId + ", selected_cnt=" + questionIdList.size() + ", found_cnt=" + questionCntFinal + ", visibility_checked=Y, question_ids=" + m.join(",", (String[]) questionIdList.toArray(new String[0])));
 	result.put("rst_code", "1003");
 	result.put("rst_message", "선택한 문제 중 사용할 수 없는 문제가 포함되어 있습니다. 문제 목록을 다시 확인해 주세요.");
 	result.print();
