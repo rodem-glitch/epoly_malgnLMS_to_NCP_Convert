@@ -568,7 +568,10 @@
 	</div>
 
 	<!-- 로그인 모달 -->
-	<div class="nm-modal-overlay" id="loginModal" onclick="closeLoginModal(event)">
+	<!-- 왜: onclick 대신 mousedown/click 조합으로 드래그 시 닫힘 방지 -->
+	<div class="nm-modal-overlay" id="loginModal"
+		onmousedown="loginModalMouseDownTarget = event.target"
+		onclick="if(event.target === this && loginModalMouseDownTarget === this) closeLoginModal()">
 		<div class="nm-login-modal" onclick="event.stopPropagation()" style="position: relative;">
 			<div class="nm-login-modal__header">
 				<button type="button" class="nm-login-modal__close" onclick="closeLoginModal()">&times;</button>
@@ -600,6 +603,7 @@
 	<iframe name="loginFrame" id="loginFrame" style="display:none;"></iframe>
 
 	<script>
+	var loginModalMouseDownTarget = null;
 	function applyDefaultLoginPreset() {
 		// 왜: 레이아웃/메뉴가 달라도 로그인 모달 기본값이 일관되게 보이도록,
 		//     서버에서 내려준 프리셋(학생/교수자)을 다시 적용합니다.
@@ -612,8 +616,7 @@
 		document.getElementById('login_id').focus();
 		document.body.style.overflow = 'hidden';
 	}
-	function closeLoginModal(event) {
-		if (event && event.target !== document.getElementById('loginModal')) return;
+	function closeLoginModal() {
 		document.getElementById('loginModal').classList.remove('active');
 		document.body.style.overflow = '';
 		document.getElementById('loginForm').reset();

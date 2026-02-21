@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CurriculumEditor } from '../CurriculumEditor';
-import { Info, ChevronDown, ChevronRight, Plus, Video, FileText, BookOpen, ClipboardList, Trash2, Edit, GripVertical } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, Plus, Video, FileText, BookOpen, ClipboardList, Trash2, Edit, GripVertical, FolderOpen } from 'lucide-react';
 import { WeeklyContentModal, type WeekContentItem, type ContentType } from './WeeklyContentModal';
 import { EditContentModal } from './EditContentModal';
 import { tutorLmsApi } from '../../api/tutorLmsApi';
 import { buildHaksaCourseKey } from '../../utils/haksa';
+import { getVideoGroups, type VideoGroup, type VideoGroupItem } from '../VideoGroupManagePage';
 
 interface CourseProps {
   id: string;
@@ -271,6 +272,52 @@ export function CurriculumTab({ courseId, course }: CurriculumTabProps) {
   const [editingContent, setEditingContent] = useState<WeekContentItem | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
 
+  // 동영상 그룹 불러오기 모달
+  const [videoGroupModalOpen, setVideoGroupModalOpen] = useState(false);
+  const [availableGroups, setAvailableGroups] = useState<VideoGroup[]>([]);
+
+  const openVideoGroupModal = () => {
+    setAvailableGroups(getVideoGroups());
+    setVideoGroupModalOpen(true);
+  };
+
+  const importVideoGroup = (group: VideoGroup) => {
+    if (!confirm(`"${group.name}" 그룹의 영상을 주차별로 불러올까요?\n기존 차시에 추가됩니다.`)) return;
+    setWeeks(prev => {
+      let nextNo = getNextSessionNo(prev);
+      return prev.map(w => {
+        const gw = group.weeks.find(gWeek => gWeek.weekNumber === w.weekNumber);
+        if (!gw || gw.videos.length === 0) return w;
+        // 왜: 그룹의 각 주차 영상을 차시 1개에 콘텐츠로 추가합니다.
+        const newContents: WeekContentItem[] = gw.videos.map(v => ({
+          id: `content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          weekNumber: w.weekNumber,
+          type: 'video' as ContentType,
+          title: v.title,
+          duration: v.duration,
+          completeTime: v.completeTime,
+          mediaKey: v.mediaKey,
+          lessonId: v.lessonId,
+          originalVideoTitle: v.title,
+          createdAt: new Date().toISOString(),
+        }));
+        const newSession: HaksaSession = {
+          sessionId: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${w.weekNumber}`,
+          sessionName: `${w.sessions.length + 1}차시 (${group.name})`,
+          sessionNo: nextNo++,
+          startDate: '',
+          startTime: '',
+          endDate: '',
+          endTime: '',
+          contents: newContents,
+          isExpanded: true,
+        };
+        return { ...w, sessions: [...w.sessions, newSession], isExpanded: true };
+      });
+    });
+    setVideoGroupModalOpen(false);
+  };
+
   // 주차 토글
   const toggleWeek = (weekNumber: number) => {
     setWeeks(prev =>
@@ -536,8 +583,17 @@ export function CurriculumTab({ courseId, course }: CurriculumTabProps) {
               총 {weekCount}주차
             </span>
           </div>
-          <div className="text-sm text-gray-500">
-            {course?.haksaCourseName || course?.subjectName || '강좌명 없음'}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={openVideoGroupModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              <FolderOpen className="w-4 h-4" />
+              <span>동영상 그룹 불러오기</span>
+            </button>
+            <div className="text-sm text-gray-500">
+              {course?.haksaCourseName || course?.subjectName || '강좌명 없음'}
+            </div>
           </div>
         </div>
 
@@ -827,6 +883,56 @@ export function CurriculumTab({ courseId, course }: CurriculumTabProps) {
           courseName={recommendCourseName}
           onSave={handleEditContent}
         />
+
+        {/* 동영상 그룹 불러오기 모달 */}
+        {videoGroupModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setVideoGroupModalOpen(false)} />
+            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">동영상 그룹 불러오기</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">불러올 그룹을 선택하세요</p>
+                </div>
+                <button
+                  onClick={() => setVideoGroupModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="overflow-y-auto flex-1 p-4 space-y-2">
+                {availableGroups.length === 0 ? (
+                  <div className="text-center py-10 text-gray-400">
+                    <Video className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">저장된 동영상 그룹이 없습니다.</p>
+                    <p className="text-xs mt-1">좌측 사이드바 → 동영상그룹관리에서 먼저 그룹을 만들어 주세요.</p>
+                  </div>
+                ) : (
+                  availableGroups.map(g => {
+                    const totalVids = g.weeks.reduce((s, wk) => s + wk.videos.length, 0);
+                    const filled = g.weeks.filter(wk => wk.videos.length > 0).length;
+                    return (
+                      <button
+                        key={g.id}
+                        onClick={() => importVideoGroup(g)}
+                        className="w-full text-left px-4 py-3 rounded-lg border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                      >
+                        <div className="font-medium text-gray-900">{g.name}</div>
+                        {g.description && (
+                          <div className="text-xs text-gray-500 mt-0.5">{g.description}</div>
+                        )}
+                        <div className="text-xs text-gray-400 mt-1">
+                          {g.weekCount}주 · 영상 {totalVids}개 · {filled}주 구성됨
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

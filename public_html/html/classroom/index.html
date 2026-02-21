@@ -86,8 +86,80 @@
 					white-space: nowrap !important;
 					padding: 6px 12px !important;
 				}
+
+				/* FAQ 섹션 */
+				.my_cr_faq {
+					margin-bottom: 20px;
+					background: #fff;
+					border: 1px solid #e5e7eb;
+					border-radius: 8px;
+					padding: 16px 20px;
+				}
+				.my_cr_faq h6 {
+					font-size: 16px;
+					font-weight: 700;
+					margin: 0 0 12px 0;
+					color: #101828;
+				}
+				.cl_faq_item {
+					border: 1px solid #e5e7eb;
+					border-radius: 8px;
+					margin-bottom: 6px;
+					overflow: hidden;
+					transition: border-color 0.2s;
+				}
+				.cl_faq_item:hover { border-color: #c7d7ff; }
+				.cl_faq_item.active {
+					border-color: #2b58e6;
+					box-shadow: 0 1px 6px rgba(43,88,230,0.08);
+				}
+				.cl_faq_q {
+					display: flex; align-items: center; gap: 8px;
+					padding: 12px 14px;
+					background: none; border: none;
+					width: 100%; text-align: left;
+					cursor: pointer;
+					font-size: 13px; color: #1e293b; font-weight: 500;
+					transition: background 0.15s;
+				}
+				.cl_faq_q:hover { background: #f8fafc; }
+				.cl_faq_q_num {
+					flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+					background: #eef2ff; color: #2b58e6; font-size: 11px; font-weight: 700;
+					display: flex; align-items: center; justify-content: center;
+				}
+				.cl_faq_q_text { flex: 1; }
+				.cl_faq_q_arrow { flex-shrink: 0; color: #9ca3af; transition: transform 0.2s; }
+				.cl_faq_item.active .cl_faq_q_arrow { transform: rotate(180deg); }
+				.cl_faq_cat {
+					display: inline-block; padding: 1px 6px; background: #eef2ff;
+					color: #2b58e6; font-size: 10px; border-radius: 10px; flex-shrink: 0;
+				}
+				.cl_faq_a { display: none; padding: 0 14px 14px; }
+				.cl_faq_item.active .cl_faq_a { display: block; }
+				.cl_faq_a_inner {
+					display: flex; gap: 8px; padding: 10px 12px;
+					background: #f4f7ff; border-radius: 6px;
+				}
+				.cl_faq_a_badge {
+					flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+					background: #2b58e6; color: #fff; font-size: 11px; font-weight: 700;
+					display: flex; align-items: center; justify-content: center;
+				}
+				.cl_faq_a_text {
+					font-size: 13px; color: #475569; line-height: 1.6; white-space: pre-wrap;
+				}
+				.cl_faq_list .nodata { text-align: center; padding: 20px 0; color: #9ca3af; font-size: 13px; }
 				</style>
 				<div class="content_body">
+					<!-- FAQ 섹션 (Q&A 위에 표시) -->
+					<div class="my_cr_faq">
+						<h6>FAQ</h6>
+						<div id="cl_faq_list" class="cl_faq_list">
+							<!-- 왜: 백엔드 API 연동 전까지 안내 메시지를 표시합니다. -->
+							<p class="nodata">등록된 FAQ가 없습니다.</p>
+						</div>
+					</div>
 					<div class="my_cr_bbs">
 						<div class="my_bbs">
 							<h6>공지사항</h6>
@@ -716,4 +788,68 @@
 					$icon.text('▼');
 				}
 			}
+
+			// ===== FAQ 섹션 =====
+			// 왜: 강의실 메인에서 Q&A 위에 해당 과목의 공개 FAQ를 표시합니다.
+			// TODO: 백엔드 API 연동 시 fetch URL을 실제 endpoint로 변경합니다.
+			function loadClassroomFaq() {
+				var $box = $('#cl_faq_list');
+				if($box.length === 0) return;
+
+				// TODO: 백엔드 연동 시 아래 주석을 해제하고 sample 부분을 삭제합니다.
+				// $.ajax({
+				//     url: '/api/faq/course_list.jsp',
+				//     data: { course_id: '{{course.id}}', published: 'true' },
+				//     dataType: 'json',
+				//     success: function(data) { renderClFaq(data.items || []); },
+				//     error: function() { renderClFaq([]); }
+				// });
+
+				// 샘플 데이터 (백엔드 미연동)
+				renderClFaq([
+					{ question: '과제 제출 기한이 지나면 어떻게 되나요?', answer: '과제 제출 기한이 지나면 기본적으로 제출이 불가능합니다. 다만, 교수자가 지각 제출을 허용한 경우 감점이 적용될 수 있습니다.', category: '과제' },
+					{ question: '시험 응시 중 인터넷이 끊기면 어떻게 되나요?', answer: '시험 응시 중 인터넷이 끊기더라도 자동 저장 기능이 작동합니다. 인터넷이 복구되면 이전 상태에서 이어서 응시할 수 있습니다.\n단, 시험 시간은 계속 흘러가므로 주의해 주세요.', category: '시험' },
+					{ question: '출석은 어떻게 확인하나요?', answer: '출석은 LMS에서 동영상 강의 시청 기록, 실시간 강의 참여 여부 등을 기준으로 자동 기록됩니다.\n출석 현황은 "내 학습현황" 메뉴에서 확인할 수 있습니다.', category: '출석' }
+				]);
+			}
+
+			function renderClFaq(items) {
+				var $box = $('#cl_faq_list');
+				if(!items || items.length === 0) {
+					$box.html('<p class="nodata">등록된 FAQ가 없습니다.</p>');
+					return;
+				}
+				var html = '';
+				$.each(items, function(idx, item) {
+					var q = escClFaq(item.question || '');
+					var a = escClFaq(item.answer || '');
+					var cat = escClFaq(item.category || '');
+					html += '<div class="cl_faq_item" id="clFaqItem' + idx + '">';
+					html += '  <button type="button" class="cl_faq_q" onclick="toggleClFaq(' + idx + ')">';
+					html += '    <span class="cl_faq_q_num">Q' + (idx + 1) + '</span>';
+					html += '    <span class="cl_faq_q_text">' + q + '</span>';
+					if(cat) html += '    <span class="cl_faq_cat">' + cat + '</span>';
+					html += '    <span class="cl_faq_q_arrow">▼</span>';
+					html += '  </button>';
+					html += '  <div class="cl_faq_a">';
+					html += '    <div class="cl_faq_a_inner">';
+					html += '      <span class="cl_faq_a_badge">A</span>';
+					html += '      <span class="cl_faq_a_text">' + a + '</span>';
+					html += '    </div>';
+					html += '  </div>';
+					html += '</div>';
+				});
+				$box.html(html);
+			}
+
+			function toggleClFaq(idx) {
+				$('#clFaqItem' + idx).toggleClass('active');
+			}
+
+			function escClFaq(text) {
+				return $('<span>').text(text).html();
+			}
+
+			// FAQ를 document ready에서 호출
+			$(document).ready(function() { loadClassroomFaq(); });
 			</script>

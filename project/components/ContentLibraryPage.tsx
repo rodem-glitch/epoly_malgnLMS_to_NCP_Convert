@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, BookOpen, Heart, Play, Upload } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, BookOpen, Heart, Play, Upload, Pencil, Check, X } from 'lucide-react';
 import { tutorLmsApi } from '../api/tutorLmsApi';
 import { KollusUploadModal } from './KollusUploadModal';
 
@@ -36,6 +36,39 @@ export function ContentLibraryPage({ activeTab }: ContentLibraryPageProps) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+
+  // ---------- 제목 인라인 편집 ----------
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId && editInputRef.current) editInputRef.current.focus();
+  }, [editingId]);
+
+  const startEditTitle = (e: React.MouseEvent, content: Content) => {
+    e.stopPropagation();
+    setEditingId(content.id);
+    setEditingTitle(content.title);
+  };
+
+  const cancelEditTitle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(null);
+    setEditingTitle('');
+  };
+
+  const saveEditTitle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!editingId || !editingTitle.trim()) return;
+    // 왜: 로컬 상태만 업데이트합니다. 백엔드 연동 시 아래 주석을 해제하세요.
+    // await tutorLmsApi.updateKollusTitle({ mediaContentKey, title: editingTitle.trim() });
+    setContents(prev => prev.map(c =>
+      c.id === editingId ? { ...c, title: editingTitle.trim() } : c,
+    ));
+    setEditingId(null);
+    setEditingTitle('');
+  };
 
   const limit = 30;
 
@@ -293,7 +326,45 @@ export function ContentLibraryPage({ activeTab }: ContentLibraryPageProps) {
 
               {/* Content Info */}
               <div className="p-4">
-                <h4 className="text-gray-900 mb-2 line-clamp-1">{content.title}</h4>
+                {editingId === content.id ? (
+                  <div className="flex items-center gap-1.5 mb-2" onClick={e => e.stopPropagation()}>
+                    <input
+                      ref={editInputRef}
+                      value={editingTitle}
+                      onChange={e => setEditingTitle(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') saveEditTitle(e as any);
+                        if (e.key === 'Escape') { setEditingId(null); setEditingTitle(''); }
+                      }}
+                      className="flex-1 px-2 py-1 border border-blue-400 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={saveEditTitle}
+                      className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                      title="저장"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={cancelEditTitle}
+                      className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors"
+                      title="취소"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 mb-2 group/title">
+                    <h4 className="text-gray-900 line-clamp-1 flex-1">{content.title}</h4>
+                    <button
+                      onClick={(e) => startEditTitle(e, content)}
+                      className="p-1 text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover/title:opacity-100 transition-all shrink-0"
+                      title="제목 수정"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
                 <p className="text-sm text-gray-600 mb-3 line-clamp-2">{content.description}</p>
               </div>
             </div>

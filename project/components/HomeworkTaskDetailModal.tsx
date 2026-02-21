@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, CheckCircle, MessageSquare, Clock, User } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, CheckCircle, MessageSquare, Clock, User, Paperclip, Trash2 } from 'lucide-react';
 import { tutorLmsApi } from '../api/tutorLmsApi';
 
 interface HomeworkTaskDetailModalProps {
@@ -19,6 +19,9 @@ export function HomeworkTaskDetailModal({
 }: HomeworkTaskDetailModalProps) {
   const [feedback, setFeedback] = useState(task?.feedback || '');
   const [loading, setLoading] = useState(false);
+  // 왜: 교수자가 첨삭 파일을 첨부할 수 있도록 파일 목록을 관리합니다.
+  const [feedbackFiles, setFeedbackFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen || !task) return null;
 
@@ -132,6 +135,64 @@ export function HomeworkTaskDetailModal({
               placeholder="추가 과제에 대한 피드백을 입력하세요..."
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none min-h-[120px]"
             />
+
+            {/* 왜: 교수자가 첨삭한 파일을 첨부하여 학생에게 전달할 수 있도록 합니다. */}
+            {/* TODO: 백엔드 API 연동 후 실제 파일 업로드 활성화 */}
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Paperclip className="w-4 h-4 text-gray-500" />
+                <span className="text-sm text-gray-700">첨부파일</span>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1 text-xs border border-blue-200 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  + 파일 선택
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const newFiles = Array.from(e.target.files || []);
+                    if (newFiles.length > 0) {
+                      setFeedbackFiles((prev) => [...prev, ...newFiles]);
+                    }
+                    // 왜: 같은 파일을 다시 선택할 수 있도록 value를 초기화합니다.
+                    e.target.value = '';
+                  }}
+                />
+              </div>
+              {feedbackFiles.length > 0 && (
+                <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                  {feedbackFiles.map((file, idx) => (
+                    <div key={`${file.name}-${idx}`} className="flex items-center justify-between px-3 py-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-700 truncate">
+                        <Paperclip className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{file.name}</span>
+                        <span className="text-xs text-gray-400 flex-shrink-0">
+                          ({(file.size / 1024).toFixed(0)}KB)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFeedbackFiles((prev) => prev.filter((_, i) => i !== idx))}
+                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                        title="삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {feedbackFiles.length === 0 && (
+                <div className="text-xs text-gray-400 pl-6">
+                  첨삭 파일이 있으면 선택해 주세요. (선택사항)
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

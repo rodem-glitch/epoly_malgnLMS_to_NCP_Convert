@@ -169,8 +169,6 @@ export type TutorCourseRow = {
   period_conv?: string;
   student_cnt?: number;
   status_label?: string;
-  // 왜: 담당과목(학사/프리즘) 탭 구분을 위해 서버에서 소스 타입을 내려줍니다.
-  source_type?: 'prism' | 'haksa' | string;
   // ===== 학사 View 25개 필드 =====
   haksa_category?: string;        // 강좌형태
   haksa_dept_name?: string;       // 학과/전공 이름
@@ -455,10 +453,18 @@ export type TutorCourseStudentRow = {
   user_id: number;
   course_id: number;
   student_id?: string;
+  login_id?: string;
   name?: string;
   email?: string;
   progress?: number;
   progress_ratio?: number;
+  total_score?: number;
+  complete_yn?: string;
+  complete_status?: string;
+  complete_no?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: number;
 };
 
 export type HaksaCourseStudentRow = {
@@ -472,6 +478,19 @@ export type HaksaCourseStudentRow = {
   open_term?: string;
   bunban_code?: string;
   group_code?: string;
+  // LM_POLY_MEMBER 추가 필드
+  user_type?: string;
+  eng_name?: string;
+  phone?: string;
+  campus_code?: string;
+  campus_name?: string;
+  institution_code?: string;
+  institution_name?: string;
+  dept_code?: string;
+  dept_name?: string;
+  state?: string;
+  use_yn?: string;
+  gender?: string;
 };
 
 export type HaksaCourseKey = {
@@ -485,9 +504,11 @@ export type HaksaCourseKey = {
 export type HaksaEvalSettings = {
   weights: {
     attendance: number;
-    exam: number;
+    midterm: number;
+    final: number;
     assignment: number;
     etc: number;
+    participation: number;
   };
   cutoffs: {
     A: number;
@@ -629,6 +650,7 @@ export type TutorHomeworkRow = {
   total_cnt?: number;
   submitted_cnt?: number;
   confirmed_cnt?: number;
+  homework_file?: string;
 };
 
 export type TutorHomeworkUserRow = {
@@ -731,200 +753,6 @@ export type TutorCompletionRow = {
   status_label?: string;
 };
 
-export type TutorDashboardStats = {
-  active_course_cnt: number;
-  score?: number;
-};
-
-export type HaksaResolveResult = {
-  mapped_course_id: number;
-  mapped_students?: number;
-  skipped_students?: number;
-  missing_students?: number;
-};
-
-export type TutorProgressSummaryRow = {
-  chapter: number;
-  section_id: number;
-  section_nm?: string;
-  lesson_id: number;
-  lesson_nm?: string;
-  lesson_type?: string;
-  total_time?: number;
-  duration_conv?: string;
-  student_cnt?: number;
-  complete_cnt?: number;
-  complete_rate?: number;
-  avg_ratio?: number;
-  last_date_conv?: string;
-};
-
-export type TutorProgressStudentRow = {
-  course_user_id: number;
-  user_id: number;
-  student_id?: string;
-  name?: string;
-  email?: string;
-  ratio?: number;
-  total_progress_ratio?: number;
-  study_time?: number;
-  study_time_conv?: string;
-  complete_yn?: 'Y' | 'N';
-  complete_date_conv?: string;
-  last_date_conv?: string;
-};
-
-export type TutorProgressDetailRow = {
-  course_user_id: number;
-  user_id: number;
-  student_id?: string;
-  name?: string;
-  email?: string;
-  chapter?: number;
-  lesson_id: number;
-  lesson_nm?: string;
-  lesson_type?: string;
-  total_time?: number;
-  complete_time?: number;
-  ratio?: number;
-  study_time?: number;
-  study_time_conv?: string;
-  curr_time?: number;
-  last_time?: number;
-  view_cnt?: number;
-  curr_page?: string;
-  study_page?: number;
-  complete_yn?: 'Y' | 'N';
-  complete_date_conv?: string;
-  last_date_conv?: string;
-};
-
-// ----- 마감 운영(시험/과제/자료/Q&A/성적/수료/증명서) -----
-export type TutorExamRow = {
-  exam_id: number;
-  exam_nm: string;
-  exam_time?: number;
-  question_cnt?: number;
-  onoff_type?: string;
-  assign_score?: number;
-  start_date?: string;
-  end_date?: string;
-  start_date_conv?: string;
-  end_date_conv?: string;
-  total_cnt?: number;
-  submitted_cnt?: number;
-  confirmed_cnt?: number;
-};
-
-export type TutorExamUserRow = {
-  course_user_id: number;
-  user_id: number;
-  login_id: string;
-  user_nm: string;
-  submitted?: boolean;
-  submitted_at?: string;
-  confirm?: boolean;
-  confirm_at?: string;
-  marking_score?: number;
-  marking_score_conv?: string;
-  score_conv?: string;
-};
-
-export type TutorHomeworkRow = {
-  homework_id: number;
-  homework_nm?: string;
-  module_nm?: string;
-  assign_score?: number;
-  start_date?: string;
-  end_date?: string;
-  start_date_conv?: string;
-  end_date_conv?: string;
-  total_cnt?: number;
-  submitted_cnt?: number;
-  confirmed_cnt?: number;
-};
-
-export type TutorHomeworkUserRow = {
-  course_user_id: number;
-  user_id: number;
-  login_id: string;
-  user_nm: string;
-  submitted?: boolean;
-  submitted_at?: string;
-  confirm?: boolean;
-  confirm_at?: string;
-  marking_score?: number;
-  marking_score_conv?: string;
-  score_conv?: string;
-  feedback?: string;
-  task_cnt?: number;
-};
-
-export type TutorMaterialRow = {
-  library_id: number;
-  library_nm: string;
-  content?: string;
-  library_file?: string;
-  library_link?: string;
-  file_url?: string;
-  file_size_conv?: string;
-  upload_date_conv?: string;
-};
-
-export type TutorQnaRow = {
-  id: number;
-  subject: string;
-  question_conv?: string;
-  user_nm?: string;
-  login_id?: string;
-  reg_date_conv?: string;
-  answered?: boolean;
-  proc_status?: number;
-};
-
-export type TutorQnaDetail = {
-  question_id: number;
-  subject: string;
-  question_content: string;
-  question_user_nm: string;
-  question_login_id: string;
-  question_reg_date_conv?: string;
-  answered?: boolean;
-  answer_id?: number;
-  answer_content?: string;
-  answer_user_nm?: string;
-  answer_login_id?: string;
-  answer_reg_date_conv?: string;
-};
-
-export type TutorGradeRow = {
-  course_user_id: number;
-  user_id: number;
-  login_id: string;
-  user_nm: string;
-  progress_ratio?: number;
-  exam_score?: number;
-  homework_score?: number;
-  etc_score?: number;
-  total_score?: number;
-  status_label?: string;
-};
-
-export type TutorCompletionRow = {
-  course_user_id: number;
-  user_id: number;
-  login_id: string;
-  user_nm: string;
-  progress_ratio?: number;
-  total_score?: number;
-  complete_status?: string;
-  complete_yn?: string;
-  complete_no?: string;
-  complete_date_conv?: string;
-  close_yn?: string;
-  close_date_conv?: string;
-  status_label?: string;
-};
 
 export type TutorDashboardStats = {
   active_course_cnt: number;
@@ -1323,6 +1151,7 @@ export const tutorLmsApi = {
     courseId: number;
     assignProgress: number;
     assignExam: number;
+    assignFinal: number;
     assignHomework: number;
     assignForum: number;
     assignEtc: number;
@@ -1339,6 +1168,8 @@ export const tutorLmsApi = {
 
     body.set('assign_progress', String(payload.assignProgress));
     body.set('assign_exam', String(payload.assignExam));
+    // TODO: 백엔드에 assign_final 컬럼 추가 후 활성화
+    body.set('assign_final', String(payload.assignFinal));
     body.set('assign_homework', String(payload.assignHomework));
     body.set('assign_forum', String(payload.assignForum));
     body.set('assign_etc', String(payload.assignEtc));

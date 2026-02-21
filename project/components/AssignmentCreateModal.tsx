@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Paperclip, Download, Trash2 } from 'lucide-react';
 
 interface AssignmentCreateModalProps {
   isOpen: boolean;
@@ -23,6 +23,7 @@ interface AssignmentCreateModalProps {
     latePenalty?: number;
     weekNumber?: number;
     sessionNumber?: number;
+    existingFileName?: string;
   };
 }
 
@@ -53,6 +54,8 @@ export function AssignmentCreateModal({
     weekNumber: 1,
     sessionNumber: 1,
     file: null as File | null,
+    deleteFile: false,
+    existingFileName: '',
   });
 
   // 왜: edit 모드일 때 initialData로 폼을 초기화합니다.
@@ -74,6 +77,8 @@ export function AssignmentCreateModal({
         weekNumber: initialData.weekNumber ?? 1,
         sessionNumber: initialData.sessionNumber ?? 1,
         file: null,
+        deleteFile: false,
+        existingFileName: initialData.existingFileName || '',
       });
     } else if (isOpen && mode === 'create') {
       // 왜: create 모드일 때는 빈 폼으로 초기화합니다.
@@ -93,6 +98,8 @@ export function AssignmentCreateModal({
         weekNumber: 1,
         sessionNumber: 1,
         file: null,
+        deleteFile: false,
+        existingFileName: '',
       });
     }
   }, [isOpen, mode, initialData, today]);
@@ -306,17 +313,122 @@ export function AssignmentCreateModal({
                 {assignmentData.file && (
                   <p className="text-xs text-gray-500 mt-1">선택됨: {assignmentData.file.name}</p>
                 )}
+
+                {/* 기존 첨부파일 표시 (수정 모드) */}
+                {isEditMode && assignmentData.existingFileName && !assignmentData.deleteFile && !assignmentData.file && (
+                  <div className="mt-2 flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Paperclip className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-blue-900 font-medium truncate">{assignmentData.existingFileName}</p>
+                      <p className="text-xs text-blue-600">현재 첨부된 파일</p>
+                    </div>
+                    <a
+                      href={`/common/file/download.jsp?filename=${encodeURIComponent(assignmentData.existingFileName)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                      title="다운로드"
+                    >
+                      <Download className="w-4 h-4" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setAssignmentData({ ...assignmentData, deleteFile: true })}
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="첨부파일 삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* 삭제 예정 상태 */}
+                {isEditMode && assignmentData.deleteFile && !assignmentData.file && (
+                  <div className="mt-2 flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <Trash2 className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    <span className="text-sm text-red-700 flex-1">첨부파일이 삭제됩니다.</span>
+                    <button
+                      type="button"
+                      onClick={() => setAssignmentData({ ...assignmentData, deleteFile: false })}
+                      className="px-3 py-1 text-xs text-red-700 border border-red-300 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      실행 취소
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm text-gray-700 mb-2">허용 파일 형식</label>
-                <input
-                  type="text"
-                  value={assignmentData.fileTypes}
-                  onChange={(e) => setAssignmentData({ ...assignmentData, fileTypes: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="예: .pdf, .docx, .zip"
-                />
-                <p className="text-sm text-gray-500 mt-1">쉼표로 구분하여 입력하세요</p>
+                {(() => {
+                  const FILE_TYPE_OPTIONS = [
+                    { ext: '.pdf', label: 'PDF' },
+                    { ext: '.docx', label: 'DOCX' },
+                    { ext: '.hwp', label: 'HWP' },
+                    { ext: '.pptx', label: 'PPTX' },
+                    { ext: '.xlsx', label: 'XLSX' },
+                    { ext: '.zip', label: 'ZIP' },
+                    { ext: '.jpg', label: 'JPG' },
+                    { ext: '.png', label: 'PNG' },
+                    { ext: '.txt', label: 'TXT' },
+                    { ext: '.html', label: 'HTML' },
+                    { ext: '.py', label: 'PY' },
+                    { ext: '.java', label: 'JAVA' },
+                  ];
+                  const selected = (assignmentData.fileTypes || '')
+                    .split(',')
+                    .map((s: string) => s.trim().toLowerCase())
+                    .filter(Boolean);
+                  const allSelected = selected.length === FILE_TYPE_OPTIONS.length &&
+                    FILE_TYPE_OPTIONS.every((o) => selected.includes(o.ext));
+                  const toggleExt = (ext: string) => {
+                    const next = selected.includes(ext)
+                      ? selected.filter((s: string) => s !== ext)
+                      : [...selected, ext];
+                    setAssignmentData({ ...assignmentData, fileTypes: next.join(', ') });
+                  };
+                  const toggleAll = () => {
+                    if (allSelected) {
+                      setAssignmentData({ ...assignmentData, fileTypes: '' });
+                    } else {
+                      setAssignmentData({
+                        ...assignmentData,
+                        fileTypes: FILE_TYPE_OPTIONS.map((o) => o.ext).join(', '),
+                      });
+                    }
+                  };
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={toggleAll}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                          allSelected
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        전체
+                      </button>
+                      {FILE_TYPE_OPTIONS.map((opt) => {
+                        const active = selected.includes(opt.ext);
+                        return (
+                          <button
+                            key={opt.ext}
+                            type="button"
+                            onClick={() => toggleExt(opt.ext)}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                              active
+                                ? 'bg-blue-100 text-blue-700 border-blue-300'
+                                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>

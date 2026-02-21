@@ -52,6 +52,40 @@ type HaksaSessionItem = {
   videoCount: number;
 };
 
+const ATTENDANCE_QR_EXPIRE_MS = 10 * 60 * 1000;
+
+type AttendanceQrTarget = {
+  type: 'session' | 'lesson';
+  id: string;
+  label: string;
+};
+
+type AttendanceQrDraft = {
+  token: string;
+  issuedAt: number;
+  expiresAt: number;
+  payload: string;
+  imageUrl: string;
+  targetLabel: string;
+};
+
+const createAttendanceQrToken = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  }
+  return Math.random().toString(36).slice(2, 18);
+};
+
+const buildAttendanceQrImageUrl = (payload: string) =>
+  `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(payload)}`;
+
+const formatQrRemaining = (ms: number) => {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const mm = Math.floor(totalSeconds / 60);
+  const ss = totalSeconds % 60;
+  return `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+};
+
 function ProgressDetailModal({
   isOpen,
   onClose,
@@ -157,6 +191,11 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<TutorProgressDetailRow | null>(null);
+  const [qrDraft, setQrDraft] = useState<AttendanceQrDraft | null>(null);
+  const [qrExpiredAt, setQrExpiredAt] = useState<number | null>(null);
+  const [qrNow, setQrNow] = useState(() => Date.now());
+  const [qrImageFailed, setQrImageFailed] = useState(false);
+  const [manualAttendanceOverrides, setManualAttendanceOverrides] = useState<Record<number, 'Y' | 'N'>>({});
 
   useEffect(() => {
     // 왜: 과목이 바뀌면 이전 선택/검색 결과가 남아 잘못된 조회가 될 수 있습니다.
@@ -165,6 +204,11 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
     setStudentRows([]);
     setHaksaAttendanceRows([]);
     setStudentKeyword('');
+    setQrDraft(null);
+    setQrExpiredAt(null);
+    setQrImageFailed(false);
+    setQrNow(Date.now());
+    setManualAttendanceOverrides({});
   }, [courseId, course?.mappedCourseId, course?.sourceType]);
 
   useEffect(() => {
@@ -409,6 +453,12 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
     };
   }, [isHaksaCourse, haksaKey, selectedSessionId, effectiveCourseId]);
 
+  useEffect(() => {
+    if (!isHaksaCourse) return;
+    // 왜: 차시가 바뀌면 수동 변경값이 다음 차시에 섞이면 안 되므로 즉시 초기화합니다.
+    setManualAttendanceOverrides({});
+  }, [isHaksaCourse, selectedSessionId, effectiveCourseId]);
+
   const selectedSummary = useMemo(
     () => summaryRows.find((r) => Number(r.lesson_id) === Number(selectedLessonId)),
     [summaryRows, selectedLessonId]
@@ -417,6 +467,189 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
   const selectedHaksaSession = useMemo(
     () => haksaSessionsFlat.find((s) => s.sessionId === selectedSessionId) ?? null,
     [haksaSessionsFlat, selectedSessionId]
+  );
+
+  const qrTarget = useMemo<AttendanceQrTarget | null>(() => {
+    if (isHaksaCourse) {
+      if (!selectedSessionId || selectedSessionId === 'overall') return null;
+      return {
+        type: 'session',
+        id: selectedSessionId,
+        label: selectedHaksaSession
+          ? `${selectedHaksaSession.weekTitle} / ${selectedHaksaSession.sessionName}`
+          : selectedSessionId,
+      };
+    }
+
+    if (!selectedLessonId || selectedLessonId === -1) return null;
+    return {
+      type: 'lesson',
+      id: String(selectedLessonId),
+      label: selectedSummary
+        ? `${selectedSummary.chapter}차시 / ${selectedSummary.lesson_nm || '-'}`
+        : `${selectedLessonId}차시`,
+    };
+  }, [isHaksaCourse, selectedSessionId, selectedHaksaSession, selectedLessonId, selectedSummary]);
+
+  const canGenerateAttendanceQr = Boolean(effectiveCourseId && qrTarget);
+  const qrRemainingMs = qrDraft ? qrDraft.expiresAt - qrNow : 0;
+  const qrActive = Boolean(qrDraft && qrRemainingMs > 0);
+
+  useEffect(() => {
+    if (!qrDraft) return;
+    const timer = window.setInterval(() => setQrNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [qrDraft]);
+
+  useEffect(() => {
+    if (!qrDraft) return;
+    if (qrNow < qrDraft.expiresAt) return;
+    // 왜: 만료된 QR을 화면에서 즉시 내려야 이전 QR 재사용을 막을 수 있습니다.
+    setQrDraft(null);
+    setQrExpiredAt(qrDraft.expiresAt);
+  }, [qrDraft, qrNow]);
+
+  const generateAttendanceQr = () => {
+    if (!canGenerateAttendanceQr || !qrTarget || !effectiveCourseId) return;
+
+    const issuedAt = Date.now();
+    const expiresAt = issuedAt + ATTENDANCE_QR_EXPIRE_MS;
+    const token = createAttendanceQrToken();
+    const payload = JSON.stringify({
+      version: 1,
+      type: 'attendance',
+      courseId: effectiveCourseId,
+      sourceType: isHaksaCourse ? 'haksa' : 'prism',
+      targetType: qrTarget.type,
+      targetId: qrTarget.id,
+      token,
+      issuedAt: new Date(issuedAt).toISOString(),
+      expiresAt: new Date(expiresAt).toISOString(),
+    });
+
+    setQrDraft({
+      token,
+      issuedAt,
+      expiresAt,
+      payload,
+      imageUrl: buildAttendanceQrImageUrl(payload),
+      targetLabel: qrTarget.label,
+    });
+    setQrExpiredAt(null);
+    setQrNow(issuedAt);
+    setQrImageFailed(false);
+  };
+
+  const stopAttendanceQr = () => {
+    if (!qrDraft) return;
+    setQrDraft(null);
+    setQrExpiredAt(Date.now());
+  };
+
+  const renderAttendanceQrPanel = () => (
+    <div className="border border-sky-200 bg-sky-50/60 rounded-lg p-4">
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-base text-gray-900">QR 출결</h3>
+            <p className="text-xs text-gray-600">
+              학생이 QR을 스캔해 출석을 처리하는 화면입니다. 현재는 프론트 임시 인터페이스이며, 실제 출석 저장은 백엔드 연동 후 동작합니다.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-2 mt-3">
+            <div className="bg-white border border-sky-100 rounded-md px-3 py-2">
+              <div className="text-[11px] text-gray-500">선택 차시</div>
+              <div className="text-sm text-gray-900 truncate">{qrTarget?.label || '차시를 선택해 주세요.'}</div>
+            </div>
+            <div className="bg-white border border-sky-100 rounded-md px-3 py-2">
+              <div className="text-[11px] text-gray-500">유효 시간</div>
+              <div className="text-sm text-gray-900">10분</div>
+            </div>
+            <div className="bg-white border border-sky-100 rounded-md px-3 py-2">
+              <div className="text-[11px] text-gray-500">현재 상태</div>
+              <div className={`text-sm ${qrActive ? 'text-green-700' : 'text-gray-700'}`}>
+                {qrActive ? `사용 가능 (${formatQrRemaining(qrRemainingMs)})` : '미발급'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <button
+              type="button"
+              onClick={generateAttendanceQr}
+              disabled={!canGenerateAttendanceQr}
+              className="px-3 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {qrDraft ? 'QR 재생성' : 'QR 생성'}
+            </button>
+            {qrDraft && (
+              <button
+                type="button"
+                onClick={stopAttendanceQr}
+                className="px-3 py-2 rounded-lg text-sm border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                QR 종료
+              </button>
+            )}
+          </div>
+
+          <p className="text-xs text-amber-700 mt-2">
+            {!effectiveCourseId
+              ? '과목 매핑이 끝난 뒤 QR 생성이 가능합니다.'
+              : !qrTarget
+                ? '왼쪽 목록에서 출결 대상 차시를 먼저 선택해 주세요.'
+                : '발급한 QR은 10분 뒤 자동으로 사라집니다.'}
+          </p>
+          {qrActive && (
+            <p className="text-xs text-blue-700 mt-1">
+              QR 발급 중에도 아래 출석표에서 출석/결석을 수동으로 바꿀 수 있습니다.
+            </p>
+          )}
+
+          {qrDraft && (
+            <div className="mt-3 p-3 bg-white border border-sky-100 rounded-md">
+              <div className="text-[11px] text-gray-500 mb-1">백엔드 연동용 payload (임시 미리보기)</div>
+              <code className="text-[11px] text-gray-700 break-all">{qrDraft.payload}</code>
+            </div>
+          )}
+        </div>
+
+        <div className="w-full sm:w-[240px] flex-shrink-0">
+          <div className="h-[240px] border border-dashed border-sky-300 rounded-lg bg-white flex items-center justify-center p-3">
+            {qrDraft ? (
+              qrImageFailed ? (
+                <div className="text-center text-xs text-gray-500 leading-5">
+                  QR 미리보기를 불러오지 못했습니다.
+                  <br />
+                  네트워크 정책 확인 후 다시 생성해 주세요.
+                </div>
+              ) : (
+                <img
+                  src={qrDraft.imageUrl}
+                  alt="출결 QR 코드"
+                  className="w-full h-full object-contain"
+                  onError={() => setQrImageFailed(true)}
+                />
+              )
+            ) : (
+              <div className="text-center text-xs text-gray-500 leading-5">
+                QR 생성 버튼을 누르면
+                <br />
+                이 영역에 QR이 표시됩니다.
+              </div>
+            )}
+          </div>
+          <div className="mt-2 text-xs text-gray-500 text-center">
+            {qrDraft
+              ? `${qrDraft.targetLabel} / 토큰 ${qrDraft.token}`
+              : qrExpiredAt
+                ? `마지막 QR이 ${new Date(qrExpiredAt).toLocaleTimeString('ko-KR', { hour12: false })}에 종료되었습니다.`
+                : '아직 발급된 QR이 없습니다.'}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 
   const buildSessionSummary = (session: HaksaSessionItem) => {
@@ -473,6 +706,26 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
     });
   }, [haksaAttendanceRows, studentKeyword]);
 
+  const manualAttendanceChangeCount = useMemo(
+    () => Object.keys(manualAttendanceOverrides).length,
+    [manualAttendanceOverrides]
+  );
+
+  const getResolvedAttendanceYn = (row: HaksaAttendanceRow): 'Y' | 'N' =>
+    manualAttendanceOverrides[row.course_user_id] ?? (row.attend_yn === 'Y' ? 'Y' : 'N');
+
+  const applyManualAttendance = (courseUserId: number, originalAttendYn: 'Y' | 'N', nextAttendYn: 'Y' | 'N') => {
+    setManualAttendanceOverrides((prev) => {
+      if (nextAttendYn === originalAttendYn) {
+        if (!(courseUserId in prev)) return prev;
+        const next = { ...prev };
+        delete next[courseUserId];
+        return next;
+      }
+      return { ...prev, [courseUserId]: nextAttendYn };
+    });
+  };
+
   const openDetail = async (row: TutorProgressStudentRow) => {
     if (!selectedLessonId || !effectiveCourseId) return;
 
@@ -498,6 +751,8 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
   if (isHaksaCourse) {
     return (
       <div className="space-y-4">
+        {renderAttendanceQrPanel()}
+
         <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
           <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
@@ -673,6 +928,26 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
             {haksaViewMode === 'attendance' && haksaAttendanceError && <div className="p-4 text-sm text-red-600">{haksaAttendanceError}</div>}
 
             {haksaViewMode === 'attendance' && (
+              <>
+                <div className="px-4 py-2 border-b border-gray-200 bg-gray-50/60 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-gray-600">
+                    수동 변경은 프론트 임시 상태입니다. 실제 저장은 백엔드 연동 후 처리됩니다.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-blue-700">
+                      수동 변경 {manualAttendanceChangeCount}건
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setManualAttendanceOverrides({})}
+                      disabled={manualAttendanceChangeCount === 0}
+                      className="px-2 py-1 text-xs border border-gray-300 rounded text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      변경 초기화
+                    </button>
+                  </div>
+                </div>
+
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-white border-b border-gray-200">
@@ -687,7 +962,9 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {filteredHaksaAttendance.map((row) => {
-                      const attend = row.attend_yn === 'Y';
+                      const originalAttendYn = row.attend_yn === 'Y' ? 'Y' : 'N';
+                      const resolvedAttendYn = getResolvedAttendanceYn(row);
+                      const attend = resolvedAttendYn === 'Y';
                       const videoDone = Number(row.video_done_cnt ?? 0);
                       const videoTotal = Number(row.video_total_cnt ?? 0);
                       const examDone = Number(row.exam_done_cnt ?? 0);
@@ -700,9 +977,21 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
                           <td className="px-4 py-3 text-sm text-gray-900">{row.student_id || '-'}</td>
                           <td className="px-4 py-3 text-sm text-gray-900">{row.name || '-'}</td>
                           <td className="px-4 py-3 text-center">
-                            <span className={`px-2 py-1 rounded text-xs ${attend ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                            {/* 왜: 교수자가 학생별 출석 상태를 빠르게 보정할 수 있도록 칩 클릭 한 번으로 토글합니다. */}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                applyManualAttendance(row.course_user_id, originalAttendYn, attend ? 'N' : 'Y')
+                              }
+                              className={`px-2 py-1 rounded text-xs border transition-colors ${
+                                attend
+                                  ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+                                  : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                              }`}
+                              title="클릭하면 출석/결석이 바뀝니다"
+                            >
                               {attend ? '출석' : '결석'}
-                            </span>
+                            </button>
                           </td>
                           <td className="px-4 py-3 text-center text-sm text-gray-700">{videoDone}/{videoTotal}</td>
                           <td className="px-4 py-3 text-center text-sm text-gray-700">{examDone}/{examTotal}</td>
@@ -721,6 +1010,7 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
                   </tbody>
                 </table>
               </div>
+              </>
             )}
 
             {haksaViewMode === 'progress' && (
@@ -825,6 +1115,8 @@ export function AttendanceTab({ courseId, course }: { courseId: number; course?:
 
   return (
     <div className="space-y-4">
+      {renderAttendanceQrPanel()}
+
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-4 border border-gray-200 rounded-lg overflow-hidden">
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 text-sm text-gray-700">

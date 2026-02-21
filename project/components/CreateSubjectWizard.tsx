@@ -119,7 +119,7 @@ export function CreateSubjectWizard({ initialStep, onStepChange }: CreateSubject
     onStepChange?.(currentStep);
   }, [currentStep, onStepChange]);
   const [saving, setSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [courseCategories, setCourseCategories] = useState<TutorCourseCategoryRow[]>([]);
@@ -266,24 +266,23 @@ export function CreateSubjectWizard({ initialStep, onStepChange }: CreateSubject
 
   const handleComplete = async () => {
     // 왜: "완료" 버튼을 눌렀을 때 DB에 실제 과목/수강생/차시가 저장돼야 새로고침해도 정보가 유지됩니다.
-    setErrorMessage(null);
 
     const courseName = formData.subjectName.trim();
     if (!courseName) {
-      setErrorMessage('과목명을 입력해 주세요.');
+      alert('과목명을 입력해 주세요.');
       return;
     }
     const yearValue = formData.year.trim();
     if (!yearValue) {
-      setErrorMessage('년도를 입력해 주세요.');
+      alert('년도를 입력해 주세요.');
       return;
     }
     if (!/^\d{4}$/.test(yearValue)) {
-      setErrorMessage('년도는 4자리 숫자(예: 2026)로 입력해 주세요.');
+      alert('년도는 4자리 숫자(예: 2026)로 입력해 주세요.');
       return;
     }
     if (!formData.startDate || !formData.endDate) {
-      setErrorMessage('수업시작일과 수업 종료일을 입력해 주세요.');
+      alert('수업시작일과 수업 종료일을 입력해 주세요.');
       return;
     }
 
@@ -357,7 +356,7 @@ export function CreateSubjectWizard({ initialStep, onStepChange }: CreateSubject
       alert('과목이 개설되었습니다. (담당과목 메뉴에서 확인할 수 있습니다)');
       resetWizard();
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '저장 중 오류가 발생했습니다.');
+      alert(e instanceof Error ? e.message : '저장 중 오류가 발생했습니다.');
     } finally {
       setSaving(false);
     }
@@ -371,11 +370,7 @@ export function CreateSubjectWizard({ initialStep, onStepChange }: CreateSubject
         <p className="text-gray-600">단계별로 교육과목을 개설하고 설정할 수 있습니다.</p>
       </div>
 
-      {errorMessage && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {errorMessage}
-        </div>
-      )}
+
 
       {/* Stepper */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GraduationCap, BookOpen, FolderPlus, Compass, Library, ChevronDown, ChevronRight, Heart, RefreshCw, ClipboardList, BookPlus, BarChart3, ClipboardCheck, MessageSquare } from 'lucide-react';
+import { GraduationCap, BookOpen, FolderPlus, Compass, Library, ChevronDown, ChevronRight, Heart, RefreshCw, ClipboardList, BookPlus, BarChart3, ClipboardCheck, MessageSquare, UserCheck, Video, FileQuestion } from 'lucide-react';
 import { CreateCourseForm } from './components/CreateCourseForm';
 import { MyCoursesList } from './components/MyCoursesList';
 import { CourseExplorer } from './components/CourseExplorer';
@@ -11,7 +11,13 @@ import { ExamManagementPage } from './components/ExamManagementPage';
 import { CreateSubjectWizard } from './components/CreateSubjectWizard';
 import { StatisticsPage } from './components/StatisticsPage';
 import { AssignmentManagePage } from './components/AssignmentManagePage';
+import { AssignmentTemplateTab } from './components/AssignmentTemplateTab';
+import { FeedbackTemplateTab } from './components/FeedbackTemplateTab';
 import { QnaManagePage } from './components/QnaManagePage';
+import { FaqManagePage } from './components/FaqManagePage';
+import { AttendanceManagePage } from './components/AttendanceManagePage';
+import { VideoGroupManagePage } from './components/VideoGroupManagePage';
+import { SurveyManagePage } from './components/SurveyManagePage';
 import type { CourseManagementTabId } from './components/CourseManagement';
 
 const MENU_IDS = [
@@ -19,13 +25,20 @@ const MENU_IDS = [
   'explore',
   'courses',
   'assignment-manage',
+  'assignment-submissions',
+  'assignment-templates',
+  'feedback-templates',
   'qna-manage',
+  'faq-manage',
   'create-course',
   'content-all',
   'content-favorites',
   'exam-categories',
   'exam-questions',
   'exam-management',
+  'attendance-manage',
+  'video-group-manage',
+  'survey-manage',
   'subject-create',
   'statistics',
 ] as const;
@@ -108,6 +121,8 @@ export default function App() {
   });
   const [contentLibraryExpanded, setContentLibraryExpanded] = useState(false);
   const [examMenuExpanded, setExamMenuExpanded] = useState(false);
+  const [assignmentMenuExpanded, setAssignmentMenuExpanded] = useState(false);
+  const [qnaMenuExpanded, setQnaMenuExpanded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // 컴포넌트 재렌더링용 키
   const activeMenu = routeState.menu;
 
@@ -116,6 +131,12 @@ export default function App() {
   
   // 시험관리 하위 메뉴 여부 확인
   const isExamSubMenu = activeMenu === 'exam-categories' || activeMenu === 'exam-questions' || activeMenu === 'exam-management';
+
+  // 과제 통합관리 하위 메뉴 여부 확인
+  const isAssignmentSubMenu = activeMenu === 'assignment-manage' || activeMenu === 'assignment-submissions' || activeMenu === 'assignment-templates' || activeMenu === 'feedback-templates';
+
+  // Q&A 하위 메뉴 여부 확인
+  const isQnaSubMenu = activeMenu === 'qna-manage' || activeMenu === 'faq-manage';
 
   const syncHash = useCallback((route: RouteState, replace = false) => {
     // 왜: 서버 라우팅 없이도 뒤로가기/직접 주소 접근이 되도록 해시를 동기화합니다.
@@ -136,6 +157,12 @@ export default function App() {
     }
     if (route.menu === 'exam-categories' || route.menu === 'exam-questions' || route.menu === 'exam-management') {
       setExamMenuExpanded(true);
+    }
+    if (route.menu === 'assignment-manage' || route.menu === 'assignment-submissions' || route.menu === 'assignment-templates' || route.menu === 'feedback-templates') {
+      setAssignmentMenuExpanded(true);
+    }
+    if (route.menu === 'qna-manage' || route.menu === 'faq-manage') {
+      setQnaMenuExpanded(true);
     }
     if (options?.syncHash !== false) {
       syncHash(route, options?.replaceHash);
@@ -191,6 +218,14 @@ export default function App() {
 
   const handleExamMenuClick = () => {
     setExamMenuExpanded((prev) => !prev);
+  };
+
+  const handleAssignmentMenuClick = () => {
+    setAssignmentMenuExpanded((prev) => !prev);
+  };
+
+  const handleQnaMenuClick = () => {
+    setQnaMenuExpanded((prev) => !prev);
   };
 
   // 현재 화면 새로고침
@@ -320,6 +355,28 @@ export default function App() {
             <div className="mt-3 mb-1 border-t border-border pt-3">
               <span className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">학습 관리</span>
             </div>
+            <button
+              onClick={() => applyMenu('attendance-manage')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+                activeMenu === 'attendance-manage'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-sidebar-foreground hover:bg-muted'
+              }`}
+            >
+              <UserCheck className="w-5 h-5" />
+              <span>출석 관리</span>
+            </button>
+            <button
+              onClick={() => applyMenu('video-group-manage')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
+                activeMenu === 'video-group-manage'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-sidebar-foreground hover:bg-muted'
+              }`}
+            >
+              <Video className="w-5 h-5" />
+              <span>동영상그룹관리</span>
+            </button>
             <div>
               <button
                 onClick={handleExamMenuClick}
@@ -377,27 +434,119 @@ export default function App() {
                 </div>
               )}
             </div>
+            <div>
+              <button
+                onClick={handleAssignmentMenuClick}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-left ${
+                  isAssignmentSubMenu
+                    ? 'bg-blue-600 text-white'
+                    : 'text-sidebar-foreground hover:bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <ClipboardCheck className="w-5 h-5" />
+                  <span>과제 통합관리</span>
+                </div>
+                {assignmentMenuExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+              {assignmentMenuExpanded && (
+                <div className="ml-4 mt-1 flex flex-col gap-1">
+                  <button
+                    onClick={() => applyMenu('assignment-submissions')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'assignment-submissions'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>제출 현황</span>
+                  </button>
+                  <button
+                    onClick={() => applyMenu('assignment-templates')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'assignment-templates'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>과제 템플릿</span>
+                  </button>
+                  <button
+                    onClick={() => applyMenu('feedback-templates')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'feedback-templates'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>피드백 템플릿</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div>
+              <button
+                onClick={handleQnaMenuClick}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors text-left ${
+                  isQnaSubMenu
+                    ? 'bg-blue-600 text-white'
+                    : 'text-sidebar-foreground hover:bg-muted'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="w-5 h-5" />
+                  <span>Q&A 통합관리</span>
+                </div>
+                {qnaMenuExpanded ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+              </button>
+              {qnaMenuExpanded && (
+                <div className="ml-4 mt-1 flex flex-col gap-1">
+                  <button
+                    onClick={() => applyMenu('qna-manage')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'qna-manage'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>Q&A 관리</span>
+                  </button>
+                  <button
+                    onClick={() => applyMenu('faq-manage')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'faq-manage'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>FAQ 공지 설정</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <button
-              onClick={() => applyMenu('assignment-manage')}
+              onClick={() => applyMenu('survey-manage')}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-                activeMenu === 'assignment-manage'
+                activeMenu === 'survey-manage'
                   ? 'bg-blue-600 text-white'
                   : 'text-sidebar-foreground hover:bg-muted'
               }`}
             >
-              <ClipboardCheck className="w-5 h-5" />
-              <span>과제 통합관리</span>
-            </button>
-            <button
-              onClick={() => applyMenu('qna-manage')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-                activeMenu === 'qna-manage'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-sidebar-foreground hover:bg-muted'
-              }`}
-            >
-              <MessageSquare className="w-5 h-5" />
-              <span>Q&A 통합관리</span>
+              <FileQuestion className="w-5 h-5" />
+              <span>설문관리</span>
             </button>
 
             {/* === 리소스 === */}
@@ -482,16 +631,30 @@ export default function App() {
               routeParams={routeState.params}
               onRouteChange={handleCoursesRouteChange}
             />
-          ) : activeMenu === 'assignment-manage' ? (
+          ) : activeMenu === 'assignment-manage' || activeMenu === 'assignment-submissions' ? (
             <AssignmentManagePage
               key={refreshKey}
               onOpenCourse={handleOpenCourseFromDashboard}
             />
+          ) : activeMenu === 'assignment-templates' ? (
+            <div className="space-y-6" key={refreshKey}>
+              <div>
+                <h1 className="text-gray-900 mb-1">과제 템플릿</h1>
+                <p className="text-gray-600">과제 템플릿을 관리하고 여러 강의에 동시 업로드합니다.</p>
+              </div>
+              <AssignmentTemplateTab />
+            </div>
+          ) : activeMenu === 'feedback-templates' ? (
+            <div className="space-y-6" key={refreshKey}>
+              <FeedbackTemplateTab />
+            </div>
           ) : activeMenu === 'qna-manage' ? (
             <QnaManagePage
               key={refreshKey}
               onOpenCourse={handleOpenCourseFromDashboard}
             />
+          ) : activeMenu === 'faq-manage' ? (
+            <FaqManagePage key={refreshKey} />
           ) : activeMenu === 'create-course' ? (
             <CreateCourseForm
               key={refreshKey}
@@ -517,6 +680,12 @@ export default function App() {
             />
           ) : activeMenu === 'statistics' ? (
             <StatisticsPage key={refreshKey} />
+          ) : activeMenu === 'attendance-manage' ? (
+            <AttendanceManagePage key={refreshKey} />
+          ) : activeMenu === 'video-group-manage' ? (
+            <VideoGroupManagePage key={refreshKey} />
+          ) : activeMenu === 'survey-manage' ? (
+            <SurveyManagePage key={refreshKey} />
           ) : (
             <div className="bg-card rounded-xl border-2 border-dashed border-border p-16 text-center">
               <div className="text-muted-foreground">

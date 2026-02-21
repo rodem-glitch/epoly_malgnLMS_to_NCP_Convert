@@ -1,4 +1,4 @@
-<div class="new-main-fullscreen" id="new-main-fullscreen">
+﻿<div class="new-main-fullscreen" id="new-main-fullscreen">
 	<style>
 		/* GrowAI 스타일 기반 레이아웃 */
 		html {
@@ -1235,6 +1235,8 @@
 		</div>
 	</div>
 	
+
+
 	<!-- 푸터 -->
 	<footer class="nm-footer">
 		<div class="nm-footer__container">
@@ -1258,8 +1260,10 @@
 		</div>
 	</footer>
 	
-	<!-- 로그인 모달 -->
-	<div class="nm-modal-overlay" id="loginModal" onclick="closeLoginModal(event)">
+	<!-- 왜: onclick 대신 mousedown/click 조합으로 드래그 시 닫힘 방지 -->
+	<div class="nm-modal-overlay" id="loginModal"
+		onmousedown="loginModalMouseDownTarget = event.target"
+		onclick="if(event.target === this && loginModalMouseDownTarget === this) closeLoginModal()">
 		<div class="nm-login-modal" onclick="event.stopPropagation()" style="position: relative;">
 			<div class="nm-login-modal__header">
 				<button type="button" class="nm-login-modal__close" onclick="closeLoginModal()">&times;</button>
@@ -1294,6 +1298,7 @@
 	<iframe name="loginFrame" id="loginFrame" style="display:none;"></iframe>
 	
 	<script>
+	var loginModalMouseDownTarget = null;
 	// 왜: 학생/교수자 메뉴 진입 경로에 맞는 테스트 계정을 서버에서 미리 정해 전달합니다.
 	function applyDefaultLoginPreset() {
 		document.getElementById('login_id').value = '{{login_id_preset}}';
@@ -1309,8 +1314,7 @@
 	}
 	
 	// 로그인 모달 닫기
-	function closeLoginModal(event) {
-		if (event && event.target !== document.getElementById('loginModal')) return;
+	function closeLoginModal() {
 		document.getElementById('loginModal').classList.remove('active');
 		document.body.style.overflow = '';
 		// 폼 초기화

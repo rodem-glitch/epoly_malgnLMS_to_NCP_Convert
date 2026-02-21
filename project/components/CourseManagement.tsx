@@ -15,6 +15,7 @@ import {
   Upload,
   Edit,
   Trash2,
+  Copy,
   ChevronDown,
   ChevronRight,
   Play,
@@ -22,6 +23,9 @@ import {
   Plus,
   BookOpen,
   Printer,
+  Paperclip,
+  AlertTriangle,
+  BarChart3,
 } from 'lucide-react';
 import { SessionEditModal } from './SessionEditModal';
 import { CourseInfoTab } from './CourseInfoTabs';
@@ -465,7 +469,48 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
         <div className="flex-1 min-w-0">
           {/* 강좌 정보 헤더 (스크롤과 함께 이동) */}
           <div className="mb-6">
-            <h2 className="text-gray-900 mb-2">{course.subjectName}</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-gray-900">{course.subjectName}</h2>
+              {course.sourceType === 'prism' && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setActiveTab('info-basic')}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
+                    title="과목 정보 수정"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>수정</span>
+                  </button>
+                  <button
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 transition-colors"
+                    title="과목 복사"
+                    onClick={() => {
+                      if (confirm(`"${course.subjectName}" 과목을 복사하시겠습니까?`)) {
+                        // TODO: 백엔드 API 연동 — tutorLmsApi.copyCourse({ courseId: course.mappedCourseId })
+                        alert('과목 복사가 요청되었습니다.\n(백엔드 연동 후 실제 복사됩니다.)');
+                      }
+                    }}
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>복사</span>
+                  </button>
+                  <button
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors"
+                    title="과목 삭제"
+                    onClick={() => {
+                      if (confirm(`"${course.subjectName}" 과목을 정말 삭제하시겠습니까?\n\n⚠ 삭제된 과목은 복구할 수 없습니다.`)) {
+                        // TODO: 백엔드 API 연동 — tutorLmsApi.deleteCourse({ courseId: course.mappedCourseId })
+                        alert('과목 삭제가 요청되었습니다.\n(백엔드 연동 후 실제 삭제됩니다.)');
+                        onBack();
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>삭제</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span>과정ID: {course.courseId}</span>
               <span className="text-gray-300">·</span>
@@ -1871,6 +1916,7 @@ const isHaksaCourse =
         totalScore: Number(row.assign_score ?? 100),
         submitted: Number(row.submitted_cnt ?? 0),
         total: Number(row.total_cnt ?? 0),
+        homeworkFile: row.homework_file || '',
       }));
       setHomeworks(mapped);
     } catch (e) {
@@ -1971,6 +2017,7 @@ const isHaksaCourse =
       dueDate: parsedEnd.date,
       dueTime: parsedEnd.time || '23:59',
       totalScore: homework.totalScore || 100,
+      existingFileName: homework.homeworkFile || '',
     });
     setShowEditModal(true);
   };
@@ -2087,6 +2134,15 @@ const isHaksaCourse =
                         <span className="w-24 text-gray-500">제출 현황</span>
                         <span className="text-gray-900">{assignment.submitted} / {assignment.total}명</span>
                       </div>
+                      {assignment.homeworkFile && (
+                        <div className="flex items-center">
+                          <span className="w-24 text-gray-500">첨부파일</span>
+                          <span className="flex items-center gap-1.5 text-blue-600">
+                            <Paperclip className="w-3.5 h-3.5" />
+                            <span className="truncate max-w-[200px]">{assignment.homeworkFile}</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -2212,6 +2268,10 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
 
   const [tempScore, setTempScore] = useState<string>('0');
   const [feedbackText, setFeedbackText] = useState<string>('');
+  // 왜: 교수자가 첨삭 파일을 첨부할 수 있도록 파일 목록을 관리합니다.
+  // TODO: 백엔드 API 연동 후 실제 파일 업로드 활성화
+  const [feedbackFiles, setFeedbackFiles] = useState<File[]>([]);
+  const feedbackFileInputRef = useRef<HTMLInputElement>(null);
 
   // 왜: 학생 제출물(제목/내용/첨부파일)을 모달로 확인할 수 있어야 합니다.
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
@@ -2228,6 +2288,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
   const [loadingHomeworks, setLoadingHomeworks] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'unsubmitted' | 'need_feedback' | 'done'>('all');
 
   const toBool = (value: any) =>
     value === true || value === 1 || value === '1' || value === 'Y' || value === 'true';
@@ -2318,6 +2379,8 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
     const student = students.find((s: any) => s.courseUserId === courseUserId);
     setTempScore(String(student?.markingScore ?? 0));
     setFeedbackText(String(student?.feedback ?? ''));
+    // 왜: 학생이 바뀌면 이전 학생용 첨부파일을 초기화해야 혼선이 없습니다.
+    setFeedbackFiles([]);
   };
 
   const handleOpenSubmissionModal = () => {
@@ -2469,9 +2532,55 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
     doneFeedback: students.filter((s: any) => s.confirm).length,
   };
 
+  // 왜: 학생 간 과제 유사도 분석 결과를 표시하기 위한 상태입니다.
+  // TODO: 백엔드 API 연동 후 실제 데이터로 전환
+  type SimilarityResult = {
+    studentAId: number;
+    studentAName: string;
+    studentBId: number;
+    studentBName: string;
+    titleScore: number;
+    contentScore: number;
+    fileScore: number;
+    totalScore: number;
+  };
+  const [similarityData, setSimilarityData] = useState<SimilarityResult[]>([]);
+  const [similarityLoading, setSimilarityLoading] = useState(false);
+  const [similarityAnalyzed, setSimilarityAnalyzed] = useState(false);
+
+  // 왜: 선택된 학생과 관련된 유사도 결과만 필터링합니다.
+  const studentSimilarities = selectedCourseUserId
+    ? similarityData.filter(
+        (r) => r.studentAId === selectedCourseUserId || r.studentBId === selectedCourseUserId
+      )
+    : [];
+
+  // 왜: 유사도 임계치 이상인 학생 ID를 빠르게 조회하기 위한 Set입니다.
+  const flaggedStudentIds = new Set<number>();
+  similarityData.forEach((r) => {
+    flaggedStudentIds.add(r.studentAId);
+    flaggedStudentIds.add(r.studentBId);
+  });
+
+  const handleAnalyzeSimilarity = () => {
+    if (!selectedHomeworkId) return;
+    setSimilarityLoading(true);
+    setSimilarityAnalyzed(false);
+
+    // TODO: 백엔드 API 연동 후 아래 mock을 실제 API 호출로 교체
+    // 예: tutorLmsApi.getHomeworkSimilarity({ courseId, homeworkId: selectedHomeworkId })
+    setTimeout(() => {
+      // 왜: 백엔드 미구현 상태이므로 빈 배열로 응답합니다.
+      //     백엔드 구현 후 실제 API 응답으로 교체합니다.
+      setSimilarityData([]);
+      setSimilarityLoading(false);
+      setSimilarityAnalyzed(true);
+    }, 800);
+  };
+
   return (
     <div className="space-y-4">
-      {/* 과제 선택 */}
+      {/* 과제 선택 + 유사도 분석 버튼 */}
       <div className="flex items-center gap-4">
         <label className="text-sm text-gray-700">과제 선택:</label>
         <select
@@ -2482,6 +2591,10 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
             setSelectedCourseUserId(null);
             setTempScore('0');
             setFeedbackText('');
+            setStatusFilter('all');
+            // 왜: 과제가 바뀌면 이전 유사도 결과를 초기화해야 혼선이 없습니다.
+            setSimilarityData([]);
+            setSimilarityAnalyzed(false);
           }}
           disabled={loadingHomeworks || homeworks.length === 0}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
@@ -2493,6 +2606,22 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
             </option>
           ))}
         </select>
+        {/* 왜: 교수자가 원할 때 유사도 분석을 실행할 수 있도록 버튼을 배치합니다. */}
+        <button
+          type="button"
+          onClick={handleAnalyzeSimilarity}
+          disabled={!selectedHomeworkId || similarityLoading}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm border border-amber-300 bg-amber-50 text-amber-800 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          {similarityLoading ? '분석 중...' : '유사도 분석'}
+        </button>
+        {similarityAnalyzed && similarityData.length === 0 && (
+          <span className="text-xs text-green-600">✓ 유사 과제가 발견되지 않았습니다.</span>
+        )}
+        {similarityAnalyzed && similarityData.length > 0 && (
+          <span className="text-xs text-red-600">⚠ {similarityData.length}건의 유사 과제가 발견되었습니다.</span>
+        )}
       </div>
 
       {errorMessage && (
@@ -2517,8 +2646,32 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
               <div className="bg-gray-50 px-4 py-3 rounded-t-lg border border-b-0 border-gray-200">
                 <h4 className="text-gray-900">수강생 목록 ({students.length}명)</h4>
               </div>
+              {/* 필터 버튼 */}
+              <div className="flex gap-2 px-4 py-2.5 border border-b-0 border-gray-200 bg-white">
+                {[
+                  { key: 'all' as const, label: '전체', count: summary.total, bg: 'bg-gray-100 text-gray-700', activeBg: 'bg-gray-700 text-white' },
+                  { key: 'unsubmitted' as const, label: '미제출', count: summary.total - summary.needFeedback - summary.doneFeedback, bg: 'bg-red-50 text-red-600', activeBg: 'bg-red-600 text-white' },
+                  { key: 'need_feedback' as const, label: '피드백 필요', count: summary.needFeedback, bg: 'bg-orange-50 text-orange-600', activeBg: 'bg-orange-500 text-white' },
+                  { key: 'done' as const, label: '피드백 완료', count: summary.doneFeedback, bg: 'bg-green-50 text-green-600', activeBg: 'bg-green-600 text-white' },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setStatusFilter(f.key)}
+                    className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+                      statusFilter === f.key ? f.activeBg : `${f.bg} hover:opacity-80`
+                    }`}
+                  >
+                    {f.label} ({f.count})
+                  </button>
+                ))}
+              </div>
               <div className="border border-gray-200 rounded-b-lg divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
-                {students.map((student: any) => {
+                {students.filter((s: any) => {
+                  if (statusFilter === 'unsubmitted') return !s.submitted;
+                  if (statusFilter === 'need_feedback') return s.submitted && !s.confirm;
+                  if (statusFilter === 'done') return s.confirm;
+                  return true;
+                }).map((student: any) => {
                   const isSelected = selectedCourseUserId === student.courseUserId;
                   const badge = !student.submitted
                     ? { label: '미제출', className: 'bg-red-100 text-red-700' }
@@ -2542,9 +2695,18 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                           <div className="text-gray-900 mb-1">{student.name}</div>
                           <div className="text-sm text-gray-600">{student.studentId}</div>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs ${badge.className}`}>
-                          {badge.label}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className={`px-2 py-1 rounded text-xs ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                          {/* 왜: 유사도 임계치 이상인 학생에게 경고 뱃지를 표시합니다. */}
+                          {flaggedStudentIds.has(student.courseUserId) && (
+                            <span className="px-1.5 py-1 rounded text-xs bg-red-100 text-red-700 flex items-center gap-0.5" title="유사 과제 감지">
+                              <AlertTriangle className="w-3 h-3" />
+                              유사
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500">
                         <span>제출: {student.submittedAt}</span>
@@ -2611,7 +2773,50 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-gray-700 mb-2">피드백</label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm text-gray-700">피드백</label>
+                      </div>
+
+                      {/* 피드백 빠른 템플릿 */}
+                      {(() => {
+                        const FB_STORAGE_KEY = 'feedback-templates';
+                        const DEFAULT_TEMPLATES = [
+                          { label: '우수', text: '과제를 매우 훌륭하게 수행하였습니다. 우수한 성과입니다.' },
+                          { label: '양호', text: '전반적으로 잘 작성하였으나, 일부 보완이 필요합니다.' },
+                          { label: '보완필요', text: '과제 내용이 부족합니다. 요구사항을 다시 확인하고 보완해 주세요.' },
+                          { label: '재제출', text: '과제 기준에 미달합니다. 수정 후 재제출 바랍니다.' },
+                          { label: '형식오류', text: '제출 파일 형식 또는 양식이 올바르지 않습니다. 확인 후 다시 제출해 주세요.' },
+                        ];
+                        let templates: { label: string; text: string }[];
+                        try {
+                          const stored = localStorage.getItem(FB_STORAGE_KEY);
+                          templates = stored ? JSON.parse(stored) : DEFAULT_TEMPLATES;
+                          if (!Array.isArray(templates) || templates.length === 0) templates = DEFAULT_TEMPLATES;
+                        } catch {
+                          templates = DEFAULT_TEMPLATES;
+                        }
+                        return (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {templates.map((tpl, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setFeedbackText((prev: string) => {
+                                    if (!prev.trim()) return tpl.text;
+                                    return prev + '\n' + tpl.text;
+                                  });
+                                }}
+                                className="px-2.5 py-1 text-xs rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                                title={tpl.text}
+                              >
+                                {tpl.label}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
                       <textarea
                         value={feedbackText}
                         onChange={(e) => setFeedbackText(e.target.value)}
@@ -2619,6 +2824,64 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                         rows={6}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       />
+
+                      {/* 왜: 교수자가 첨삭한 파일을 첨부하여 학생에게 전달할 수 있도록 합니다. */}
+                      {/* TODO: 백엔드 API 연동 후 실제 파일 업로드 활성화 */}
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-700">첨부파일</span>
+                          <button
+                            type="button"
+                            onClick={() => feedbackFileInputRef.current?.click()}
+                            className="px-3 py-1 text-xs border border-blue-200 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                          >
+                            + 파일 선택
+                          </button>
+                          <input
+                            ref={feedbackFileInputRef}
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              const newFiles = Array.from(e.target.files || []);
+                              if (newFiles.length > 0) {
+                                setFeedbackFiles((prev) => [...prev, ...newFiles]);
+                              }
+                              // 왜: 같은 파일을 다시 선택할 수 있도록 value를 초기화합니다.
+                              e.target.value = '';
+                            }}
+                          />
+                        </div>
+                        {feedbackFiles.length > 0 && (
+                          <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                            {feedbackFiles.map((file, idx) => (
+                              <div key={`${file.name}-${idx}`} className="flex items-center justify-between px-3 py-2">
+                                <div className="flex items-center gap-2 text-sm text-gray-700 truncate">
+                                  <Paperclip className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate">{file.name}</span>
+                                  <span className="text-xs text-gray-400 flex-shrink-0">
+                                    ({(file.size / 1024).toFixed(0)}KB)
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setFeedbackFiles((prev) => prev.filter((_, i) => i !== idx))}
+                                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                                  title="삭제"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {feedbackFiles.length === 0 && (
+                          <div className="text-xs text-gray-400 pl-6">
+                            첨삭 파일이 있으면 선택해 주세요. (선택사항)
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                       <div className="flex justify-end gap-2">
@@ -2654,6 +2917,67 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                         <br />- 오프라인 과제처럼 제출 기록이 없어도, 필요하면 점수 입력이 가능합니다.
                       </div>
                     </div>
+
+                    {/* 왜: 선택된 학생과 관련된 유사도 분석 결과를 상세하게 표시합니다. */}
+                    {/* TODO: 백엔드 API 연동 후 실제 데이터 표시 */}
+                    {similarityAnalyzed && (
+                      <div className="mt-4 border border-amber-200 rounded-lg overflow-hidden">
+                        <div className="bg-amber-50 px-4 py-2.5 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm font-medium text-amber-900">유사도 분석 결과</span>
+                        </div>
+                        {studentSimilarities.length > 0 ? (
+                          <div className="divide-y divide-amber-100">
+                            {studentSimilarities.map((sim, idx) => {
+                              // 왜: 선택된 학생 기준으로 비교 대상 학생 정보를 가져옵니다.
+                              const isA = sim.studentAId === selectedCourseUserId;
+                              const peerName = isA ? sim.studentBName : sim.studentAName;
+                              const peerId = isA ? sim.studentBId : sim.studentAId;
+                              const scoreColor =
+                                sim.totalScore >= 90
+                                  ? 'text-red-700 bg-red-50'
+                                  : sim.totalScore >= 70
+                                  ? 'text-orange-700 bg-orange-50'
+                                  : 'text-gray-700 bg-gray-50';
+
+                              return (
+                                <div key={idx} className="px-4 py-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-gray-900">
+                                      {peerName}
+                                      <span className="text-gray-400 ml-1">({peerId})</span>
+                                    </span>
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${scoreColor}`}>
+                                      유사도 {sim.totalScore}%
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-3 text-xs text-gray-500">
+                                    <span>제목: <span className="font-medium text-gray-700">{sim.titleScore}%</span></span>
+                                    <span>본문: <span className="font-medium text-gray-700">{sim.contentScore}%</span></span>
+                                    <span>파일: <span className="font-medium text-gray-700">{sim.fileScore}%</span></span>
+                                  </div>
+                                  {/* 왜: 가중치 정보를 표시하여 교수자가 판단 근거를 알 수 있게 합니다. */}
+                                  <div className="mt-1.5">
+                                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          sim.totalScore >= 90 ? 'bg-red-500' : sim.totalScore >= 70 ? 'bg-orange-400' : 'bg-gray-300'
+                                        }`}
+                                        style={{ width: `${sim.totalScore}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="px-4 py-4 text-sm text-gray-500 text-center">
+                            이 학생의 과제와 유사한 과제가 없습니다.
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* 추가 과제 목록 */}
                     {homeworkTasks.length > 0 && (
@@ -3560,12 +3884,13 @@ function GradesTab({ courseId }: { courseId: number }) {
   const scoreWeights = {
     progress: toNum(getCourseValue('assign_progress'), 0),
     exam: toNum(getCourseValue('assign_exam'), 0),
+    final: toNum(getCourseValue('assign_final'), 0),
     homework: toNum(getCourseValue('assign_homework'), 0),
-    forum: toNum(getCourseValue('assign_forum'), 0),
     etc: toNum(getCourseValue('assign_etc'), 0),
+    forum: toNum(getCourseValue('assign_forum'), 0),
   };
   const scoreWeightSum =
-    scoreWeights.progress + scoreWeights.exam + scoreWeights.homework + scoreWeights.forum + scoreWeights.etc;
+    scoreWeights.progress + scoreWeights.exam + scoreWeights.final + scoreWeights.homework + scoreWeights.etc + scoreWeights.forum;
 
   const handleRecalc = () => {
     void (async () => {
@@ -3593,7 +3918,7 @@ function GradesTab({ courseId }: { courseId: number }) {
     const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const filename = `course_${courseId}_grades_${ymd}.csv`;
 
-    const headers = ['No', 'course_user_id', '학번', '이름', '진도율(%)', '시험', '과제', '기타', '총점', '상태'];
+    const headers = ['No', 'course_user_id', '학번', '이름', '출석', '중간', '기말', '과제', '기타', '참여도', '총점', '상태'];
     const rows = grades.map((g, index) => ([
       index + 1,
       g.courseUserId ?? '',
@@ -3601,8 +3926,10 @@ function GradesTab({ courseId }: { courseId: number }) {
       g.name ?? '',
       Math.round(toNum(g.progressRatio, 0)),
       toNum(g.examScore, 0),
+      toNum((g as any).finalScore, 0),
       toNum(g.homeworkScore, 0),
       toNum(g.etcScore, 0),
+      toNum((g as any).forumScore, 0),
       toNum(g.totalScore, 0),
       g.statusLabel ?? '',
     ]));
@@ -3638,8 +3965,8 @@ function GradesTab({ courseId }: { courseId: number }) {
         <div className="mb-3 text-sm">
           <div className="text-gray-700 mb-1">배점 비율</div>
           <div className="text-gray-600">
-            진도 {scoreWeights.progress} / 시험 {scoreWeights.exam} / 과제 {scoreWeights.homework}
-            {scoreWeights.forum > 0 ? ` / 토론 ${scoreWeights.forum}` : ''} / 기타 {scoreWeights.etc}
+            출석 {scoreWeights.progress} / 중간 {scoreWeights.exam} / 기말 {scoreWeights.final} / 과제 {scoreWeights.homework}
+             / 기타 {scoreWeights.etc} / 참여도 {scoreWeights.forum}
             {scoreWeightSum > 0 ? ` (합계 ${scoreWeightSum})` : ''}
           </div>
         </div>
@@ -3677,10 +4004,12 @@ function GradesTab({ courseId }: { courseId: number }) {
               <tr>
                 <th className="px-4 py-3 text-left text-sm text-gray-700">이름</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">학번</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">진도율</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">시험</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">출석</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">중간</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">기말</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">과제</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">기타</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">참여도</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">총점</th>
                 <th className="px-4 py-3 text-center text-sm text-gray-700">결과</th>
               </tr>
@@ -3691,11 +4020,13 @@ function GradesTab({ courseId }: { courseId: number }) {
                   <td className="px-4 py-4 text-sm text-gray-900">{grade.name}</td>
                   <td className="px-4 py-4 text-center text-sm text-gray-600">{grade.studentId}</td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">
-                    {Math.round(grade.progressRatio * 10) / 10}%
+                    {Math.round(grade.progressRatio * 10) / 10}
                   </td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">{grade.examScore}</td>
+                  <td className="px-4 py-4 text-center text-sm text-gray-900">{(grade as any).finalScore ?? 0}</td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">{grade.homeworkScore}</td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">{grade.etcScore}</td>
+                  <td className="px-4 py-4 text-center text-sm text-gray-900">{(grade as any).forumScore ?? 0}</td>
                   <td className="px-4 py-4 text-center">
                     <span className="inline-flex px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
                       {Math.round(grade.totalScore * 100) / 100}
@@ -3711,7 +4042,7 @@ function GradesTab({ courseId }: { courseId: number }) {
 
               {grades.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                  <td colSpan={10} className="px-4 py-10 text-center text-gray-500">
                     성적 데이터가 없습니다.
                   </td>
                 </tr>
@@ -3720,6 +4051,104 @@ function GradesTab({ courseId }: { courseId: number }) {
           </table>
         </div>
       )}
+
+      {/* 성적 분포 그래프 */}
+      {!loading && grades.length > 0 && (
+        <GradeDistributionChart grades={grades} />
+      )}
+    </div>
+  );
+}
+
+// 성적 분포 그래프 (CSS-only 가로 바 차트)
+function GradeDistributionChart({ grades }: { grades: any[] }) {
+  // 왜: 10점 단위 구간별 학생 수를 세어 바 차트로 시각화합니다.
+  const bins = [
+    { label: '90~100', min: 90, max: 100 },
+    { label: '80~89', min: 80, max: 89.99 },
+    { label: '70~79', min: 70, max: 79.99 },
+    { label: '60~69', min: 60, max: 69.99 },
+    { label: '50~59', min: 50, max: 59.99 },
+    { label: '40~49', min: 40, max: 49.99 },
+    { label: '30~39', min: 30, max: 39.99 },
+    { label: '20~29', min: 20, max: 29.99 },
+    { label: '10~19', min: 10, max: 19.99 },
+    { label: '0~9', min: 0, max: 9.99 },
+  ];
+
+  const binCounts = bins.map(bin => ({
+    ...bin,
+    count: grades.filter(g => {
+      const score = Number(g.totalScore) || 0;
+      return score >= bin.min && score <= bin.max;
+    }).length,
+  }));
+
+  const maxCount = Math.max(...binCounts.map(b => b.count), 1);
+  const total = grades.length;
+
+  // 평균, 최고, 최저
+  const scores = grades.map(g => Number(g.totalScore) || 0);
+  const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+  const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
+  const minScore = scores.length > 0 ? Math.min(...scores) : 0;
+
+  const barColors = [
+    'bg-blue-600', 'bg-blue-500', 'bg-blue-400', 'bg-sky-500',
+    'bg-emerald-500', 'bg-yellow-500', 'bg-orange-400', 'bg-orange-500',
+    'bg-red-400', 'bg-red-500',
+  ];
+
+  return (
+    <div className="mt-6 p-5 bg-white border border-gray-200 rounded-xl">
+      <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <BarChart3 className="w-5 h-5 text-blue-600" />
+        성적 분포
+      </h4>
+
+      {/* 통계 요약 */}
+      <div className="grid grid-cols-4 gap-3 mb-5">
+        <div className="p-3 bg-blue-50 rounded-lg text-center">
+          <div className="text-xs text-blue-600 mb-1">수강생</div>
+          <div className="text-lg font-bold text-blue-900">{total}명</div>
+        </div>
+        <div className="p-3 bg-green-50 rounded-lg text-center">
+          <div className="text-xs text-green-600 mb-1">평균</div>
+          <div className="text-lg font-bold text-green-900">{avg.toFixed(1)}점</div>
+        </div>
+        <div className="p-3 bg-purple-50 rounded-lg text-center">
+          <div className="text-xs text-purple-600 mb-1">최고점</div>
+          <div className="text-lg font-bold text-purple-900">{maxScore.toFixed(1)}점</div>
+        </div>
+        <div className="p-3 bg-orange-50 rounded-lg text-center">
+          <div className="text-xs text-orange-600 mb-1">최저점</div>
+          <div className="text-lg font-bold text-orange-900">{minScore.toFixed(1)}점</div>
+        </div>
+      </div>
+
+      {/* 바 차트 */}
+      <div className="space-y-2">
+        {binCounts.map((bin, idx) => {
+          const pct = maxCount > 0 ? (bin.count / maxCount) * 100 : 0;
+          const ratio = total > 0 ? ((bin.count / total) * 100).toFixed(0) : '0';
+          return (
+            <div key={bin.label} className="flex items-center gap-3">
+              <div className="w-14 text-right text-xs font-medium text-gray-500">{bin.label}</div>
+              <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                <div
+                  className={`h-full ${barColors[idx]} rounded-md transition-all duration-500 ease-out`}
+                  style={{ width: `${pct}%`, minWidth: bin.count > 0 ? '2px' : '0' }}
+                />
+                {bin.count > 0 && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+                    {bin.count}명 ({ratio}%)
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -5384,6 +5813,27 @@ function HaksaGradingContent({
         >
           {recalcLoading ? '재계산 중...' : '성적 재계산'}
         </button>
+        <button
+          onClick={() => {
+            // 왜: 화면에 보이는 학생 성적을 그대로 CSV로 내려받아, 교수자가 엑셀로 활용할 수 있게 합니다.
+            const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const filename = `haksa_grades_${ymd}.csv`;
+            const headers = ['No', '이름', '학번', '점수', '성적'];
+            const rows = students.map((s, i) => ([
+              i + 1,
+              s.name ?? '',
+              s.studentId ?? '',
+              s.score ?? 0,
+              s.grade || '미판정',
+            ]));
+            downloadCsv(filename, headers, rows);
+          }}
+          disabled={students.length === 0}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          <span>성적표 다운로드(CSV)</span>
+        </button>
 
         {selectedIds.length > 0 && (
           <div className="flex items-center gap-2">
@@ -5485,27 +5935,77 @@ function HaksaGradingContent({
         </table>
       </div>
 
-      {/* 성적 통계 */}
-      {students.length > 0 && (
-        <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-3">성적 분포</h4>
-          <div className="flex flex-wrap gap-4">
-            {GRADES.map(g => {
-              const count = students.filter(s => s.grade === g.value).length;
-              return (
+      {/* 성적 분포 그래프 */}
+      {students.length > 0 && (() => {
+        const gradeCounts = GRADES.map(g => ({
+          ...g,
+          count: students.filter(s => s.grade === g.value).length,
+        }));
+        const ungraded = students.filter(s => !s.grade).length;
+        const maxGradeCount = Math.max(...gradeCounts.map(g => g.count), ungraded, 1);
+
+        return (
+          <div className="p-5 bg-white border border-gray-200 rounded-xl">
+            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              성적 분포
+            </h4>
+
+            {/* 뱃지 요약 */}
+            <div className="flex flex-wrap gap-3 mb-4">
+              {gradeCounts.map(g => (
                 <div key={g.value} className="flex items-center gap-2">
                   <span className={`px-3 py-1 rounded-full text-sm ${g.color}`}>{g.value}</span>
-                  <span className="text-gray-600">{count}명</span>
+                  <span className="text-gray-600 text-sm">{g.count}명</span>
                 </div>
-              );
-            })}
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">미판정</span>
-              <span className="text-gray-600">{students.filter(s => !s.grade).length}명</span>
+              ))}
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">미판정</span>
+                <span className="text-gray-600 text-sm">{ungraded}명</span>
+              </div>
+            </div>
+
+            {/* 바 차트 */}
+            <div className="space-y-2">
+              {gradeCounts.map(g => {
+                const pct = maxGradeCount > 0 ? (g.count / maxGradeCount) * 100 : 0;
+                const ratio = students.length > 0 ? ((g.count / students.length) * 100).toFixed(0) : '0';
+                return (
+                  <div key={g.value} className="flex items-center gap-3">
+                    <div className="w-10 text-right text-xs font-semibold text-gray-600">{g.value}</div>
+                    <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                      <div
+                        className="h-full bg-blue-500 rounded-md transition-all duration-500 ease-out"
+                        style={{ width: `${pct}%`, minWidth: g.count > 0 ? '2px' : '0' }}
+                      />
+                      {g.count > 0 && (
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+                          {g.count}명 ({ratio}%)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {/* 미판정 */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 text-right text-xs font-semibold text-gray-400">-</div>
+                <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                  <div
+                    className="h-full bg-gray-400 rounded-md transition-all duration-500 ease-out"
+                    style={{ width: `${maxGradeCount > 0 ? (ungraded / maxGradeCount) * 100 : 0}%`, minWidth: ungraded > 0 ? '2px' : '0' }}
+                  />
+                  {ungraded > 0 && (
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+                      {ungraded}명
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

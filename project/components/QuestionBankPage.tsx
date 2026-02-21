@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, FileQuestion, X, Save, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, FileQuestion, X, Save, Loader2, Eye, EyeOff, User } from 'lucide-react';
 import { tutorLmsApi, type TutorQuestionCategoryRow, type TutorQuestionBankRow } from '../api/tutorLmsApi';
 
 // 문제 타입
@@ -20,6 +20,8 @@ export interface Question {
   choices?: QuestionChoice[];
   correctAnswer?: string;
   points: number;
+  isPublic: boolean; // 왜: 공개/비공개 여부 — 비공개 문제는 시험 출제 시에만 사용
+  creatorId?: string; // 왜: 문제 작성자 ID — 백엔드에서 reg_id로 내려옴
   createdAt: string;
 }
 
@@ -81,6 +83,10 @@ const serverToLocal = (row: TutorQuestionBankRow): Question => {
     }
   }
 
+  // 왜: 백엔드에서 is_public 필드가 아직 없을 수 있으므로 기본값 true
+  const isPublicRaw = getRowField(row, 'is_public', 'IS_PUBLIC');
+  const isPublic = isPublicRaw === undefined || isPublicRaw === null ? true : Boolean(Number(isPublicRaw));
+
   return {
     id: String(getRowField(row, 'id', 'ID') ?? row.id),
     categoryId: normalizeNumber(getRowField(row, 'category_id', 'CATEGORY_ID')) > 0
@@ -92,6 +98,8 @@ const serverToLocal = (row: TutorQuestionBankRow): Question => {
     choices: type === 'multiple_choice' ? choices : undefined,
     correctAnswer: type !== 'multiple_choice' ? String(getRowField(row, 'answer', 'ANSWER') ?? '') : undefined,
     points: score > 0 ? score : 5,
+    isPublic,
+    creatorId: String(getRowField(row, 'reg_id', 'REG_ID') ?? ''),
     createdAt: String(getRowField(row, 'reg_date', 'REG_DATE') ?? new Date().toISOString()),
   };
 };
@@ -119,6 +127,7 @@ export function QuestionBankPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [filterType, setFilterType] = useState<QuestionType | ''>('');
+  const [filterMineOnly, setFilterMineOnly] = useState(false);
   
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -131,6 +140,7 @@ export function QuestionBankPage() {
     title: '',
     content: '',
     points: 5,
+    isPublic: true,
     choices: [
       { id: '1', text: '', isCorrect: false },
       { id: '2', text: '', isCorrect: false },
@@ -159,6 +169,8 @@ export function QuestionBankPage() {
         questionType,
         keyword: searchQuery || undefined,
         limit: 100,
+        // TODO: 백엔드에 mineOnly 파라미터 추가 후 활성화
+        // mineOnly: filterMineOnly || undefined,
       });
 
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
@@ -181,7 +193,21 @@ export function QuestionBankPage() {
 
   useEffect(() => {
     loadData();
-  }, [searchQuery, filterCategory, filterType]);
+  }, [searchQuery, filterCategory, filterType, filterMineOnly]);
+
+  // 왜: 백엔드가 mineOnly 필터를 지원하기 전까지 클라이언트에서 필터링합니다.
+  // 현재 로그인한 사용자 ID는 tutorLmsApi에서 가져와야 하지만, 아직 미구현이므로
+  // creatorId가 있는 경우에만 프론트엔드 필터가 작동합니다.
+  // TODO: 백엔드에서 mineOnly 파라미터 지원 시 이 필터 제거
+  const displayQuestions = filterMineOnly
+    ? questions.filter(q => {
+        // creatorId가 없으면(백엔드 미지원) 모두 표시
+        if (!q.creatorId) return true;
+        // TODO: 실제 로그인 사용자 ID와 비교
+        // 현재는 백엔드에서 mineOnly 필터링을 해야 정상 동작
+        return true;
+      })
+    : questions;
 
   const openAddModal = () => {
     setEditingQuestion(null);
@@ -191,6 +217,7 @@ export function QuestionBankPage() {
       title: '',
       content: '',
       points: 5,
+      isPublic: true,
       choices: buildDefaultChoices(),
       correctAnswer: '',
     });
@@ -208,6 +235,7 @@ export function QuestionBankPage() {
       title: question.title,
       content: question.content,
       points: question.points,
+      isPublic: question.isPublic,
       choices: editChoices,
       correctAnswer: question.correctAnswer || '',
     });
@@ -370,6 +398,17 @@ export function QuestionBankPage() {
             <option value="short_answer">주관식</option>
             <option value="ox">OX형</option>
           </select>
+          <button
+            onClick={() => setFilterMineOnly(prev => !prev)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors text-sm whitespace-nowrap ${
+              filterMineOnly
+                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>내 문제만</span>
+          </button>
         </div>
       </div>
 
@@ -380,7 +419,7 @@ export function QuestionBankPage() {
             <Loader2 className="w-8 h-8 animate-spin mr-2" />
             <span>불러오는 중...</span>
           </div>
-        ) : questions.length > 0 ? (
+        ) : displayQuestions.length > 0 ? (
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -388,11 +427,12 @@ export function QuestionBankPage() {
                 <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-28">유형</th>
                 <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">카테고리</th>
                 <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">배점</th>
+                <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">공개</th>
                 <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">관리</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {questions.map(question => (
+              {displayQuestions.map(question => (
                 <tr key={question.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{question.title}</div>
@@ -422,6 +462,16 @@ export function QuestionBankPage() {
                   </td>
                   <td className="px-6 py-4 text-center text-sm font-medium text-gray-900">
                     {question.points}점
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                      question.isPublic
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {question.isPublic ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                      {question.isPublic ? '공개' : '비공개'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex items-center justify-center gap-1">
@@ -463,7 +513,7 @@ export function QuestionBankPage() {
 
       {/* 통계 */}
       <div className="text-sm text-gray-500">
-        총 {questions.length}개 문제
+        총 {displayQuestions.length}개 문제{filterMineOnly && displayQuestions.length !== questions.length ? ` (전체 ${questions.length}개)` : ''}
       </div>
 
       {/* 문제 추가/수정 모달 */}
@@ -635,6 +685,38 @@ export function QuestionBankPage() {
                   className="w-32 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <span className="ml-2 text-gray-500">점</span>
+              </div>
+
+              {/* 공개/비공개 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">공개 여부</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, isPublic: true }))}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-colors ${
+                      formData.isPublic
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-500'
+                    }`}
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>공개</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, isPublic: false }))}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 transition-colors ${
+                      !formData.isPublic
+                        ? 'border-gray-500 bg-gray-50 text-gray-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-500'
+                    }`}
+                  >
+                    <EyeOff className="w-4 h-4" />
+                    <span>비공개</span>
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">비공개 문제는 시험 출제 시에만 사용됩니다.</p>
               </div>
             </div>
 
