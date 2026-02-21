@@ -1,17 +1,17 @@
 ﻿# RPG-라이트: 저장소 지도 (`map.md`)
 
-최근 갱신: 2026-02-20
+최근 갱신: 2026-02-21
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 16:55
+최근 자동 갱신: 2026-02-21 19:05
 
-- JSP 총합(전체): 1245
-- JSP(public_html): 1244 (sysop: 715, api: 18)
+- JSP 총합(전체): 1262
+- JSP(public_html): 1261 (sysop: 715, api: 19)
 - 템플릿 HTML(public_html/**/html): 928
 - DAO(src/dao): 181
-- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 106
+- React(Vite) 프로젝트 파일 수(project, node_modules 제외): 114
 - polytech-lms-api(Java/Spring Boot) Java 파일 수: 147
 
 생성된 인덱스:
@@ -121,6 +121,13 @@
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 템플릿(HTML) | 비고 |
 |---|---|---|---|---|
 | 담당과목 > 과목 세부관리 상단 액션 대비: 과목 복사 권한 보강 + 과목 삭제 API 추가 | `POST public_html/tutor_lms/api/course_copy.jsp`, `POST public_html/tutor_lms/api/course_delete.jsp`, `GET public_html/tutor_lms/api/tutor_list.jsp` | `src/dao/CourseDao.java`(`LM_COURSE.status/etc2/manager_id`), `src/dao/CourseTutorDao.java`(`LM_COURSE_TUTOR.type`), `src/dao/CourseManagerDao.java`(`LM_COURSE_MANAGER`), `src/dao/CourseUserDao.java`(`LM_COURSE_USER.status`), `src/dao/CoursePrecedeDao.java`(`LM_COURSE_PRECEDE`), `src/dao/CourseLessonDao.java`(`LM_COURSE_LESSON.status`) | (React API 응답 JSON) | 비관리자도 본인 담당 과목은 복사 가능(타인 지정 차단), 학사연동(`etc2='HAKSA_MAPPED'`) 복사/삭제 차단, 삭제 시 수강생/선행과정 참조 검사 후 soft delete |
+
+## 최근 작업(교수자 프론트-백 연결)
+| 기능/화면 | 진입점(JSP/API) | 관련 소스 | 산출물 | 비고 |
+|---|---|---|---|---|
+| 담당과목 > 과목 세부관리 상단 액션(복사/삭제) 프론트 실연동 | `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/tutor_list.jsp`, `POST public_html/tutor_lms/api/course_copy.jsp`, `POST public_html/tutor_lms/api/course_delete.jsp` | `project/components/CourseManagement.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | 상단 `복사/삭제` TODO 제거. 복사명 입력 + 교수목록 조회 기반 `tutor_id` 결정 후 복사 호출, 삭제는 확인창/로딩상태/오류메시지 처리 추가 |
+| 담당과목 > 과제 피드백(첨삭파일/유사도) 프론트 실연동 | `project/components/CourseManagement.tsx`, `project/components/HomeworkTaskDetailModal.tsx` → `GET/POST public_html/tutor_lms/api/homework_feedback_file_*.jsp`, `POST public_html/tutor_lms/api/homework_similarity_run.jsp`, `GET public_html/tutor_lms/api/homework_similarity_list.jsp`, `GET public_html/tutor_lms/api/homework_user_submission.jsp` | `project/components/CourseManagement.tsx`, `project/components/HomeworkTaskDetailModal.tsx`, `project/components/HomeworkSubmissionDetailModal.tsx`, `project/api/tutorLmsApi.ts` | `public_html/tutor_lms/app/assets/*` | 피드백 첨부파일은 서버 저장파일/로컬선택 파일을 분리 관리하고 삭제/업로드를 실제 API로 처리. 유사도 분석은 mock 제거 후 실행(run)+조회(list) 실호출로 전환 |
+| 담당과목 > 문제은행 공개/비공개 + 내 문제만 서버필터 연동 | `project/components/QuestionBankPage.tsx` → `GET public_html/tutor_lms/api/question_bank_list.jsp?mine_only=Y`, `POST public_html/tutor_lms/api/question_bank_insert.jsp`, `POST public_html/tutor_lms/api/question_bank_modify.jsp` | `project/components/QuestionBankPage.tsx`, `project/api/tutorLmsApi.ts`, `public_html/tutor_lms/api/question_bank_list.jsp` | `public_html/tutor_lms/app/assets/*` | `mineOnly`를 서버 파라미터로 전달해 클라이언트 임시필터 제거. 문제 저장 시 `openYn`을 보내 공개/비공개를 DB(`LM_QUESTION.open_yn`)에 직접 반영 |
 
 ## 최근 작업(교수자 차시 추천 동영상 시간 동기화)
 | 기능/화면 | 진입점(JSP/API) | 관련 DAO/테이블 | 관련 소스 | 비고 |

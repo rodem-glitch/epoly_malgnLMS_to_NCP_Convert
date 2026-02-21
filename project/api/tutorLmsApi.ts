@@ -25,6 +25,13 @@ export type TutorLmsApiResponse<T> = {
   rst_courses?: unknown;
   rst_submissions?: unknown;
   rst_qna?: unknown;
+  rst_summary?: unknown;
+  rst_stat?: unknown;
+  rst_survey?: unknown;
+  rst_thread?: unknown;
+  rst_question?: unknown;
+  rst_responses?: unknown;
+  rst_grade_data?: unknown;
 };
 
 function buildQuery(params: Record<string, string | number | undefined | null>) {
@@ -685,6 +692,35 @@ export type TutorHomeworkSubmissionDetail = {
   subject: string;
   content: string;
   files: TutorHomeworkSubmissionFileRow[];
+  feedback_files?: TutorHomeworkFeedbackFileRow[];
+};
+
+export type TutorHomeworkFeedbackFileRow = {
+  id: number;
+  filename: string;
+  ek?: string;
+  download_url?: string;
+};
+
+export type TutorHomeworkSimilarityRow = {
+  id: number;
+  run_id?: number;
+  left_course_user_id: number;
+  right_course_user_id: number;
+  left_user_id?: number;
+  right_user_id?: number;
+  left_login_id?: string;
+  left_user_nm?: string;
+  right_login_id?: string;
+  right_user_nm?: string;
+  subject_score?: number;
+  content_score?: number;
+  file_score?: number;
+  total_score?: number;
+  subject_score_conv?: string;
+  content_score_conv?: string;
+  file_score_conv?: string;
+  total_score_conv?: string;
 };
 
 export type TutorMaterialRow = {
@@ -722,6 +758,174 @@ export type TutorQnaDetail = {
   answer_user_nm?: string;
   answer_login_id?: string;
   answer_reg_date_conv?: string;
+};
+
+export type TutorFaqNoticeRow = {
+  faq_id: number;
+  question: string;
+  answer: string;
+  reg_date?: string;
+  mod_date?: string;
+  reg_date_conv?: string;
+  mod_date_conv?: string;
+  display_yn?: 'Y' | 'N';
+};
+
+export type TutorHomeworkFeedbackTemplateRow = {
+  id: number;
+  course_id: number;
+  manager_id: number;
+  sort: number;
+  content: string;
+  content_preview?: string;
+  reg_date?: string;
+  mod_date?: string;
+  reg_date_conv?: string;
+  mod_date_conv?: string;
+};
+
+export type TutorSurveyRow = {
+  survey_id: number;
+  module_nm?: string;
+  survey_nm?: string;
+  item_cnt?: number;
+  apply_type?: string;
+  apply_type_conv?: string;
+  apply_conv?: string;
+  start_date?: string;
+  end_date?: string;
+  start_date_conv?: string;
+  end_date_conv?: string;
+  chapter?: number;
+  total_cnt?: number;
+  submitted_cnt?: number;
+  survey_rate?: number | string;
+  anonymous_yn?: 'Y' | 'N';
+  anonymous_type_conv?: string;
+};
+
+export type TutorSurveyResultQuestionRow = {
+  question_id: number;
+  sort?: number;
+  question_type?: string;
+  question_type_conv?: string;
+  question?: string;
+  item_cnt?: number;
+  item1?: string;
+  item2?: string;
+  item3?: string;
+  item4?: string;
+  item5?: string;
+  item6?: string;
+  item7?: string;
+  item8?: string;
+  item9?: string;
+  item10?: string;
+  item1_cnt?: number;
+  item2_cnt?: number;
+  item3_cnt?: number;
+  item4_cnt?: number;
+  item5_cnt?: number;
+  item6_cnt?: number;
+  item7_cnt?: number;
+  item8_cnt?: number;
+  item9_cnt?: number;
+  item10_cnt?: number;
+  response_cnt?: number;
+};
+
+export type TutorSurveyResponseRow = {
+  course_user_id: number;
+  answer?: string;
+  answer_text?: string;
+  answer_conv?: string;
+  user_nm?: string;
+  login_id?: string;
+  reg_date?: string;
+  reg_date_conv?: string;
+};
+
+export type TutorAttendanceLessonRow = {
+  section_id: number;
+  section_nm?: string;
+  lesson_id: number;
+  chapter: number;
+  lesson_nm?: string;
+  lesson_type?: string;
+  total_time?: number;
+  duration_conv?: string;
+};
+
+export type TutorAttendanceMatrixRow = {
+  course_user_id: number;
+  student_id?: string;
+  name?: string;
+  section_id?: number;
+  section_nm?: string;
+  lesson_id: number;
+  chapter: number;
+  attend_yn?: 'Y' | 'N';
+  attend_label?: string;
+  attend_date_conv?: string;
+};
+
+export type TutorAttendanceCourseSummaryRow = {
+  id: number;
+  course_nm?: string;
+  course_id_conv?: string;
+  program_nm_conv?: string;
+  student_cnt?: number;
+  lesson_cnt?: number;
+  at_risk_cnt?: number;
+  at_risk_cnt_conv?: string;
+  absence_rule_yn?: 'Y' | 'N';
+  absence_limit_cnt?: number;
+  status_label?: string;
+};
+
+export type TutorScoreDistributionRow = {
+  bucket_key: string;
+  bucket_label?: string;
+  min_score?: number;
+  max_score?: number;
+  student_count: number;
+  ratio?: number;
+};
+
+export type TutorScoreDistributionSummary = {
+  total_count: number;
+  avg_score?: number;
+  min_score?: number;
+  max_score?: number;
+  pass_count?: number;
+  complete_count?: number;
+  fail_count?: number;
+};
+
+export type TutorCourseChatRoomRow = {
+  thread_id: number;
+  question_id: number;
+  student_user_id: number;
+  student_user_nm?: string;
+  student_login_id?: string;
+  subject?: string;
+  preview_conv?: string;
+  waiting_answer?: boolean;
+  question_reg_date_conv?: string;
+  last_reg_date_conv?: string;
+  last_sender_role?: 'student' | 'professor';
+};
+
+export type TutorCourseChatMessageRow = {
+  id: number;
+  thread: number;
+  user_id: number;
+  writer?: string;
+  content?: string;
+  sender_role?: 'student' | 'professor';
+  mine?: boolean;
+  reg_date?: string;
+  reg_date_conv?: string;
 };
 
 export type TutorGradeRow = {
@@ -1107,6 +1311,18 @@ export const tutorLmsApi = {
     body.set('tutor_id', String(payload.tutorId));
 
     return requestJson<number>(`/tutor_lms/api/course_copy.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  // 왜: 담당과목 상세 상단 "삭제" 버튼에서 비정규 과목을 안전하게 비활성(status=-1) 처리합니다.
+  async deleteCourse(payload: { courseId: number }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+
+    return requestJson<number>(`/tutor_lms/api/course_delete.jsp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
@@ -2004,6 +2220,7 @@ export const tutorLmsApi = {
 
   async createHomework(payload: {
     courseId: number;
+    courseIds?: number[];
     title: string;
     description: string;
     startDate?: string;
@@ -2012,10 +2229,15 @@ export const tutorLmsApi = {
     dueTime: string;
     totalScore: number;
     onoffType?: 'N' | 'F';
+    submitFileExtMode?: 'ALL' | 'DOC' | 'IMAGE' | 'ARCHIVE' | 'AUDIO' | 'CUSTOM';
+    submitFileExts?: string;
+    allowLateSubmission?: boolean;
+    latePenalty?: number;
     file?: File | null;
   }) {
     const body = new FormData();
     body.set('course_id', String(payload.courseId));
+    if (payload.courseIds && payload.courseIds.length > 0) body.set('course_ids', payload.courseIds.join(','));
     body.set('title', payload.title);
     body.set('description', payload.description);
     if (payload.startDate) body.set('startDate', payload.startDate);
@@ -2024,6 +2246,10 @@ export const tutorLmsApi = {
     body.set('dueTime', payload.dueTime);
     body.set('totalScore', String(payload.totalScore));
     body.set('onoff_type', payload.onoffType ?? 'N');
+    body.set('submit_file_ext_mode', payload.submitFileExtMode ?? 'ALL');
+    body.set('submit_file_exts', payload.submitFileExts ?? '');
+    body.set('allowLateSubmission', payload.allowLateSubmission ? 'Y' : 'N');
+    body.set('latePenalty', String(Math.max(0, Math.min(100, Number(payload.latePenalty ?? 0)))));
     if(payload.file) body.set('homework_file', payload.file);
 
     return requestJson<number>(`/tutor_lms/api/homework_insert.jsp`, {
@@ -2043,6 +2269,11 @@ export const tutorLmsApi = {
     dueTime: string;
     totalScore: number;
     onoffType?: 'N' | 'F';
+    deleteHomeworkFileYn?: boolean;
+    submitFileExtMode?: 'ALL' | 'DOC' | 'IMAGE' | 'ARCHIVE' | 'AUDIO' | 'CUSTOM';
+    submitFileExts?: string;
+    allowLateSubmission?: boolean;
+    latePenalty?: number;
     file?: File | null;
   }) {
     const body = new FormData();
@@ -2056,6 +2287,11 @@ export const tutorLmsApi = {
     body.set('dueTime', payload.dueTime);
     body.set('totalScore', String(payload.totalScore));
     body.set('onoff_type', payload.onoffType ?? 'N');
+    body.set('delete_homework_file_yn', payload.deleteHomeworkFileYn ? 'Y' : 'N');
+    if (payload.submitFileExtMode) body.set('submit_file_ext_mode', payload.submitFileExtMode);
+    if (payload.submitFileExts !== undefined) body.set('submit_file_exts', payload.submitFileExts);
+    if (payload.allowLateSubmission !== undefined) body.set('allowLateSubmission', payload.allowLateSubmission ? 'Y' : 'N');
+    if (payload.latePenalty !== undefined) body.set('latePenalty', String(Math.max(0, Math.min(100, Number(payload.latePenalty)))));
     if(payload.file) body.set('homework_file', payload.file);
 
     return requestJson<number>(`/tutor_lms/api/homework_modify.jsp`, {
@@ -2110,6 +2346,90 @@ export const tutorLmsApi = {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     });
+  },
+
+  // 왜: 교수자 피드백 첨부파일(첨삭본)을 학생별로 조회/업로드/삭제할 수 있어야 합니다.
+  async getHomeworkFeedbackFiles(params: { courseId: number; homeworkId: number; courseUserId: number }) {
+    const url = `/tutor_lms/api/homework_feedback_file_list.jsp${buildQuery({
+      course_id: params.courseId,
+      homework_id: params.homeworkId,
+      course_user_id: params.courseUserId,
+    })}`;
+    return requestJson<TutorHomeworkFeedbackFileRow[]>(url);
+  },
+
+  async uploadHomeworkFeedbackFile(payload: {
+    courseId: number;
+    homeworkId: number;
+    courseUserId: number;
+    file: File;
+  }) {
+    const body = new FormData();
+    body.set('course_id', String(payload.courseId));
+    body.set('homework_id', String(payload.homeworkId));
+    body.set('course_user_id', String(payload.courseUserId));
+    body.set('feedback_file', payload.file);
+
+    return requestJson<TutorHomeworkFeedbackFileRow>(`/tutor_lms/api/homework_feedback_file_upload.jsp`, {
+      method: 'POST',
+      body,
+    });
+  },
+
+  async deleteHomeworkFeedbackFile(payload: {
+    courseId: number;
+    homeworkId: number;
+    courseUserId: number;
+    fileId: number;
+  }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set('homework_id', String(payload.homeworkId));
+    body.set('course_user_id', String(payload.courseUserId));
+    body.set('file_id', String(payload.fileId));
+
+    return requestJson<number>(`/tutor_lms/api/homework_feedback_file_delete.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  // 왜: 과제 유사도 분석은 "실행(run)"과 "목록 조회(list)"를 분리해 제공됩니다.
+  async runHomeworkSimilarity(payload: { courseId: number; homeworkId: number; thresholdScore?: number }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set('homework_id', String(payload.homeworkId));
+    if (payload.thresholdScore !== undefined) body.set('threshold_score', String(payload.thresholdScore));
+
+    return requestJson<{
+      run_id?: number;
+      pair_total?: number;
+      pair_saved?: number;
+      threshold_score?: number;
+      message?: string;
+    }>(`/tutor_lms/api/homework_similarity_run.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async getHomeworkSimilarityList(params: {
+    courseId: number;
+    homeworkId: number;
+    page?: number;
+    pageSize?: number;
+    minScore?: number;
+  }) {
+    const url = `/tutor_lms/api/homework_similarity_list.jsp${buildQuery({
+      course_id: params.courseId,
+      homework_id: params.homeworkId,
+      page: params.page,
+      page_size: params.pageSize,
+      min_score: params.minScore,
+    })}`;
+    return requestJson<TutorHomeworkSimilarityRow[]>(url);
   },
 
   // 왜: 제출 취소는 피드백 저장과 다르게 제출/첨부 정리를 포함합니다.
@@ -2227,6 +2547,176 @@ export const tutorLmsApi = {
     });
   },
 
+  async getFaqNotices(params: { courseId: number; keyword?: string }) {
+    const url = `/tutor_lms/api/qna_faq_notice_list.jsp${buildQuery({
+      course_id: params.courseId,
+      s_keyword: params.keyword,
+    })}`;
+    return requestJson<TutorFaqNoticeRow[]>(url);
+  },
+
+  async saveFaqNotice(payload: {
+    courseId: number;
+    subject: string;
+    content: string;
+    faqId?: number;
+    displayYn?: 'Y' | 'N';
+  }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set('subject', payload.subject);
+    body.set('content', payload.content);
+    if (payload.faqId) body.set('faq_id', String(payload.faqId));
+    body.set('display_yn', payload.displayYn ?? 'Y');
+
+    return requestJson<number>(`/tutor_lms/api/qna_faq_notice_save.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async deleteFaqNotice(payload: { courseId: number; faqId: number }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set('faq_id', String(payload.faqId));
+
+    return requestJson<number>(`/tutor_lms/api/qna_faq_notice_delete.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async getHomeworkFeedbackTemplates(params: { courseId: number; managerId?: number; limit?: number }) {
+    const url = `/tutor_lms/api/homework_feedback_template_list.jsp${buildQuery({
+      course_id: params.courseId,
+      manager_id: params.managerId,
+      limit: params.limit,
+    })}`;
+    return requestJson<TutorHomeworkFeedbackTemplateRow[]>(url);
+  },
+
+  async saveHomeworkFeedbackTemplate(payload: {
+    courseId: number;
+    id?: number;
+    managerId?: number;
+    sort?: number;
+    content: string;
+  }) {
+    const body = new URLSearchParams();
+    if (payload.id) body.set('id', String(payload.id));
+    body.set('course_id', String(payload.courseId));
+    if (payload.managerId) body.set('manager_id', String(payload.managerId));
+    body.set('sort', String(Math.max(0, payload.sort ?? 0)));
+    body.set('content', payload.content);
+
+    return requestJson<number>(`/tutor_lms/api/homework_feedback_template_save.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async deleteHomeworkFeedbackTemplate(payload: { id: number; courseId: number; managerId?: number }) {
+    const body = new URLSearchParams();
+    body.set('id', String(payload.id));
+    body.set('course_id', String(payload.courseId));
+    if (payload.managerId) body.set('manager_id', String(payload.managerId));
+
+    return requestJson<number>(`/tutor_lms/api/homework_feedback_template_delete.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async getSurveys(params: { courseId: number }) {
+    const url = `/tutor_lms/api/survey_list.jsp${buildQuery({ course_id: params.courseId })}`;
+    return requestJson<TutorSurveyRow[]>(url);
+  },
+
+  async createSurvey(payload: {
+    courseId: number;
+    surveyName: string;
+    content?: string;
+    questionType: '1' | 'M' | '2' | '3';
+    question: string;
+    questionItems?: string[];
+    anonymousYn?: 'Y' | 'N';
+    startDate?: string;
+    endDate?: string;
+    chapter?: number;
+  }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set('survey_nm', payload.surveyName);
+    body.set('content', payload.content ?? '');
+    body.set('question_type', payload.questionType);
+    body.set('question', payload.question);
+    if (payload.questionItems && payload.questionItems.length > 0) {
+      body.set('question_items', payload.questionItems.filter(Boolean).join('||'));
+    }
+    if (payload.anonymousYn) body.set('anonymous_yn', payload.anonymousYn);
+    if (payload.startDate) body.set('start_date', payload.startDate);
+    if (payload.endDate) body.set('end_date', payload.endDate);
+    if (payload.chapter !== undefined) body.set('chapter', String(payload.chapter));
+
+    return requestJson<number>(`/tutor_lms/api/survey_insert.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async updateSurvey(payload: {
+    courseId: number;
+    surveyId: number;
+    surveyName: string;
+    content?: string;
+    anonymousYn?: 'Y' | 'N';
+    startDate?: string;
+    endDate?: string;
+    chapter?: number;
+  }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set('survey_id', String(payload.surveyId));
+    body.set('survey_nm', payload.surveyName);
+    body.set('content', payload.content ?? '');
+    if (payload.anonymousYn) body.set('anonymous_yn', payload.anonymousYn);
+    if (payload.startDate) body.set('start_date', payload.startDate);
+    if (payload.endDate) body.set('end_date', payload.endDate);
+    if (payload.chapter !== undefined) body.set('chapter', String(payload.chapter));
+
+    return requestJson<number>(`/tutor_lms/api/survey_modify.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async deleteSurvey(payload: { courseId: number; surveyId: number }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set('survey_id', String(payload.surveyId));
+
+    return requestJson<number>(`/tutor_lms/api/survey_delete.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async getSurveyResult(params: { courseId: number; surveyId: number; questionId?: number }) {
+    const url = `/tutor_lms/api/survey_result.jsp${buildQuery({
+      course_id: params.courseId,
+      survey_id: params.surveyId,
+      question_id: params.questionId,
+    })}`;
+    return requestJson<TutorSurveyResultQuestionRow[]>(url);
+  },
+
   // =========================
   // 마감 운영: 성적/수료/증명서
   // =========================
@@ -2241,6 +2731,116 @@ export const tutorLmsApi = {
     if (payload.courseUserId) body.set('course_user_id', String(payload.courseUserId));
 
     return requestJson<number>(`/tutor_lms/api/grades_recalc.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async getGradesDistribution(params: { courseId: number }) {
+    const url = `/tutor_lms/api/grades_distribution.jsp${buildQuery({ course_id: params.courseId })}`;
+    return requestJson<TutorScoreDistributionRow[]>(url);
+  },
+
+  async getHaksaGradeDistribution(params: HaksaCourseKey) {
+    const url = `/tutor_lms/api/haksa_grade_distribution.jsp${buildQuery({
+      course_code: params.courseCode,
+      open_year: params.openYear,
+      open_term: params.openTerm,
+      bunban_code: params.bunbanCode,
+      group_code: params.groupCode,
+    })}`;
+    return requestJson<TutorScoreDistributionRow[]>(url);
+  },
+
+  getHaksaGradeExportUrl(params: HaksaCourseKey) {
+    return `/tutor_lms/api/haksa_grade_export.jsp${buildQuery({
+      course_code: params.courseCode,
+      open_year: params.openYear,
+      open_term: params.openTerm,
+      bunban_code: params.bunbanCode,
+      group_code: params.groupCode,
+    })}`;
+  },
+
+  async getAttendanceCourseSummary(params: { keyword?: string; year?: string; tutorId?: number } = {}) {
+    const url = `/tutor_lms/api/attendance_course_summary.jsp${buildQuery({
+      s_keyword: params.keyword,
+      year: params.year,
+      tutor_id: params.tutorId,
+    })}`;
+    return requestJson<TutorAttendanceCourseSummaryRow[]>(url);
+  },
+
+  async getAttendanceWeekLessons(params: { courseId: number }) {
+    const url = `/tutor_lms/api/attendance_week_lessons.jsp${buildQuery({ course_id: params.courseId })}`;
+    return requestJson<TutorAttendanceLessonRow[]>(url);
+  },
+
+  async getAttendanceStudentMatrix(params: { courseId: number; sectionId?: number }) {
+    const url = `/tutor_lms/api/attendance_student_matrix.jsp${buildQuery({
+      course_id: params.courseId,
+      section_id: params.sectionId,
+    })}`;
+    return requestJson<TutorAttendanceMatrixRow[]>(url);
+  },
+
+  async batchUpdateAttendance(payload: {
+    courseId: number;
+    lessonIds: number[];
+    attendStatuses: Array<'Y' | 'N'>;
+    courseUserIds: number[];
+  }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+    body.set('lesson_ids', payload.lessonIds.join(','));
+    body.set('attend_statuses', payload.attendStatuses.join(','));
+    body.set('course_user_ids', payload.courseUserIds.join(','));
+
+    return requestJson<number>(`/tutor_lms/api/attendance_batch_update.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async applyAttendanceAbsence(payload: { courseId: number }) {
+    const body = new URLSearchParams();
+    body.set('course_id', String(payload.courseId));
+
+    return requestJson<number>(`/tutor_lms/api/attendance_absence_apply.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async getCourseChatRooms(params: { courseId: number; keyword?: string }) {
+    const url = `/tutor_lms/api/course_chat.jsp${buildQuery({
+      mode: 'rooms',
+      course_id: params.courseId,
+      s_keyword: params.keyword,
+    })}`;
+    return requestJson<TutorCourseChatRoomRow[]>(url);
+  },
+
+  async getCourseChatMessages(params: { courseId: number; threadId: number }) {
+    const url = `/tutor_lms/api/course_chat.jsp${buildQuery({
+      mode: 'messages',
+      course_id: params.courseId,
+      thread_id: params.threadId,
+    })}`;
+    return requestJson<TutorCourseChatMessageRow[]>(url);
+  },
+
+  async sendCourseChatMessage(payload: { courseId: number; threadId: number; content: string }) {
+    const body = new URLSearchParams();
+    body.set('mode', 'send');
+    body.set('course_id', String(payload.courseId));
+    body.set('thread_id', String(payload.threadId));
+    body.set('content', payload.content);
+
+    return requestJson<number>(`/tutor_lms/api/course_chat.jsp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
@@ -2326,6 +2926,7 @@ export const tutorLmsApi = {
     categoryId?: number;
     questionType?: number;
     keyword?: string;
+    mineOnly?: boolean;
     page?: number;
     limit?: number;
   } = {}) {
@@ -2333,6 +2934,7 @@ export const tutorLmsApi = {
       category_id: params.categoryId,
       question_type: params.questionType,
       s_keyword: params.keyword,
+      mine_only: params.mineOnly ? 'Y' : undefined,
       page: params.page,
       limit: params.limit,
     })}`;
@@ -2349,6 +2951,7 @@ export const tutorLmsApi = {
     description?: string;
     points?: number;
     items?: string[]; // 객관식 보기 (최대 5개)
+    openYn?: 'Y' | 'N';
   }) {
     const body = new URLSearchParams();
     if (payload.categoryId) body.set('category_id', String(payload.categoryId));
@@ -2359,6 +2962,7 @@ export const tutorLmsApi = {
     body.set('answer', payload.answer);
     if (payload.description) body.set('description', payload.description);
     if (payload.points) body.set('points', String(payload.points));
+    if (payload.openYn) body.set('open_yn', payload.openYn);
     // 객관식 보기 처리
     if (payload.items) {
       payload.items.forEach((item, idx) => {
@@ -2384,6 +2988,7 @@ export const tutorLmsApi = {
     description?: string;
     points?: number;
     items?: string[];
+    openYn?: 'Y' | 'N';
   }) {
     const body = new URLSearchParams();
     body.set('id', String(payload.id));
@@ -2395,6 +3000,7 @@ export const tutorLmsApi = {
     if (payload.answer !== undefined) body.set('answer', payload.answer);
     if (payload.description !== undefined) body.set('description', payload.description);
     if (payload.points !== undefined) body.set('points', String(payload.points));
+    if (payload.openYn !== undefined) body.set('open_yn', payload.openYn);
     if (payload.items) {
       payload.items.forEach((item, idx) => {
         body.set(`item${idx + 1}`, item);
@@ -2528,6 +3134,35 @@ export const tutorLmsApi = {
     body.set('upload_key', payload.uploadKey);
 
     return requestJson<unknown>(`/tutor_lms/api/kollus_attach_channel.jsp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+  },
+
+  async updateKollusTitle(payload: {
+    mediaContentKey: string;
+    title: string;
+    snapshotUrl?: string;
+    categoryKey?: string;
+    categoryName?: string;
+    originalFileName?: string;
+    totalTime?: number;
+    contentWidth?: number;
+    contentHeight?: number;
+  }) {
+    const body = new URLSearchParams();
+    body.set('media_content_key', payload.mediaContentKey);
+    body.set('title', payload.title);
+    if (payload.snapshotUrl) body.set('snapshot_url', payload.snapshotUrl);
+    if (payload.categoryKey) body.set('category_key', payload.categoryKey);
+    if (payload.categoryName) body.set('category_nm', payload.categoryName);
+    if (payload.originalFileName) body.set('original_file_name', payload.originalFileName);
+    if (payload.totalTime !== undefined) body.set('total_time', String(payload.totalTime));
+    if (payload.contentWidth !== undefined) body.set('content_width', String(payload.contentWidth));
+    if (payload.contentHeight !== undefined) body.set('content_height', String(payload.contentHeight));
+
+    return requestJson<number>(`/tutor_lms/api/kollus_media_title_update.jsp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,

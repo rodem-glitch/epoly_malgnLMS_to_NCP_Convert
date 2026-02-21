@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-20
+최근 갱신: 2026-02-21
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 16:55
+최근 자동 갱신: 2026-02-21 19:05
 
 - Resin 설정: resin/resin.xml (root-directory=public_html)
 - React 배포: public_html/tutor_lms/app (project 빌드 산출물)
@@ -71,9 +71,11 @@
   - 개인정보 접근 이력은 기존 `public_html/tutor_lms/api/privacy_log.jsp`(가려진 정보 보기/다운로드) 경로를 기준으로 운영합니다.
 - 교수자 LMS 문제은행 공개/비공개(주의):
   - `LM_QUESTION.open_yn`은 조회/출제 권한과 직접 연결됩니다. 비관리자 조회/선택 조건은 반드시 `manager_id = user_id OR open_yn = 'Y'`를 같이 유지해야 합니다.
+  - `mine_only=Y` 요청은 UI 편의 필터가 아니라 서버 강제 필터입니다. 이 모드에서는 관리자여도 `manager_id = user_id`만 조회하도록 유지해야 “내 문제만” 의미가 흔들리지 않습니다.
   - 시험 템플릿(`exam_template_insert/modify`)은 문제 목록 화면과 별개 경로라서, `question_ids` 재검증에서 같은 공개 조건을 빼면 URL/요청 우회로 비공개 문제가 출제될 수 있습니다.
   - 공개(`open_yn='Y'`)는 “조회/출제 허용” 의미이고, 수정/삭제 권한까지 열어주면 안 됩니다. 수정/삭제는 작성자 또는 관리자만 허용해야 데이터 오염을 막을 수 있습니다.
   - 신규 컬럼이 없는 DB에서는 `Unknown column 'open_yn'`이 발생하므로 배포 전에 `public_html/ddl_question_open_yn.sql` 적용 여부를 먼저 확인해야 합니다.
+  - 목록 API 운영 추적은 `tutor_question_bank_list` 로그(`user_id/is_admin/mine_only`)를 기준으로 확인합니다. 권한 이슈는 이 로그로 1차 분기 확인이 가능합니다.
   - 관련 코드: `public_html/tutor_lms/api/question_bank_list.jsp`, `public_html/tutor_lms/api/question_bank_insert.jsp`, `public_html/tutor_lms/api/question_bank_modify.jsp`, `public_html/tutor_lms/api/question_bank_delete.jsp`, `public_html/tutor_lms/api/exam_template_insert.jsp`, `public_html/tutor_lms/api/exam_template_modify.jsp`
 - 학사(정규) 커리큘럼 차시 수강기간 vs 과제 `보기`(주의):
   - 차시 수강기간은 동영상/시험은 기존대로 차단하지만, 과제는 차시 기간 밖이어도 `보기` 이동을 허용합니다(사용성 이슈로 예외).
@@ -247,6 +249,13 @@
   - DB 이관(`-EnableDbMigration`)을 켜면 배포 시점에 `migration/source.sql`이 대상 MySQL로 import 됩니다. 대상 DB가 비어있지 않으면 데이터 충돌/중복 위험이 있으니 사전 백업이 필수입니다.
   - 소스 DB 자동 dump 방식(`mysqldump`)은 로컬 PC에서 실행되므로, 소스 DB 네트워크 접근 권한과 클라이언트 설치 여부를 먼저 확인해야 합니다.
   - API 로그에 `Qdrant client version 1.13.0 vs server 1.15.3` 경고가 출력될 수 있습니다. 기능은 동작해도 장기적으로 버전 정합(클라이언트/서버)을 맞추는 것이 안전합니다.
+- 교수자 담당과목 프론트-백 연결(복사/삭제 + 과제 피드백 파일/유사도) 주의:
+  - 과목 복사는 `tutor_list.jsp`로 받은 `tutor_id`가 필수입니다. 프론트에서 튜터 조회를 건너뛰면 `course_copy.jsp`가 권한/파라미터 오류로 실패할 수 있습니다.
+  - 과목 삭제는 soft delete(`LM_COURSE.status=-1`) API이므로, 화면에서 삭제 성공 후 목록 재조회(또는 뒤로가기)가 빠지면 사용자 입장에서는 “삭제 안 됨”으로 보일 수 있습니다.
+  - 피드백 첨부파일은 서버 저장 파일(`uploadedFeedbackFiles`)과 로컬 선택 파일(`feedbackFiles`)을 분리해서 관리해야 합니다. 한 배열로 합치면 “이미 저장된 파일 삭제”와 “아직 업로드 전 파일 제거”가 섞여 오동작하기 쉽습니다.
+  - 유사도 분석은 `run`과 `list`가 분리된 API입니다. 목록만 호출하면 최신 결과가 아닐 수 있으므로 `run -> list` 순서를 유지해야 회귀를 막을 수 있습니다.
+  - 제출 상세 API(`homework_user_submission.jsp`)의 `feedback_files`와 별도 목록 API(`homework_feedback_file_list.jsp`)의 응답 구조를 프론트에서 동일하게 매핑해야 모달 간 표시 불일치가 발생하지 않습니다.
+  - 관련 코드: `project/api/tutorLmsApi.ts`, `project/components/CourseManagement.tsx`, `project/components/HomeworkTaskDetailModal.tsx`, `project/components/HomeworkSubmissionDetailModal.tsx`, `public_html/tutor_lms/api/course_copy.jsp`, `public_html/tutor_lms/api/course_delete.jsp`, `public_html/tutor_lms/api/homework_feedback_file_upload.jsp`, `public_html/tutor_lms/api/homework_feedback_file_list.jsp`, `public_html/tutor_lms/api/homework_feedback_file_delete.jsp`, `public_html/tutor_lms/api/homework_similarity_run.jsp`, `public_html/tutor_lms/api/homework_similarity_list.jsp`
 - Spring Boot 통계(SGIS) 전국 코드 주의:
   - 산업별 통계에서 전국 전체(`admCd=00`)는 응답 시점에 따라 값이 비는 경우가 있어, 시도 코드 합산 경로를 유지해야 합니다.
   - 시도코드 체계(SGIS/로컬) 불일치 가능성이 있어, 합계가 0이면 대체 코드 체계로 재합산하는 방어가 필요합니다.

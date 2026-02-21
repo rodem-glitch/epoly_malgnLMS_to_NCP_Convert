@@ -1,11 +1,11 @@
 ﻿# RPG-라이트: 기능 흐름 (`flows.md`)
 
-최근 갱신: 2026-02-20
+최근 갱신: 2026-02-21
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
 
-최근 자동 갱신: 2026-02-19 16:55
+최근 자동 갱신: 2026-02-21 19:05
 
 - Resin root-directory: resin/resin.xml → public_html
 - React 빌드 산출물: project/vite.config.ts → public_html/tutor_lms/app
@@ -1102,3 +1102,51 @@
   - 정적 확인: `public_html/tutor_lms/api/course_copy.jsp`, `public_html/tutor_lms/api/course_delete.jsp`, `public_html/tutor_lms/api/tutor_list.jsp`에서 권한/차단/삭제 분기 확인
   - 확인 경로(수동): 교수 계정으로 `담당과목 > 과목 세부 관리 > 복사/삭제` 호출 시 권한/차단 메시지 확인
 - 최근 갱신: 2026-02-20
+
+### FLOW-2015: 교수자 담당과목 프론트-백 API 실연동(복사/삭제 + 과제 피드백 파일/유사도)
+- 사용자 동작(의도):
+  - 교수자가 담당과목 상세 상단에서 과목을 복사/삭제하고, 과제 피드백 화면에서 첨삭 파일과 유사도 분석을 실제 데이터로 즉시 확인
+- 진입점:
+  - 과목 상단 액션: `project/components/CourseManagement.tsx` → `GET public_html/tutor_lms/api/tutor_list.jsp`, `POST public_html/tutor_lms/api/course_copy.jsp`, `POST public_html/tutor_lms/api/course_delete.jsp`
+  - 과제 피드백 첨부/유사도: `project/components/CourseManagement.tsx`, `project/components/HomeworkTaskDetailModal.tsx` → `GET/POST public_html/tutor_lms/api/homework_feedback_file_*.jsp`, `POST public_html/tutor_lms/api/homework_similarity_run.jsp`, `GET public_html/tutor_lms/api/homework_similarity_list.jsp`
+  - 제출 상세 모달: `project/components/HomeworkSubmissionDetailModal.tsx` → `GET public_html/tutor_lms/api/homework_user_submission.jsp`
+- 처리(핵심):
+  - `project/api/tutorLmsApi.ts`에 `deleteCourse`, `get/upload/deleteHomeworkFeedbackFile`, `run/getHomeworkSimilarityList` API 메서드를 추가해 기존 TODO를 제거
+  - 과목 복사는 `tutor_list.jsp`로 현재 교수 `tutor_id`를 조회한 뒤 복사 API를 호출하고, 삭제는 확인창/로딩 상태를 분리해 중복 요청을 막음
+  - 피드백 첨부는 서버 파일 목록(`uploadedFeedbackFiles`)과 로컬 선택 파일(`feedbackFiles`)을 분리 관리해 삭제/업로드 동선을 명확히 함
+  - 유사도 분석은 setTimeout mock을 제거하고 `run -> list` 순서의 실호출로 바꿔 즉시 결과를 표시함
+  - 제출 상세 모달에 `feedback_files` 렌더링을 추가해 교수 첨삭 파일 다운로드 경로를 학생 제출물 상세와 같은 화면에서 확인 가능하게 함
+- DB:
+  - 과목 상태 변경: `LM_COURSE.status` (soft delete)
+  - 피드백 첨부: `CL_FILE(module='homework_feedback_{homework_id}', module_id=course_user_id)`
+  - 유사도 결과: `LM_HOMEWORK_SIMILARITY_RUN`, `LM_HOMEWORK_SIMILARITY_RESULT`
+- 출력:
+  - React 화면(`담당과목 > 과목 세부관리`, `담당과목 > 과제 > 피드백 관리`)에서 실제 API 응답 기반 UI 렌더링
+  - 빌드 산출물: `public_html/tutor_lms/app/index.html`, `public_html/tutor_lms/app/assets/*`
+- 확인(근거):
+  - 정적 확인: `git diff -- project/api/tutorLmsApi.ts`, `git diff -- project/components/CourseManagement.tsx`, `git diff -- project/components/HomeworkTaskDetailModal.tsx`, `git diff -- project/components/HomeworkSubmissionDetailModal.tsx`
+  - 빌드 확인: `cd project && cmd /c npm run build` 성공(산출물 갱신 확인)
+- 최근 갱신: 2026-02-21
+
+### FLOW-2016: 교수자 문제은행 mineOnly 서버필터 + 공개/비공개 저장 연동
+- 사용자 동작(의도):
+  - 교수자가 문제은행에서 `내 문제만`을 켜면 서버 기준으로 본인 등록 문제만 조회하고, 문제 저장 시 공개/비공개 값이 실제 DB에 반영되길 원함
+- 진입점:
+  - 프론트: `project/components/QuestionBankPage.tsx`
+  - API 클라이언트: `project/api/tutorLmsApi.ts`
+  - 백엔드 목록 API: `public_html/tutor_lms/api/question_bank_list.jsp`
+- 처리(핵심):
+  - 프론트 목록 조회에서 `mineOnly: filterMineOnly`를 전달하고, 임시 클라이언트 필터를 제거해 서버 응답을 그대로 사용
+  - 문제 생성/수정 호출(`createQuestion`, `updateQuestion`)에 `openYn: 'Y'|'N'`를 포함해 공개 상태를 저장
+  - 목록 파싱은 `open_yn`을 우선 사용하고, 구버전 `is_public`도 함께 허용
+  - 백엔드는 `mine_only=Y`를 받으면 `a.manager_id = userId` 조건으로 강제 필터하고, 기본 모드는 기존 권한 규칙(교수: 본인+공개, 관리자: 전체)을 유지
+  - 운영 추적용 로그 `tutor_question_bank_list`에 `user_id/is_admin/mine_only`를 기록
+- DB:
+  - `LM_QUESTION.manager_id`, `LM_QUESTION.open_yn`, `LM_QUESTION.status`
+- 출력:
+  - 문제은행 목록: `rst_data`(mine_only 적용 결과)
+  - 생성/수정: 공개 여부가 서버 저장값으로 반영되어 재조회 시 일관된 표시
+- 확인(근거):
+  - 정적 확인: `project/components/QuestionBankPage.tsx`, `project/api/tutorLmsApi.ts`, `public_html/tutor_lms/api/question_bank_list.jsp`
+  - 빌드 확인: `cd project && cmd /c npm run build` 성공
+- 최근 갱신: 2026-02-21

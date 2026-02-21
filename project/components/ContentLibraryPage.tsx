@@ -58,16 +58,32 @@ export function ContentLibraryPage({ activeTab }: ContentLibraryPageProps) {
     setEditingTitle('');
   };
 
-  const saveEditTitle = (e: React.MouseEvent) => {
+  const saveEditTitle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!editingId || !editingTitle.trim()) return;
-    // 왜: 로컬 상태만 업데이트합니다. 백엔드 연동 시 아래 주석을 해제하세요.
-    // await tutorLmsApi.updateKollusTitle({ mediaContentKey, title: editingTitle.trim() });
-    setContents(prev => prev.map(c =>
-      c.id === editingId ? { ...c, title: editingTitle.trim() } : c,
-    ));
-    setEditingId(null);
-    setEditingTitle('');
+    const target = contents.find((c) => c.id === editingId);
+    if (!target) return;
+    try {
+      const res = await tutorLmsApi.updateKollusTitle({
+        mediaContentKey: target.mediaKey,
+        title: editingTitle.trim(),
+        snapshotUrl: target.snapshotUrl,
+        categoryKey: target.categoryKey,
+        categoryName: target.category,
+        originalFileName: target.originalFileName,
+        totalTime: target.totalTime,
+        contentWidth: target.contentWidth,
+        contentHeight: target.contentHeight,
+      });
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      setContents(prev => prev.map(c =>
+        c.id === editingId ? { ...c, title: editingTitle.trim() } : c,
+      ));
+      setEditingId(null);
+      setEditingTitle('');
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : '제목 수정 중 오류가 발생했습니다.');
+    }
   };
 
   const limit = 30;
@@ -333,13 +349,13 @@ export function ContentLibraryPage({ activeTab }: ContentLibraryPageProps) {
                       value={editingTitle}
                       onChange={e => setEditingTitle(e.target.value)}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') saveEditTitle(e as any);
+                        if (e.key === 'Enter') void saveEditTitle(e as any);
                         if (e.key === 'Escape') { setEditingId(null); setEditingTitle(''); }
                       }}
                       className="flex-1 px-2 py-1 border border-blue-400 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
-                      onClick={saveEditTitle}
+                      onClick={(e) => { void saveEditTitle(e); }}
                       className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
                       title="저장"
                     >

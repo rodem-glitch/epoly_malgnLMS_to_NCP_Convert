@@ -268,19 +268,30 @@ export const CurriculumEditor: React.FC<CurriculumEditorProps> = ({
         }
       }
       
-      // 2. 각 섹션의 신규 레슨 추가
+      // 2. 각 섹션의 신규 레슨 추가 (일괄 API)
       for (const section of curriculumData) {
-        for (const lesson of section.lessons) {
-          if (lesson.isNew) {
-            const res = await tutorLmsApi.addCurriculumLesson({
-              courseId,
-              sectionId: section.sectionId,
-              lessonId: Number(lesson.lessonId),
-            });
-            if (res.rst_code !== '0000') throw new Error(res.rst_message);
-            lesson.isNew = false;
+        const newLessons = section.lessons.filter((lesson) => lesson.isNew);
+        if (newLessons.length === 0) continue;
+
+        // 왜: 레슨 ID가 비정상이면 저장 후 커리큘럼 정합성이 깨지므로 서버 호출 전 차단합니다.
+        const lessonsPayload = newLessons.map((lesson) => {
+          const lessonId = Number(lesson.lessonId);
+          if (!Number.isFinite(lessonId) || lessonId <= 0) {
+            throw new Error('신규 레슨 ID가 올바르지 않습니다.');
           }
-        }
+          return { lessonId };
+        });
+
+        const res = await tutorLmsApi.addCurriculumLessonsBulk({
+          courseId,
+          sectionId: section.sectionId,
+          lessons: lessonsPayload,
+        });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+
+        section.lessons.forEach((lesson) => {
+          if (lesson.isNew) lesson.isNew = false;
+        });
       }
       
       // 3. 기존 레슨 순서(chapter) 및 인정시간(completeTime) 업데이트

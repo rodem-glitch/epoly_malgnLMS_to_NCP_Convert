@@ -37,45 +37,8 @@ const DEFAULT_CATEGORIES: FaqCategory[] = [
   { id: 'attendance', name: '출석', sortOrder: 5 },
 ];
 
-// 왜: 샘플 FAQ — 백엔드 연동 전 UI 확인용
-const SAMPLE_FAQS: FaqItem[] = [
-  {
-    id: '1',
-    question: '과제 제출 기한이 지나면 어떻게 되나요?',
-    answer: '과제 제출 기한이 지나면 기본적으로 제출이 불가능합니다. 다만, 교수자가 지각 제출을 허용한 경우 감점이 적용될 수 있습니다. 자세한 사항은 각 과제의 안내를 확인해 주세요.',
-    category: 'assignment',
-    isPublished: true,
-    targetCourses: [], // 전체 과목
-    sortOrder: 1,
-    createdAt: '2026-02-15',
-    updatedAt: '2026-02-15',
-  },
-  {
-    id: '2',
-    question: '시험 응시 중 인터넷이 끊기면 어떻게 되나요?',
-    answer: '시험 응시 중 인터넷이 끊기더라도 자동 저장 기능이 작동합니다. 인터넷이 복구되면 이전 상태에서 이어서 응시할 수 있습니다. 단, 시험 시간은 계속 흘러가므로 주의해 주세요.',
-    category: 'exam',
-    isPublished: true,
-    targetCourses: [], // 전체 과목
-    sortOrder: 2,
-    createdAt: '2026-02-15',
-    updatedAt: '2026-02-15',
-  },
-  {
-    id: '3',
-    question: '출석은 어떻게 확인하나요?',
-    answer: '출석은 LMS에서 동영상 강의 시청 기록, 실시간 강의 참여 여부 등을 기준으로 자동 기록됩니다. 출석 현황은 "내 학습현황" 메뉴에서 확인할 수 있습니다.',
-    category: 'attendance',
-    isPublished: false,
-    targetCourses: [],
-    sortOrder: 3,
-    createdAt: '2026-02-16',
-    updatedAt: '2026-02-16',
-  },
-];
-
 export function FaqManagePage() {
-  const [faqs, setFaqs] = useState<FaqItem[]>(SAMPLE_FAQS);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [categories, setCategories] = useState<FaqCategory[]>(DEFAULT_CATEGORIES);
   const [filterCategory, setFilterCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,6 +47,8 @@ export function FaqManagePage() {
   // 과목 목록 (노출 대상 과목 선택용)
   const [courses, setCourses] = useState<CourseForSelect[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [loadingFaqs, setLoadingFaqs] = useState(false);
 
   // 모달
   const [showModal, setShowModal] = useState(false);
@@ -138,6 +103,10 @@ export function FaqManagePage() {
           }
         }
         setCourses(merged);
+        setSelectedCourseId((prev) => {
+          if (prev && merged.some((course) => course.courseId === prev)) return prev;
+          return merged[0]?.courseId ?? '';
+        });
       } catch {
         // 과목 로드 실패 시 빈 배열 유지
       } finally {
@@ -157,6 +126,40 @@ export function FaqManagePage() {
     }
     return true;
   }).sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const fetchFaqs = async (courseId: string) => {
+    if (!courseId) {
+      setFaqs([]);
+      return;
+    }
+    setLoadingFaqs(true);
+    try {
+      const res = await tutorLmsApi.getFaqNotices({ courseId: Number(courseId) });
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      const rows = Array.isArray(res.rst_data) ? res.rst_data : [];
+      setFaqs(
+        rows.map((row: any, index: number) => ({
+          id: String(row.faq_id),
+          question: String(row.question ?? ''),
+          answer: String(row.answer ?? ''),
+          category: 'general',
+          isPublished: String(row.display_yn ?? 'Y') !== 'N',
+          targetCourses: [courseId],
+          sortOrder: index + 1,
+          createdAt: String(row.reg_date_conv ?? ''),
+          updatedAt: String(row.mod_date_conv ?? ''),
+        }))
+      );
+    } catch {
+      setFaqs([]);
+    } finally {
+      setLoadingFaqs(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchFaqs(selectedCourseId);
+  }, [selectedCourseId]);
 
   // === CRUD ===
   const openAddModal = () => {
@@ -183,49 +186,62 @@ export function FaqManagePage() {
       alert('질문과 답변을 모두 입력해 주세요.');
       return;
     }
-
-    const resolvedTargetCourses = formData.targetMode === 'all' ? [] : formData.targetCourses;
-
-    if (editingFaq) {
-      setFaqs(prev => prev.map(f =>
-        f.id === editingFaq.id
-          ? {
-              ...f,
-              question: formData.question.trim(),
-              answer: formData.answer.trim(),
-              category: formData.category,
-              isPublished: formData.isPublished,
-              targetCourses: resolvedTargetCourses,
-              updatedAt: new Date().toISOString().slice(0, 10),
-            }
-          : f
-      ));
-    } else {
-      const newFaq: FaqItem = {
-        id: `faq_${Date.now()}`,
-        question: formData.question.trim(),
-        answer: formData.answer.trim(),
-        category: formData.category,
-        isPublished: formData.isPublished,
-        targetCourses: resolvedTargetCourses,
-        sortOrder: faqs.length + 1,
-        createdAt: new Date().toISOString().slice(0, 10),
-        updatedAt: new Date().toISOString().slice(0, 10),
-      };
-      setFaqs(prev => [...prev, newFaq]);
+    if (!selectedCourseId) {
+      alert('대상 과목을 먼저 선택해 주세요.');
+      return;
     }
-    setShowModal(false);
+
+    void (async () => {
+      try {
+        const res = await tutorLmsApi.saveFaqNotice({
+          courseId: Number(selectedCourseId),
+          faqId: editingFaq ? Number(editingFaq.id) : undefined,
+          subject: formData.question.trim(),
+          content: formData.answer.trim(),
+          displayYn: formData.isPublished ? 'Y' : 'N',
+        });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+        setShowModal(false);
+        await fetchFaqs(selectedCourseId);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : 'FAQ 저장 중 오류가 발생했습니다.');
+      }
+    })();
   };
 
   const handleDelete = (id: string) => {
     if (!confirm('이 FAQ를 삭제하시겠습니까?')) return;
-    setFaqs(prev => prev.filter(f => f.id !== id));
+    if (!selectedCourseId) return;
+    void (async () => {
+      try {
+        const res = await tutorLmsApi.deleteFaqNotice({ courseId: Number(selectedCourseId), faqId: Number(id) });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+        await fetchFaqs(selectedCourseId);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : 'FAQ 삭제 중 오류가 발생했습니다.');
+      }
+    })();
   };
 
   const togglePublish = (id: string) => {
-    setFaqs(prev => prev.map(f =>
-      f.id === id ? { ...f, isPublished: !f.isPublished } : f
-    ));
+    if (!selectedCourseId) return;
+    const target = faqs.find((f) => f.id === id);
+    if (!target) return;
+    void (async () => {
+      try {
+        const res = await tutorLmsApi.saveFaqNotice({
+          courseId: Number(selectedCourseId),
+          faqId: Number(id),
+          subject: target.question,
+          content: target.answer,
+          displayYn: target.isPublished ? 'N' : 'Y',
+        });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+        await fetchFaqs(selectedCourseId);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : 'FAQ 공개 상태 변경 중 오류가 발생했습니다.');
+      }
+    })();
   };
 
   const toggleCourseInForm = (courseId: string) => {
@@ -277,14 +293,29 @@ export function FaqManagePage() {
           <p className="text-gray-500 text-sm mt-0.5">자주 묻는 질문을 공지 형태로 등록하여 학생들의 반복 질문을 줄입니다.</p>
         </div>
         <div className="flex gap-2">
+          <select
+            value={selectedCourseId}
+            onChange={(e) => setSelectedCourseId(e.target.value)}
+            disabled={loadingCourses || courses.length === 0}
+            className="px-3 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-64"
+          >
+            {courses.length === 0 && <option value="">담당 과목 없음</option>}
+            {courses.map((course) => (
+              <option key={course.courseId} value={course.courseId}>
+                {course.courseName}
+              </option>
+            ))}
+          </select>
           <button
             onClick={() => setShowCategoryModal(true)}
+            disabled={!selectedCourseId}
             className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
           >
             카테고리 관리
           </button>
           <button
             onClick={openAddModal}
+            disabled={!selectedCourseId}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
           >
             <Plus className="w-4 h-4" />
@@ -339,7 +370,11 @@ export function FaqManagePage() {
 
       {/* FAQ 목록 (아코디언) */}
       <div className="space-y-2">
-        {filteredFaqs.length === 0 ? (
+        {loadingFaqs ? (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500 text-sm">
+            FAQ를 불러오는 중...
+          </div>
+        ) : filteredFaqs.length === 0 ? (
           <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
             <HelpCircle className="w-10 h-10 mx-auto mb-3 text-gray-400 opacity-50" />
             <p className="text-gray-500 text-lg font-medium">등록된 FAQ가 없습니다</p>

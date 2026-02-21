@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { X, CheckCircle, MessageSquare, Clock, User, Paperclip, Trash2 } from 'lucide-react';
 import { tutorLmsApi } from '../api/tutorLmsApi';
 
@@ -6,6 +6,8 @@ interface HomeworkTaskDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   courseId: number;
+  homeworkId: number;
+  courseUserId: number;
   task: any;
   onRefresh: () => void;
 }
@@ -14,19 +16,87 @@ export function HomeworkTaskDetailModal({
   isOpen,
   onClose,
   courseId,
+  homeworkId,
+  courseUserId,
   task,
   onRefresh,
 }: HomeworkTaskDetailModalProps) {
-  const [feedback, setFeedback] = useState(task?.feedback || '');
+  const [feedback, setFeedback] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fileBusy, setFileBusy] = useState(false);
   // 왜: 교수자가 첨삭 파일을 첨부할 수 있도록 파일 목록을 관리합니다.
   const [feedbackFiles, setFeedbackFiles] = useState<File[]>([]);
+  const [uploadedFeedbackFiles, setUploadedFeedbackFiles] = useState<
+    { id: number; filename: string; downloadUrl: string }[]
+  >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen || !task) return;
+    setFeedback(String(task.feedback ?? ''));
+    setFeedbackFiles([]);
+  }, [isOpen, task]);
+
+  const fetchUploadedFeedbackFiles = async () => {
+    if (!homeworkId || !courseUserId) {
+      setUploadedFeedbackFiles([]);
+      return;
+    }
+
+    try {
+      const res = await tutorLmsApi.getHomeworkFeedbackFiles({ courseId, homeworkId, courseUserId });
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      const rows = Array.isArray(res.rst_data) ? res.rst_data : [];
+      setUploadedFeedbackFiles(
+        rows.map((row: any) => ({
+          id: Number(row.id),
+          filename: String(row.filename ?? ''),
+          downloadUrl: String(row.download_url ?? ''),
+        }))
+      );
+    } catch {
+      setUploadedFeedbackFiles([]);
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || !task) return;
+    void fetchUploadedFeedbackFiles();
+  }, [isOpen, task, courseId, homeworkId, courseUserId]);
 
   if (!isOpen || !task) return null;
 
+  const handleDeleteUploadedFile = (fileId: number) => {
+    if (!homeworkId || !courseUserId) return;
+    if (!confirm('선택한 첨삭 파일을 삭제하시겠습니까?')) return;
+
+    void (async () => {
+      setFileBusy(true);
+      try {
+        const res = await tutorLmsApi.deleteHomeworkFeedbackFile({
+          courseId,
+          homeworkId,
+          courseUserId,
+          fileId,
+        });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+        await fetchUploadedFeedbackFiles();
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '첨삭 파일 삭제 중 오류가 발생했습니다.');
+      } finally {
+        setFileBusy(false);
+      }
+    })();
+  };
+
   const handleConfirm = async () => {
+    if (!homeworkId || !courseUserId) {
+      alert('과제/수강생 정보가 없어 저장할 수 없습니다.');
+      return;
+    }
+
     setLoading(true);
+    setFileBusy(true);
     try {
       const res = await tutorLmsApi.confirmHomeworkTask({
         courseId,
@@ -34,14 +104,30 @@ export function HomeworkTaskDetailModal({
         feedback,
       });
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
-      
-      alert('평가완료 처리되었습니다.');
+
+      const pendingFiles = [...feedbackFiles];
+      for (const file of pendingFiles) {
+        const uploadRes = await tutorLmsApi.uploadHomeworkFeedbackFile({
+          courseId,
+          homeworkId,
+          courseUserId,
+          file,
+        });
+        if (uploadRes.rst_code !== '0000') {
+          throw new Error(`[${file.name}] ${uploadRes.rst_message}`);
+        }
+      }
+
+      setFeedbackFiles([]);
+      await fetchUploadedFeedbackFiles();
+      alert(pendingFiles.length > 0 ? '평가완료 및 첨삭 파일 저장이 완료되었습니다.' : '평가완료 처리되었습니다.');
       onRefresh();
       onClose();
     } catch (e) {
       alert(e instanceof Error ? e.message : '처리 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
+      setFileBusy(false);
     }
   };
 
@@ -136,8 +222,7 @@ export function HomeworkTaskDetailModal({
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none min-h-[120px]"
             />
 
-            {/* 왜: 교수자가 첨삭한 파일을 첨부하여 학생에게 전달할 수 있도록 합니다. */}
-            {/* TODO: 백엔드 API 연동 후 실제 파일 업로드 활성화 */}
+            {/* 왜: 서버 저장 파일과 이번에 추가할 파일을 구분해 보여야 첨삭 이력이 명확합니다. */}
             <div className="mt-3 space-y-2">
               <div className="flex items-center gap-2">
                 <Paperclip className="w-4 h-4 text-gray-500" />
@@ -145,6 +230,7 @@ export function HomeworkTaskDetailModal({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
+                  disabled={fileBusy}
                   className="px-3 py-1 text-xs border border-blue-200 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   + 파일 선택
@@ -154,6 +240,7 @@ export function HomeworkTaskDetailModal({
                   type="file"
                   multiple
                   className="hidden"
+                  disabled={fileBusy}
                   onChange={(e) => {
                     const newFiles = Array.from(e.target.files || []);
                     if (newFiles.length > 0) {
@@ -164,6 +251,33 @@ export function HomeworkTaskDetailModal({
                   }}
                 />
               </div>
+              {uploadedFeedbackFiles.length > 0 && (
+                <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                  {uploadedFeedbackFiles.map((file) => (
+                    <div key={file.id} className="flex items-center justify-between px-3 py-2">
+                      <a
+                        href={file.downloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2 text-sm text-blue-700 hover:underline truncate"
+                        title={file.filename}
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{file.filename}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteUploadedFile(file.id)}
+                        disabled={fileBusy}
+                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0 disabled:opacity-50"
+                        title="서버 파일 삭제"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               {feedbackFiles.length > 0 && (
                 <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
                   {feedbackFiles.map((file, idx) => (
@@ -178,7 +292,8 @@ export function HomeworkTaskDetailModal({
                       <button
                         type="button"
                         onClick={() => setFeedbackFiles((prev) => prev.filter((_, i) => i !== idx))}
-                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                        disabled={fileBusy}
+                        className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0 disabled:opacity-50"
                         title="삭제"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -187,7 +302,7 @@ export function HomeworkTaskDetailModal({
                   ))}
                 </div>
               )}
-              {feedbackFiles.length === 0 && (
+              {uploadedFeedbackFiles.length === 0 && feedbackFiles.length === 0 && (
                 <div className="text-xs text-gray-400 pl-6">
                   첨삭 파일이 있으면 선택해 주세요. (선택사항)
                 </div>
@@ -207,7 +322,7 @@ export function HomeworkTaskDetailModal({
           {task.submit_yn === 'Y' && (
             <button
               onClick={handleConfirm}
-              disabled={loading}
+              disabled={loading || fileBusy}
               className="px-6 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 flex items-center gap-2"
             >
               {loading ? (

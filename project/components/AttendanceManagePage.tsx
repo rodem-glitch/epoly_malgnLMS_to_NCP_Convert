@@ -77,6 +77,7 @@ export function AttendanceManagePage() {
   // 왜: 주차별로 차시 수가 다를 수 있음 (예: 1주차=2시간, 2주차=3시간)
   const [sessionsPerWeek, setSessionsPerWeek] = useState<Record<number, number>>({});
   const [showSessionConfig, setShowSessionConfig] = useState(false);
+  const [lessonIdByCell, setLessonIdByCell] = useState<Record<string, number>>({});
 
   // 주차별 차시 수 가져오기 (기본값 1)
   const getSessionCount = (week: number) => sessionsPerWeek[week] || 1;
@@ -206,6 +207,79 @@ export function AttendanceManagePage() {
       let studentList: { courseUserId: number; studentId: string; name: string }[] = [];
 
       if (Number.isFinite(numericId) && numericId > 0) {
+        const [lessonRes, matrixRes] = await Promise.all([
+          tutorLmsApi.getAttendanceWeekLessons({ courseId: numericId }),
+          tutorLmsApi.getAttendanceStudentMatrix({ courseId: numericId }),
+        ]);
+
+        const lessonRows = lessonRes.rst_code === '0000' && Array.isArray(lessonRes.rst_data) ? lessonRes.rst_data : [];
+        const matrixRows = matrixRes.rst_code === '0000' && Array.isArray(matrixRes.rst_data) ? matrixRes.rst_data : [];
+
+        if (lessonRows.length > 0 && matrixRows.length > 0) {
+          const sectionIds: number[] = [];
+          lessonRows.forEach((row: any) => {
+            const sectionId = toNum(row.section_id ?? row.sectionId ?? 0, 0);
+            if (!sectionIds.includes(sectionId)) sectionIds.push(sectionId);
+          });
+          const sectionToWeek = new Map<number, number>();
+          sectionIds.forEach((sectionId, index) => sectionToWeek.set(sectionId, index + 1));
+
+          const lessonCellMap = new Map<number, { week: number; session: number }>();
+          const sessionCountByWeek: Record<number, number> = {};
+          const lessonIdMap: Record<string, number> = {};
+
+          lessonRows.forEach((row: any) => {
+            const lessonId = toNum(row.lesson_id ?? row.lessonId ?? 0, 0);
+            if (lessonId <= 0) return;
+            const sectionId = toNum(row.section_id ?? row.sectionId ?? 0, 0);
+            const week = sectionToWeek.get(sectionId) ?? 1;
+            const nextSession = (sessionCountByWeek[week] ?? 0) + 1;
+            sessionCountByWeek[week] = nextSession;
+            lessonCellMap.set(lessonId, { week, session: nextSession });
+            lessonIdMap[cellKey(week, nextSession)] = lessonId;
+          });
+
+          const studentMap = new Map<number, StudentAttendance>();
+          matrixRows.forEach((row: any) => {
+            const courseUserId = toNum(row.course_user_id ?? row.courseUserId ?? 0, 0);
+            if (courseUserId <= 0) return;
+            if (!studentMap.has(courseUserId)) {
+              studentMap.set(courseUserId, {
+                courseUserId,
+                studentId: String(row.student_id ?? row.studentId ?? ''),
+                name: String(row.name ?? row.user_nm ?? ''),
+                cells: {},
+              });
+            }
+            const lessonId = toNum(row.lesson_id ?? row.lessonId ?? 0, 0);
+            const lessonCell = lessonCellMap.get(lessonId);
+            if (!lessonCell) return;
+            const key = cellKey(lessonCell.week, lessonCell.session);
+            const attendYn = String(row.attend_yn ?? row.attendYn ?? 'Y').toUpperCase();
+            studentMap.get(courseUserId)!.cells[key] = attendYn === 'N' ? 'absent' : 'present';
+          });
+
+          const totalWeeks = Math.max(...Object.keys(sessionCountByWeek).map((w) => Number(w)), 1);
+          setWeekCount(totalWeeks);
+          setSessionsPerWeek(sessionCountByWeek);
+          setLessonIdByCell(lessonIdMap);
+
+          const normalizedStudents = Array.from(studentMap.values()).map((student) => {
+            const nextCells = { ...student.cells };
+            for (let week = 1; week <= totalWeeks; week++) {
+              const count = sessionCountByWeek[week] || 1;
+              for (let session = 1; session <= count; session++) {
+                const key = cellKey(week, session);
+                if (!(key in nextCells)) nextCells[key] = 'present';
+              }
+            }
+            return { ...student, cells: nextCells };
+          });
+
+          setStudents(normalizedStudents);
+          return;
+        }
+
         const res = await tutorLmsApi.getCourseStudents({ courseId: numericId });
         if (res.rst_code === '0000' && Array.isArray(res.rst_data)) {
           studentList = res.rst_data.map((s: any) => ({
@@ -215,7 +289,6 @@ export function AttendanceManagePage() {
           }));
         }
       } else if (course.sourceType === 'haksa' && course.haksaCourseCode) {
-        // 왜: mappedCourseId가 없는 학사 과목은 학사 수강생 API를 사용
         const res = await tutorLmsApi.getHaksaCourseStudents({
           courseCode: course.haksaCourseCode!,
           openYear: course.haksaOpenYear,
@@ -232,7 +305,6 @@ export function AttendanceManagePage() {
         }
       }
 
-      // TODO: 실제 출석 데이터 API 호출. 현재는 전원 '출석'으로 초기화.
       const initial: StudentAttendance[] = studentList.map((s) => {
         const cells: Record<string, AttendanceStatus> = {};
         for (let w = 1; w <= weekCount; w++) {
@@ -243,6 +315,8 @@ export function AttendanceManagePage() {
         }
         return { ...s, cells };
       });
+      const fallbackLessonMap: Record<string, number> = {};
+      setLessonIdByCell(fallbackLessonMap);
       setStudents(initial);
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : '출석 데이터를 불러오는 중 오류가 발생했습니다.');
@@ -344,11 +418,48 @@ export function AttendanceManagePage() {
 
   // === 저장 ===
   const handleSave = async () => {
+    if (!selectedCourse) return;
+    const numericId = selectedCourse.mappedCourseId ?? Number(selectedCourse.courseId);
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+      alert('저장 가능한 과정 ID가 없어 출결을 저장할 수 없습니다.');
+      return;
+    }
+    if (Object.keys(lessonIdByCell).length === 0) {
+      alert('저장 가능한 차시 정보가 없습니다. 과목을 다시 선택해 주세요.');
+      return;
+    }
+
     setSaving(true);
     setErrorMessage(null);
     try {
-      // TODO: 백엔드 API 연동
-      alert('출석 데이터가 저장되었습니다.\n(백엔드 연동 후 실제 저장됩니다.)');
+      let successStudentCount = 0;
+      for (const student of students) {
+        const lessonIds: number[] = [];
+        const attendStatuses: Array<'Y' | 'N'> = [];
+
+        for (let w = 1; w <= weekCount; w++) {
+          const sessionCount = getSessionCount(w);
+          for (let s = 1; s <= sessionCount; s++) {
+            const key = cellKey(w, s);
+            const lessonId = lessonIdByCell[key];
+            if (!lessonId) continue;
+            lessonIds.push(lessonId);
+            const status = student.cells[key] || 'present';
+            attendStatuses.push(status === 'absent' ? 'N' : 'Y');
+          }
+        }
+
+        if (lessonIds.length === 0) continue;
+        const res = await tutorLmsApi.batchUpdateAttendance({
+          courseId: numericId,
+          lessonIds,
+          attendStatuses,
+          courseUserIds: [student.courseUserId],
+        });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+        successStudentCount++;
+      }
+      alert(`출석 데이터가 저장되었습니다. (${successStudentCount}명 반영)`);
       setDirty(false);
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : '저장 중 오류가 발생했습니다.');
@@ -404,8 +515,44 @@ export function AttendanceManagePage() {
         autoFailStudents.map((s) => `• ${s.name} (${s.studentId}) — 결석 ${getAbsenceCount(s)}회`).join('\n')
     );
     if (!ok) return;
-    // TODO: 백엔드 API
-    alert(`${autoFailStudents.length}명 F 처리 완료.\n(백엔드 연동 후 실제 반영됩니다.)`);
+    if (!selectedCourse) return;
+    const numericId = selectedCourse.mappedCourseId ?? Number(selectedCourse.courseId);
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+      alert('자동 F 처리를 위한 과정 ID가 없습니다.');
+      return;
+    }
+    void (async () => {
+      try {
+        const res = await tutorLmsApi.applyAttendanceAbsence({ courseId: numericId });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+        const applied = Number((res as any).rst_success_count ?? 0);
+        alert(`${applied}명 자동 F 처리 완료`);
+        if (selectedCourse) await fetchAttendance(selectedCourse);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '자동 F 처리 중 오류가 발생했습니다.');
+      }
+    })();
+  };
+
+  const handleAutoApprove = () => {
+    if (!selectedCourse) return;
+    const numericId = selectedCourse.mappedCourseId ?? Number(selectedCourse.courseId);
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+      alert('자동승인 가능한 과정 ID가 없습니다.');
+      return;
+    }
+    if (!confirm('현재 과목의 대기 수강생을 자동 승인하시겠습니까?')) return;
+    void (async () => {
+      try {
+        const res = await tutorLmsApi.autoApproveCourseStudents({ courseId: numericId });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+        const approved = Number((res as any).rst_approved_count ?? res.rst_data ?? 0);
+        alert(`수강생 자동승인 완료: ${approved}명`);
+        if (selectedCourse) await fetchAttendance(selectedCourse);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '자동승인 중 오류가 발생했습니다.');
+      }
+    })();
   };
 
   return (
@@ -491,7 +638,7 @@ export function AttendanceManagePage() {
 
           {/* 설정 바 */}
           <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 items-end">
               <div>
                 <label className="block text-sm text-gray-700 mb-1">총 주차 수</label>
                 <input
@@ -553,6 +700,16 @@ export function AttendanceManagePage() {
                   <span>F 처리 ({autoFailStudents.length}명)</span>
                 </button>
               </div>
+              {selectedCourse?.sourceType === 'prism' && (
+                <div>
+                  <button
+                    onClick={handleAutoApprove}
+                    className="flex items-center gap-2 w-full justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+                  >
+                    <span>자동승인</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

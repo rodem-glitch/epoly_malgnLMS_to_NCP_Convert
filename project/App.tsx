@@ -15,6 +15,7 @@ import { AssignmentTemplateTab } from './components/AssignmentTemplateTab';
 import { FeedbackTemplateTab } from './components/FeedbackTemplateTab';
 import { QnaManagePage } from './components/QnaManagePage';
 import { FaqManagePage } from './components/FaqManagePage';
+import { CourseChatManagePage } from './components/CourseChatManagePage';
 import { AttendanceManagePage } from './components/AttendanceManagePage';
 import { VideoGroupManagePage } from './components/VideoGroupManagePage';
 import { SurveyManagePage } from './components/SurveyManagePage';
@@ -29,6 +30,7 @@ const MENU_IDS = [
   'assignment-templates',
   'feedback-templates',
   'qna-manage',
+  'course-chat',
   'faq-manage',
   'create-course',
   'content-all',
@@ -136,7 +138,7 @@ export default function App() {
   const isAssignmentSubMenu = activeMenu === 'assignment-manage' || activeMenu === 'assignment-submissions' || activeMenu === 'assignment-templates' || activeMenu === 'feedback-templates';
 
   // Q&A 하위 메뉴 여부 확인
-  const isQnaSubMenu = activeMenu === 'qna-manage' || activeMenu === 'faq-manage';
+  const isQnaSubMenu = activeMenu === 'qna-manage' || activeMenu === 'course-chat' || activeMenu === 'faq-manage';
 
   const syncHash = useCallback((route: RouteState, replace = false) => {
     // 왜: 서버 라우팅 없이도 뒤로가기/직접 주소 접근이 되도록 해시를 동기화합니다.
@@ -161,7 +163,7 @@ export default function App() {
     if (route.menu === 'assignment-manage' || route.menu === 'assignment-submissions' || route.menu === 'assignment-templates' || route.menu === 'feedback-templates') {
       setAssignmentMenuExpanded(true);
     }
-    if (route.menu === 'qna-manage' || route.menu === 'faq-manage') {
+    if (route.menu === 'qna-manage' || route.menu === 'course-chat' || route.menu === 'faq-manage') {
       setQnaMenuExpanded(true);
     }
     if (options?.syncHash !== false) {
@@ -534,6 +536,17 @@ export default function App() {
                     <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                     <span>FAQ 공지 설정</span>
                   </button>
+                  <button
+                    onClick={() => applyMenu('course-chat')}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-left text-sm ${
+                      activeMenu === 'course-chat'
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                    <span>수강생 채팅</span>
+                  </button>
                 </div>
               )}
             </div>
@@ -653,6 +666,8 @@ export default function App() {
               key={refreshKey}
               onOpenCourse={handleOpenCourseFromDashboard}
             />
+          ) : activeMenu === 'course-chat' ? (
+            <CourseChatManagePage key={refreshKey} />
           ) : activeMenu === 'faq-manage' ? (
             <FaqManagePage key={refreshKey} />
           ) : activeMenu === 'create-course' ? (

@@ -468,40 +468,79 @@ export function CurriculumTab({ courseId, course }: CurriculumTabProps) {
   // 콘텐츠 삭제
   const handleDeleteContent = (weekNumber: number, sessionId: string, contentId: string) => {
     if (!confirm('이 콘텐츠를 삭제하시겠습니까?')) return;
-    setWeeks(prev =>
-      prev.map(w => {
-        if (w.weekNumber === weekNumber) {
-          return {
-            ...w,
-            sessions: w.sessions.map(s =>
-              s.sessionId === sessionId
-                ? { ...s, contents: s.contents.filter(c => c.id !== contentId) }
-                : s
-            ),
-          };
+    const target = normalizedWeeks
+      .find((w) => w.weekNumber === weekNumber)
+      ?.sessions.find((s) => s.sessionId === sessionId)
+      ?.contents.find((c) => c.id === contentId);
+
+    void (async () => {
+      try {
+        // 왜: 학사 과목 영상은 개별 수정/삭제 API가 별도로 있어, 커리큘럼 JSON과 서버 데이터가 어긋나지 않게 함께 반영합니다.
+        if (isHaksaCourse && haksaKey && target?.type === 'video') {
+          const res = await tutorLmsApi.deleteHaksaVideo({
+            ...haksaKey,
+            contentId,
+          });
+          if (res.rst_code !== '0000') throw new Error(res.rst_message);
         }
-        return w;
-      })
-    );
+
+        setWeeks(prev =>
+          prev.map(w => {
+            if (w.weekNumber === weekNumber) {
+              return {
+                ...w,
+                sessions: w.sessions.map(s =>
+                  s.sessionId === sessionId
+                    ? { ...s, contents: s.contents.filter(c => c.id !== contentId) }
+                    : s
+                ),
+              };
+            }
+            return w;
+          })
+        );
+      } catch (e) {
+        setErrorMessage(e instanceof Error ? e.message : '콘텐츠 삭제 중 오류가 발생했습니다.');
+      }
+    })();
   };
 
   // 콘텐츠 편집
   const handleEditContent = (updatedContent: WeekContentItem) => {
     if (!editingSessionId) return;
-    
-    setWeeks(prev =>
-      prev.map(w => ({
-        ...w,
-        sessions: w.sessions.map(s =>
-          s.sessionId === editingSessionId
-            ? { ...s, contents: s.contents.map(c => c.id === updatedContent.id ? updatedContent : c) }
-            : s
-        ),
-      }))
-    );
-    setEditModalOpen(false);
-    setEditingContent(null);
-    setEditingSessionId(null);
+
+    void (async () => {
+      try {
+        // 왜: 학사 과목 영상은 제목/미디어키/인정시간 수정 시 전용 API를 함께 호출해야 관리 화면과 실제 학사 데이터가 일치합니다.
+        if (isHaksaCourse && haksaKey && updatedContent.type === 'video') {
+          const completeTime = Number(updatedContent.completeTime ?? 0);
+          const res = await tutorLmsApi.updateHaksaVideo({
+            ...haksaKey,
+            contentId: updatedContent.id,
+            title: updatedContent.title,
+            mediaKey: updatedContent.mediaKey,
+            completeTime: completeTime > 0 ? completeTime : undefined,
+          });
+          if (res.rst_code !== '0000') throw new Error(res.rst_message);
+        }
+
+        setWeeks(prev =>
+          prev.map(w => ({
+            ...w,
+            sessions: w.sessions.map(s =>
+              s.sessionId === editingSessionId
+                ? { ...s, contents: s.contents.map(c => c.id === updatedContent.id ? updatedContent : c) }
+                : s
+            ),
+          }))
+        );
+        setEditModalOpen(false);
+        setEditingContent(null);
+        setEditingSessionId(null);
+      } catch (e) {
+        setErrorMessage(e instanceof Error ? e.message : '콘텐츠 수정 중 오류가 발생했습니다.');
+      }
+    })();
   };
 
   // 인정시간 수정 (동영상 콘텐츠 전용)

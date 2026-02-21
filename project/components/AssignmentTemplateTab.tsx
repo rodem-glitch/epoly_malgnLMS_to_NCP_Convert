@@ -527,31 +527,30 @@ function MultiCourseUploadModal({
 
     setUploading(true);
     try {
-      // 왜: 선택된 각 강의에 과제를 동시 등록합니다.
-      const results = await Promise.allSettled(
-        Array.from(selectedIds).map((courseId) =>
-          tutorLmsApi.createHomework({
-            courseId,
-            title: template.title,
-            description: template.description,
-            startDate,
-            startTime,
-            dueDate,
-            dueTime,
-            totalScore: template.totalScore,
-            onoffType: 'N',
-          }),
-        ),
-      );
+      // 왜: 백엔드가 course_ids 일괄 등록을 지원하므로, 한 번의 요청으로 처리합니다.
+      const targetCourseIds = Array.from(selectedIds);
+      const res = await tutorLmsApi.createHomework({
+        courseId: targetCourseIds[0],
+        courseIds: targetCourseIds,
+        title: template.title,
+        description: template.description,
+        startDate,
+        startTime,
+        dueDate,
+        dueTime,
+        totalScore: template.totalScore,
+        onoffType: 'N',
+        submitFileExtMode: template.fileTypes && template.fileTypes.trim() ? 'CUSTOM' : 'ALL',
+        submitFileExts: template.fileTypes || '',
+        allowLateSubmission: template.allowLateSubmission,
+        latePenalty: template.latePenalty,
+      });
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
-      const successCount = results.filter((r) => r.status === 'fulfilled' && (r.value as any).rst_code === '0000').length;
-      const failCount = selectedIds.size - successCount;
-
-      if (failCount === 0) {
-        alert(`${successCount}개 강의에 과제가 등록되었습니다.`);
-      } else {
-        alert(`성공: ${successCount}개 / 실패: ${failCount}개\n일부 강의에 과제 등록이 실패했습니다.`);
-      }
+      const successCount = Number((res as any).rst_inserted_course_count ?? targetCourseIds.length);
+      const failCount = Number((res as any).rst_fail_count ?? 0);
+      if (failCount > 0) alert(`성공: ${successCount}개 / 실패: ${failCount}개\n일부 강의 등록에 실패했습니다.`);
+      else alert(`${successCount}개 강의에 과제가 등록되었습니다.`);
       onClose();
     } catch (e) {
       alert(e instanceof Error ? e.message : '과제 업로드 중 오류가 발생했습니다.');

@@ -10,6 +10,7 @@ QuestionCategoryDao category = new QuestionCategoryDao();
 int categoryId = m.ri("category_id");
 int questionType = m.ri("question_type");
 String keyword = m.rs("s_keyword");
+boolean mineOnly = "Y".equalsIgnoreCase(m.rs("mine_only"));
 int limit = m.ri("limit") > 0 ? m.ri("limit") : 50;
 int pageNum = m.ri("page") > 0 ? m.ri("page") : 1;
 
@@ -26,9 +27,13 @@ lm.addWhere("a.site_id = " + siteId);
 lm.addWhere("a.status = 1");
 
 // 교수자는 본인 문제 + 공개된 문제를 조회
-if(!isAdmin) {
+if(mineOnly) {
+	lm.addWhere("a.manager_id = " + userId);
+} else if(!isAdmin) {
 	lm.addWhere("(a.manager_id = " + userId + " OR a.open_yn = 'Y')");
 }
+
+m.log("tutor_question_bank_list", "user_id=" + userId + ", is_admin=" + (isAdmin ? "Y" : "N") + ", mine_only=" + (mineOnly ? "Y" : "N"));
 
 // 카테고리 필터
 if(categoryId > 0) {

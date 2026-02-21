@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Info,
   List,
@@ -47,7 +47,7 @@ interface CourseManagementProps {
   course: {
     id: string;
     mappedCourseId?: number;
-    // 왜: 학사/프리즘 탭에 따라 API 호출 및 편집 가능 여부를 결정합니다.
+    // ?? ?숈궗/?꾨━利???뿉 ?곕씪 API ?몄텧 諛??몄쭛 媛???щ?瑜?寃곗젙?⑸땲??
     sourceType?: 'haksa' | 'prism';
     courseId: string;
     courseType: string;
@@ -57,7 +57,7 @@ interface CourseManagementProps {
     period: string;
     students: number;
     status: string;
-    // ===== 학사 View 25개 필드 =====
+    // ===== ?숈궗 View 25媛??꾨뱶 =====
     haksaCategory?: string;
     haksaDeptName?: string;
     haksaWeek?: string;
@@ -98,7 +98,7 @@ const getHaksaWeekCount = (course?: any) => {
   return 15;
 };
 
-const buildHaksaSessionName = (sessionNumber: number) => `${sessionNumber}차시`;
+const buildHaksaSessionName = (sessionNumber: number) => `${sessionNumber}李⑥떆`;
 
 const appendHaksaCurriculumContent = async ({
   haksaKey,
@@ -111,12 +111,12 @@ const appendHaksaCurriculumContent = async ({
   sessionNumber: number;
   content: any;
 }) => {
-  if (!haksaKey) throw new Error('학사 과목 키가 비어 있어 강의목차에 저장할 수 없습니다.');
+  if (!haksaKey) throw new Error('?숈궗 怨쇰ぉ ?ㅺ? 鍮꾩뼱 ?덉뼱 媛뺤쓽紐⑹감????ν븷 ???놁뒿?덈떎.');
 
   const res = await tutorLmsApi.getHaksaCurriculum(haksaKey);
   if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
-  // 왜: DataSet 응답이 배열로 올 수 있어 첫 번째 행을 기준으로 해석합니다.
+  // ?? DataSet ?묐떟??諛곗뿴濡??????덉뼱 泥?踰덉㎏ ?됱쓣 湲곗??쇰줈 ?댁꽍?⑸땲??
   const payload = Array.isArray(res.rst_data) ? res.rst_data[0] : res.rst_data;
   const raw = payload?.curriculum_json || '';
 
@@ -138,7 +138,7 @@ const appendHaksaCurriculumContent = async ({
   if (!targetWeek) {
     targetWeek = {
       weekNumber: normalizedWeek,
-      title: `${normalizedWeek}주차`,
+      title: `${normalizedWeek}二쇱감`,
       isExpanded: true,
       sessions: [],
     };
@@ -200,7 +200,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
   const [course, setCourse] = useState(initialCourse);
 
   const resolveInitialTab = (tab?: CourseManagementTabId): TabType => {
-    // 왜: 상위 탭(info/assignment)이 들어오면 기본 하위 탭으로 정리합니다.
+    // ?? ?곸쐞 ??info/assignment)???ㅼ뼱?ㅻ㈃ 湲곕낯 ?섏쐞 ??쑝濡??뺣━?⑸땲??
     if (!tab || tab === 'info') return 'info-basic';
     if (tab === 'assignment') return 'assignment-management';
     return tab;
@@ -213,7 +213,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
 
   useEffect(() => {
     if (!initialTab) return;
-    // 왜: 뒤로가기/직접 주소 이동 시 탭 상태를 주소 기준으로 다시 맞춥니다.
+    // ?? ?ㅻ줈媛湲?吏곸젒 二쇱냼 ?대룞 ?????곹깭瑜?二쇱냼 湲곗??쇰줈 ?ㅼ떆 留욎땅?덈떎.
     const nextTab = resolveInitialTab(initialTab);
     setActiveTab(nextTab);
     setIsInfoExpanded(INFO_SUB_TAB_IDS.includes(nextTab));
@@ -221,11 +221,11 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
   }, [initialTab]);
 
   useEffect(() => {
-    // 왜: 상위에서 주소 동기화를 할 수 있도록 현재 탭을 알려줍니다.
+    // ?? ?곸쐞?먯꽌 二쇱냼 ?숆린?붾? ?????덈룄濡??꾩옱 ??쓣 ?뚮젮以띾땲??
     onTabChange?.(activeTab);
   }, [activeTab, onTabChange]);
 
-  // 페이지 진입 시 스크롤을 맨 위로 이동
+  // ?섏씠吏 吏꾩엯 ???ㅽ겕濡ㅼ쓣 留??꾨줈 ?대룞
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -248,7 +248,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
     { id: 'completion' as TabType, label: '수료관리', icon: CheckCircle, isSubTab: false },
   ];
 
-  // 왜: 과목정보 하위 탭 (info 탭 케럟 변경)
+  // ?? 怨쇰ぉ?뺣낫 ?섏쐞 ??(info ??耳??蹂寃?
   const infoSubTabs = [
     { id: 'info-basic' as TabType, label: '기본 정보', icon: Info },
     { id: 'info-evaluation' as TabType, label: '평가/수료 기준', icon: ClipboardCheck },
@@ -273,7 +273,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
       }
     } else {
       setActiveTab(tabId);
-      // 다른 탭을 클릭하면 해당 탭의 하위 탭만 유지
+      // ?ㅻⅨ ??쓣 ?대┃?섎㈃ ?대떦 ??쓽 ?섏쐞 ??쭔 ?좎?
       if (!visibleInfoSubTabs.map((subTab) => subTab.id).includes(tabId)) {
         setIsInfoExpanded(false);
       }
@@ -295,7 +295,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
       course?.haksaBunbanCode ||
       course?.haksaGroupCode
     ) ||
-    String(course?.courseType || '').includes('학사');
+    String(course?.courseType || '').includes('?숈궗');
   const visibleTabs = isHaksaMenu ? tabs.filter(tab => tab.id !== 'completion') : tabs;
   const visibleInfoSubTabs = isHaksaMenu
     ? infoSubTabs.filter(subTab => subTab.id !== 'info-completion')
@@ -307,6 +307,77 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
       setActiveTab('info-basic');
     }
   }, [activeTab, isHaksaMenu]);
+
+  const [headerActionLoading, setHeaderActionLoading] = useState<'copy' | 'delete' | null>(null);
+
+  const handleCopyCourse = () => {
+    if (!Number.isFinite(courseIdNum) || courseIdNum <= 0) {
+      alert('蹂듭궗 媛?ν븳 怨쇰ぉ ID瑜?李얠쓣 ???놁뒿?덈떎.');
+      return;
+    }
+
+    const defaultName = `${course.subjectName} (蹂듭궗)`;
+    const nextName = prompt('蹂듭궗??怨쇰ぉ紐낆쓣 ?낅젰??二쇱꽭??', defaultName);
+    if (nextName === null) return;
+
+    const trimmedName = nextName.trim();
+    if (!trimmedName) {
+      alert('怨쇰ぉ紐낆쓣 ?낅젰??二쇱꽭??');
+      return;
+    }
+
+    void (async () => {
+      setHeaderActionLoading('copy');
+      try {
+        // ?? 蹂듭궗 API???대떦 援먯닔(tutor_id)媛 ?꾩닔?쇱꽌 癒쇱? ?꾩옱 ?ъ슜???쒗꽣 ?뺣낫瑜?議고쉶?⑸땲??
+        const tutorRes = await tutorLmsApi.getTutors();
+        if (tutorRes.rst_code !== '0000') throw new Error(tutorRes.rst_message);
+        const tutors = Array.isArray(tutorRes.rst_data) ? tutorRes.rst_data : [];
+        const tutorId = Number(tutors[0]?.user_id ?? 0);
+        if (!tutorId) throw new Error('?대떦 援먯닔 ?뺣낫瑜?李얠쓣 ???놁뒿?덈떎.');
+
+        const copyRes = await tutorLmsApi.copyCourse({
+          sourceCourseId: courseIdNum,
+          courseName: trimmedName,
+          tutorId,
+        });
+        if (copyRes.rst_code !== '0000') throw new Error(copyRes.rst_message);
+
+        alert('怨쇰ぉ??蹂듭궗?섏뿀?듬땲?? 紐⑸줉?먯꽌 ??怨쇰ぉ???뺤씤??二쇱꽭??');
+        onBack();
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '怨쇰ぉ 蹂듭궗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+      } finally {
+        setHeaderActionLoading(null);
+      }
+    })();
+  };
+
+  const handleDeleteCourse = () => {
+    if (!Number.isFinite(courseIdNum) || courseIdNum <= 0) {
+      alert('??젣 媛?ν븳 怨쇰ぉ ID瑜?李얠쓣 ???놁뒿?덈떎.');
+      return;
+    }
+
+    if (!confirm(`"${course.subjectName}" 怨쇰ぉ???뺣쭚 ??젣?섏떆寃좎뒿?덇퉴?\n\n????젣??怨쇰ぉ? 蹂듦뎄?????놁뒿?덈떎.`)) {
+      return;
+    }
+
+    void (async () => {
+      setHeaderActionLoading('delete');
+      try {
+        const res = await tutorLmsApi.deleteCourse({ courseId: courseIdNum });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+
+        alert('怨쇰ぉ????젣?섏뿀?듬땲??');
+        onBack();
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '怨쇰ぉ ??젣 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+      } finally {
+        setHeaderActionLoading(null);
+      }
+    })();
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -347,7 +418,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
       case 'qna':
         return <QnaTab courseId={courseIdNum} initialPostId={initialQnaPostId} />;
       case 'grades':
-        // 왜: 학사 성적은 A/B/C/D/F 판정 UI가 요구되므로, 매핑 여부와 무관하게 학사 전용 화면을 사용합니다.
+        // ?? ?숈궗 ?깆쟻? A/B/C/D/F ?먯젙 UI媛 ?붽뎄?섎?濡? 留ㅽ븨 ?щ?? 臾닿??섍쾶 ?숈궗 ?꾩슜 ?붾㈃???ъ슜?⑸땲??
         return course?.sourceType === 'haksa'
           ? <HaksaGradingContent course={course} />
           : <GradesTab courseId={courseIdNum} />;
@@ -365,16 +436,16 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
         {/* Left Sidebar - Vertical Tabs (Fixed Position) */}
         <div className="w-64 flex-shrink-0">
           <div className="fixed w-64" style={{ maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto' }}>
-            {/* 목록으로 돌아가기 버튼 */}
+            {/* 紐⑸줉?쇰줈 ?뚯븘媛湲?踰꾪듉 */}
             <button
               onClick={onBack}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span>목록으로 돌아가기</span>
+              <span>紐⑸줉?쇰줈 ?뚯븘媛湲?</span>
             </button>
             
-            {/* 메뉴 네비게이션 */}
+            {/* 硫붾돱 ?ㅻ퉬寃뚯씠??*/}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <nav className="flex flex-col">
                 {visibleTabs.map((tab) => {
@@ -408,7 +479,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
                         )}
                       </button>
                       
-                      {/* 과목정보 하위 탭 */}
+                      {/* 怨쇰ぉ?뺣낫 ?섏쐞 ??*/}
                       {isInfoTab && isInfoExpanded && (
                         <div className="bg-gray-50">
                           {visibleInfoSubTabs.map((subTab) => {
@@ -433,7 +504,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
                         </div>
                       )}
                       
-                      {/* 과제 하위 탭 */}
+                      {/* 怨쇱젣 ?섏쐞 ??*/}
                       {isAssignmentTab && isAssignmentExpanded && (
                         <div className="bg-gray-50">
                           {assignmentSubTabs.map((subTab) => {
@@ -467,7 +538,7 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
 
         {/* Right Content Area */}
         <div className="flex-1 min-w-0">
-          {/* 강좌 정보 헤더 (스크롤과 함께 이동) */}
+          {/* 媛뺤쥖 ?뺣낫 ?ㅻ뜑 (?ㅽ겕濡ㅺ낵 ?④퍡 ?대룞) */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-gray-900">{course.subjectName}</h2>
@@ -476,53 +547,44 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
                   <button
                     onClick={() => setActiveTab('info-basic')}
                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors"
-                    title="과목 정보 수정"
+                    title="怨쇰ぉ ?뺣낫 ?섏젙"
                   >
                     <Edit className="w-3.5 h-3.5" />
-                    <span>수정</span>
+                    <span>?섏젙</span>
                   </button>
                   <button
+                    disabled={headerActionLoading !== null}
                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 transition-colors"
-                    title="과목 복사"
-                    onClick={() => {
-                      if (confirm(`"${course.subjectName}" 과목을 복사하시겠습니까?`)) {
-                        // TODO: 백엔드 API 연동 — tutorLmsApi.copyCourse({ courseId: course.mappedCourseId })
-                        alert('과목 복사가 요청되었습니다.\n(백엔드 연동 후 실제 복사됩니다.)');
-                      }
-                    }}
+                    title="怨쇰ぉ 蹂듭궗"
+                    onClick={handleCopyCourse}
                   >
                     <Copy className="w-3.5 h-3.5" />
-                    <span>복사</span>
+                    <span>{headerActionLoading === 'copy' ? '蹂듭궗 以?..' : '蹂듭궗'}</span>
                   </button>
                   <button
+                    disabled={headerActionLoading !== null}
                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition-colors"
-                    title="과목 삭제"
-                    onClick={() => {
-                      if (confirm(`"${course.subjectName}" 과목을 정말 삭제하시겠습니까?\n\n⚠ 삭제된 과목은 복구할 수 없습니다.`)) {
-                        // TODO: 백엔드 API 연동 — tutorLmsApi.deleteCourse({ courseId: course.mappedCourseId })
-                        alert('과목 삭제가 요청되었습니다.\n(백엔드 연동 후 실제 삭제됩니다.)');
-                        onBack();
-                      }
-                    }}
+                    title="怨쇰ぉ ??젣"
+                    onClick={handleDeleteCourse}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>삭제</span>
+                    <span>{headerActionLoading === 'delete' ? '??젣 以?..' : '??젣'}</span>
                   </button>
                 </div>
               )}
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-600">
-              <span>과정ID: {course.courseId}</span>
-              <span className="text-gray-300">·</span>
+              <span>怨쇱젙ID: {course.courseId}</span>
+              <span className="text-gray-300">쨌</span>
               <span>{course.courseType}</span>
-              <span className="text-gray-300">·</span>
+              <span className="text-gray-300">쨌</span>
               <span>{course.period}</span>
-              <span className="text-gray-300">·</span>
-              <span>수강생: {course.students}명</span>
+              <span className="text-gray-300">쨌</span>
+              <span>?섍컯?? {course.students}紐?</span>
             </div>
           </div>
           
-          {/* 탭 콘텐츠 */}
+          {/* ??肄섑뀗痢?*/}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             {renderTabContent()}
           </div>
@@ -532,9 +594,9 @@ export function CourseManagement({ course: initialCourse, onBack, initialTab, in
   );
 }
 
-// 과목정보 탭 (이제 CourseInfoTabs.tsx에서 import됨)
+// 怨쇰ぉ?뺣낫 ??(?댁젣 CourseInfoTabs.tsx?먯꽌 import??
 
-// 학사 과목: 시험 탭(강의목차 기반으로 표시)
+// ?숈궗 怨쇰ぉ: ?쒗뿕 ??媛뺤쓽紐⑹감 湲곕컲?쇰줈 ?쒖떆)
 function HaksaExamTab({ course }: { course?: any }) {
   const haksaKey = useMemo(
     () =>
@@ -560,7 +622,7 @@ function HaksaExamTab({ course }: { course?: any }) {
 
   useEffect(() => {
     if (!haksaKey) {
-      setErrorMessage('학사 과목 키가 비어 있어 시험을 불러올 수 없습니다.');
+      setErrorMessage('?숈궗 怨쇰ぉ ?ㅺ? 鍮꾩뼱 ?덉뼱 ?쒗뿕??遺덈윭?????놁뒿?덈떎.');
       setHaksaExams([]);
       return;
     }
@@ -573,7 +635,7 @@ function HaksaExamTab({ course }: { course?: any }) {
         const res = await tutorLmsApi.getHaksaCurriculum(haksaKey);
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
-        // 왜: Malgn DataSet 응답이 배열로 올 수 있어 첫 번째 행을 기준으로 해석합니다.
+        // ?? Malgn DataSet ?묐떟??諛곗뿴濡??????덉뼱 泥?踰덉㎏ ?됱쓣 湲곗??쇰줈 ?댁꽍?⑸땲??
         const payload = Array.isArray(res.rst_data) ? res.rst_data[0] : res.rst_data;
         const raw = payload?.curriculum_json || '';
         if (!raw) {
@@ -590,7 +652,7 @@ function HaksaExamTab({ course }: { course?: any }) {
       } catch (e) {
         if (!cancelled) {
           setHaksaExams([]);
-          setErrorMessage(e instanceof Error ? e.message : '시험 목록을 불러오는 중 오류가 발생했습니다.');
+          setErrorMessage(e instanceof Error ? e.message : '?쒗뿕 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -606,20 +668,20 @@ function HaksaExamTab({ course }: { course?: any }) {
   return (
     <div className="space-y-4">
       <div className="p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm">
-        학사 과목의 시험은 <b>강의목차</b>에서 주차/차시에 등록한 항목을 기준으로 표시됩니다.
+        ?숈궗 怨쇰ぉ???쒗뿕? <b>媛뺤쓽紐⑹감</b>?먯꽌 二쇱감/李⑥떆???깅줉????ぉ??湲곗??쇰줈 ?쒖떆?⑸땲??
       </div>
 
       {errorMessage && (
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{errorMessage}</div>
       )}
 
-      {loading && <div className="p-6 text-center text-gray-500">시험 목록을 불러오는 중...</div>}
+      {loading && <div className="p-6 text-center text-gray-500">?쒗뿕 紐⑸줉??遺덈윭?ㅻ뒗 以?..</div>}
 
       {!loading && haksaExams.length > 0 ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">등록된 시험</h3>
-            <span className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded-full">총 {haksaExams.length}개</span>
+            <h3 className="text-lg font-medium text-gray-900">?깅줉???쒗뿕</h3>
+            <span className="px-3 py-1 bg-red-100 text-red-700 text-sm rounded-full">珥?{haksaExams.length}媛?</span>
           </div>
 
           {haksaExams.map((exam: any) => (
@@ -631,21 +693,21 @@ function HaksaExamTab({ course }: { course?: any }) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-red-600" />
-                    <span className="font-medium text-gray-900">{exam.title || '시험'}</span>
+                    <span className="font-medium text-gray-900">{exam.title || '?쒗뿕'}</span>
                     <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                      {exam.weekNumber || 1}주차
+                      {exam.weekNumber || 1}二쇱감
                     </span>
                   </div>
                   {exam.description && <p className="text-sm text-gray-500 mt-1 ml-7">{exam.description}</p>}
 
                   {exam.examSettings && (
                     <div className="mt-2 ml-7 text-sm text-gray-600 space-y-1">
-                      <div>배점: {exam.examSettings.points ?? 0}점</div>
+                      <div>諛곗젏: {exam.examSettings.points ?? 0}??</div>
                       <div>
-                        재응시:{' '}
+                        ?ъ쓳??{' '}
                         {exam.examSettings.allowRetake
-                          ? `가능 (${exam.examSettings.retakeScore ?? 0}점 미만, ${exam.examSettings.retakeCount ?? 0}회)`
-                          : '불가'}
+                          ? `媛??(${exam.examSettings.retakeScore ?? 0}??誘몃쭔, ${exam.examSettings.retakeCount ?? 0}??`
+                          : '遺덇?'}
                       </div>
                       <div>결과노출: {exam.examSettings.showResults === false ? '비노출' : '노출'}</div>
                     </div>
@@ -665,8 +727,8 @@ function HaksaExamTab({ course }: { course?: any }) {
         !loading && (
           <div className="text-center text-gray-500 py-12 border border-dashed border-gray-300 rounded-lg">
             <FileText className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-            <p className="mb-2">등록된 시험이 없습니다.</p>
-            <p className="text-sm text-gray-400">강의목차에서 주차별로 시험을 추가할 수 있습니다.</p>
+            <p className="mb-2">?깅줉???쒗뿕???놁뒿?덈떎.</p>
+            <p className="text-sm text-gray-400">媛뺤쓽紐⑹감?먯꽌 二쇱감蹂꾨줈 ?쒗뿕??異붽??????덉뒿?덈떎.</p>
           </div>
         )
       )}
@@ -674,7 +736,7 @@ function HaksaExamTab({ course }: { course?: any }) {
   );
 }
 
-// 학사 과목: 자료 탭(강의목차 기반으로 표시)
+// ?숈궗 怨쇰ぉ: ?먮즺 ??媛뺤쓽紐⑹감 湲곕컲?쇰줈 ?쒖떆)
 function HaksaMaterialsTab({ course }: { course?: any }) {
   const haksaKey = useMemo(
     () =>
@@ -700,7 +762,7 @@ function HaksaMaterialsTab({ course }: { course?: any }) {
 
   useEffect(() => {
     if (!haksaKey) {
-      setErrorMessage('학사 과목 키가 비어 있어 자료를 불러올 수 없습니다.');
+      setErrorMessage('?숈궗 怨쇰ぉ ?ㅺ? 鍮꾩뼱 ?덉뼱 ?먮즺瑜?遺덈윭?????놁뒿?덈떎.');
       setHaksaDocs([]);
       return;
     }
@@ -732,7 +794,7 @@ function HaksaMaterialsTab({ course }: { course?: any }) {
       } catch (e) {
         if (!cancelled) {
           setHaksaDocs([]);
-          setErrorMessage(e instanceof Error ? e.message : '자료 목록을 불러오는 중 오류가 발생했습니다.');
+          setErrorMessage(e instanceof Error ? e.message : '?먮즺 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -748,20 +810,20 @@ function HaksaMaterialsTab({ course }: { course?: any }) {
   return (
     <div className="space-y-4">
       <div className="p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm">
-        학사 과목의 자료는 <b>강의목차</b>에서 주차/차시에 등록한 항목을 기준으로 표시됩니다.
+        ?숈궗 怨쇰ぉ???먮즺??<b>媛뺤쓽紐⑹감</b>?먯꽌 二쇱감/李⑥떆???깅줉????ぉ??湲곗??쇰줈 ?쒖떆?⑸땲??
       </div>
 
       {errorMessage && (
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{errorMessage}</div>
       )}
 
-      {loading && <div className="p-6 text-center text-gray-500">자료 목록을 불러오는 중...</div>}
+      {loading && <div className="p-6 text-center text-gray-500">?먮즺 紐⑸줉??遺덈윭?ㅻ뒗 以?..</div>}
 
       {!loading && haksaDocs.length > 0 ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900">등록된 자료</h3>
-            <span className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full">총 {haksaDocs.length}개</span>
+            <h3 className="text-lg font-medium text-gray-900">?깅줉???먮즺</h3>
+            <span className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full">珥?{haksaDocs.length}媛?</span>
           </div>
 
           {haksaDocs.map((doc: any) => (
@@ -773,9 +835,9 @@ function HaksaMaterialsTab({ course }: { course?: any }) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <FolderOpen className="w-5 h-5 text-green-600" />
-                    <span className="font-medium text-gray-900">{doc.title || '학습자료'}</span>
+                    <span className="font-medium text-gray-900">{doc.title || '?숈뒿?먮즺'}</span>
                     <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                      {doc.weekNumber || 1}주차
+                      {doc.weekNumber || 1}二쇱감
                     </span>
                   </div>
                   {doc.description && <p className="text-sm text-gray-500 mt-1 ml-7">{doc.description}</p>}
@@ -793,7 +855,7 @@ function HaksaMaterialsTab({ course }: { course?: any }) {
       ) : (
         !loading && (
           <div className="p-10 text-center text-gray-500 border border-dashed border-gray-200 rounded-lg">
-            등록된 자료가 없습니다. 강의목차에서 주차별로 자료를 추가할 수 있습니다.
+            ?깅줉???먮즺媛 ?놁뒿?덈떎. 媛뺤쓽紐⑹감?먯꽌 二쇱감蹂꾨줈 ?먮즺瑜?異붽??????덉뒿?덈떎.
           </div>
         )
       )}
@@ -802,7 +864,7 @@ function HaksaMaterialsTab({ course }: { course?: any }) {
 }
 
 function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
-  // 왜: 학사 과목은 courseId가 NaN 또는 0이므로, 빈 상태로 시작하여 교수자가 직접 추가할 수 있도록 합니다.
+  // ?? ?숈궗 怨쇰ぉ? courseId媛 NaN ?먮뒗 0?대?濡? 鍮??곹깭濡??쒖옉?섏뿬 援먯닔?먭? 吏곸젒 異붽??????덈룄濡??⑸땲??
   const isHaksaCourse =
     course?.sourceType === 'haksa' && (!course?.mappedCourseId || Number.isNaN(courseId) || courseId <= 0);
   const haksaKey = useMemo(
@@ -830,17 +892,17 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // 학사 과목의 경우 로컬스토리지에서 시험 목록 불러오기
+  // ?숈궗 怨쇰ぉ??寃쎌슦 濡쒖뺄?ㅽ넗由ъ??먯꽌 ?쒗뿕 紐⑸줉 遺덈윭?ㅺ린
   const [haksaExams, setHaksaExams] = useState<any[]>([]);
   const [haksaExamsLoaded, setHaksaExamsLoaded] = useState(false);
   const latestHaksaExamsRef = useRef<any[]>([]);
   const latestHaksaKeyRef = useRef(haksaKey);
 
-  // 프리즘 과목 시험 수정 관련 상태
+  // ?꾨━利?怨쇰ぉ ?쒗뿕 ?섏젙 愿???곹깭
   const [editingPrismExam, setEditingPrismExam] = useState<any | null>(null);
   const [prismExamSettings, setPrismExamSettings] = useState<Record<number, any>>({});
 
-  // 오늘 날짜 기본값
+  // ?ㅻ뒛 ?좎쭨 湲곕낯媛?
   const today = new Date().toISOString().split('T')[0];
   const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -866,7 +928,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
       try {
         const res = await tutorLmsApi.getHaksaExams(haksaKey);
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
-        // 왜: DataSet 응답이 배열로 올 수 있어 첫 번째 행을 기준으로 해석합니다.
+        // ?? DataSet ?묐떟??諛곗뿴濡??????덉뼱 泥?踰덉㎏ ?됱쓣 湲곗??쇰줈 ?댁꽍?⑸땲??
         const payload = Array.isArray(res.rst_data) ? res.rst_data[0] : res.rst_data;
         const raw = payload?.exams_json || '';
         if (raw) {
@@ -875,7 +937,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
           return;
         }
 
-        // 왜: 기존 로컬스토리지 데이터를 DB로 이전합니다(이전 데이터 손실 방지).
+        // ?? 湲곗〈 濡쒖뺄?ㅽ넗由ъ? ?곗씠?곕? DB濡??댁쟾?⑸땲???댁쟾 ?곗씠???먯떎 諛⑹?).
         if (course?.id) {
           try {
             const saved = localStorage.getItem(`haksa_exams_${course.id}`);
@@ -893,7 +955,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
         }
       } catch (e) {
         if (!cancelled) {
-          setErrorMessage(e instanceof Error ? e.message : '시험 목록을 불러오는 중 오류가 발생했습니다.');
+          setErrorMessage(e instanceof Error ? e.message : '?쒗뿕 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       } finally {
         if (!cancelled) setHaksaExamsLoaded(true);
@@ -907,7 +969,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
   }, [isHaksaCourse, haksaKey, course?.id]);
   useEffect(() => {
     if (isHaksaCourse && !haksaKey) {
-      setErrorMessage('학사 과목 키가 비어 있어 시험 저장/조회가 불가능합니다.');
+      setErrorMessage('?숈궗 怨쇰ぉ ?ㅺ? 鍮꾩뼱 ?덉뼱 ?쒗뿕 ???議고쉶媛 遺덇??ν빀?덈떎.');
     }
   }, [isHaksaCourse, haksaKey]);
   useEffect(() => {
@@ -919,7 +981,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
   useEffect(() => {
     return () => {
       if (!isHaksaCourse || !latestHaksaKeyRef.current || !haksaExamsLoaded) return;
-      // 왜: 탭 이동/언마운트 시 마지막 상태 저장이 누락될 수 있어 한 번 더 보장합니다.
+      // ?? ???대룞/?몃쭏?댄듃 ??留덉?留??곹깭 ??μ씠 ?꾨씫?????덉뼱 ??踰???蹂댁옣?⑸땲??
       void tutorLmsApi.updateHaksaExams({
         ...latestHaksaKeyRef.current,
         examsJson: JSON.stringify(latestHaksaExamsRef.current),
@@ -927,7 +989,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
     };
   }, [isHaksaCourse, haksaExamsLoaded]);
 
-  // 프리즘 과목 시험 설정 로컬스토리지에서 불러오기
+  // ?꾨━利?怨쇰ぉ ?쒗뿕 ?ㅼ젙 濡쒖뺄?ㅽ넗由ъ??먯꽌 遺덈윭?ㅺ린
   useEffect(() => {
     if (courseId && !isHaksaCourse) {
       try {
@@ -960,7 +1022,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
       }));
       setExams(mapped);
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '시험 목록을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '?쒗뿕 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoading(false);
     }
@@ -970,7 +1032,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
     if (!isHaksaCourse) void fetchExams();
   }, [courseId, isHaksaCourse]);
 
-  // 프리즘 시험 수정 시작
+  // ?꾨━利??쒗뿕 ?섏젙 ?쒖옉
   const handleEditPrismExam = (exam: any) => {
     const settings = prismExamSettings[exam.id] || {};
     setEditingPrismExam(exam);
@@ -987,7 +1049,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
     });
   };
 
-  // 프리즘 시험 수정 저장
+  // ?꾨━利??쒗뿕 ?섏젙 ???
   const handleSavePrismExamEdit = () => {
     if (!editingPrismExam) return;
 
@@ -997,7 +1059,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
     };
     setPrismExamSettings(updated);
 
-    // 로컬스토리지 저장
+    // 濡쒖뺄?ㅽ넗由ъ? ???
     if (courseId) {
       try {
         localStorage.setItem(`prism_exam_settings_${courseId}`, JSON.stringify(updated));
@@ -1007,15 +1069,15 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
     setEditingPrismExam(null);
   };
 
-  // 프리즘 시험 삭제
+  // ?꾨━利??쒗뿕 ??젣
   const handleDeletePrismExam = async (examId: number) => {
-    if (!confirm('이 시험을 삭제하시겠습니까?')) return;
+    if (!confirm('???쒗뿕????젣?섏떆寃좎뒿?덇퉴?')) return;
     
     try {
       const res = await tutorLmsApi.deleteExam({ courseId, examId });
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
       
-      // 로컬스토리지에서 설정 삭제
+      // 濡쒖뺄?ㅽ넗由ъ??먯꽌 ?ㅼ젙 ??젣
       const updated = { ...prismExamSettings };
       delete updated[examId];
       setPrismExamSettings(updated);
@@ -1026,13 +1088,13 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
       }
       
       await fetchExams();
-      alert('시험이 삭제되었습니다.');
+      alert('?쒗뿕????젣?섏뿀?듬땲??');
     } catch (e) {
-      alert(e instanceof Error ? e.message : '시험 삭제 중 오류가 발생했습니다.');
+      alert(e instanceof Error ? e.message : '?쒗뿕 ??젣 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     }
   };
 
-  // 왜: 학사 과목인 경우 시험관리에서 등록한 시험을 표시하고 추가할 수 있습니다.
+  // ?? ?숈궗 怨쇰ぉ??寃쎌슦 ?쒗뿕愿由ъ뿉???깅줉???쒗뿕???쒖떆?섍퀬 異붽??????덉뒿?덈떎.
   if (isHaksaCourse) {
     return (
       <HaksaExamContent
@@ -1060,18 +1122,18 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
     );
   }
 
-  // 프리즘 과목: 시험관리 목록에서 선택하는 모달 표시
+  // ?꾨━利?怨쇰ぉ: ?쒗뿕愿由?紐⑸줉?먯꽌 ?좏깮?섎뒗 紐⑤떖 ?쒖떆
   return (
     <>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">등록된 시험</h3>
+          <h3 className="text-lg font-medium text-gray-900">?깅줉???쒗뿕</h3>
           <button 
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>시험 추가</span>
+            <span>?쒗뿕 異붽?</span>
           </button>
         </div>
         {errorMessage && (
@@ -1081,7 +1143,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
         )}
 
         {loading && (
-          <div className="p-6 text-center text-gray-500">시험 목록을 불러오는 중...</div>
+          <div className="p-6 text-center text-gray-500">?쒗뿕 紐⑸줉??遺덈윭?ㅻ뒗 以?..</div>
         )}
 
         {!loading && exams.length > 0 && (
@@ -1099,36 +1161,36 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                         <ClipboardCheck className="w-5 h-5 text-red-600" />
                         <span className="font-medium text-gray-900">{exam.title}</span>
                         <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
-                          {exam.submitted}/{exam.total}명 제출
+                          {exam.submitted}/{exam.total}紐??쒖텧
                         </span>
                       </div>
                       
-                      {/* 설정 항목들 테이블 형태로 표시 */}
+                      {/* ?ㅼ젙 ??ぉ???뚯씠釉??뺥깭濡??쒖떆 */}
                       <div className="ml-7 text-sm space-y-2 bg-gray-50 p-3 rounded-lg">
                         <div className="flex items-center">
-                          <span className="w-24 text-gray-500">응시기간</span>
+                          <span className="w-24 text-gray-500">?묒떆湲곌컙</span>
                           <span className="text-gray-900">
                             {settings.startDate || exam.date || '-'} {settings.startTime || ''} ~ {settings.endDate || '-'} {settings.endTime || ''}
                           </span>
                         </div>
                         <div className="flex items-center">
-                          <span className="w-24 text-gray-500">시험시간</span>
+                          <span className="w-24 text-gray-500">?쒗뿕?쒓컙</span>
                           <span className="text-gray-900">{exam.duration}</span>
                         </div>
                         <div className="flex items-center">
-                          <span className="w-24 text-gray-500">배점</span>
-                          <span className="text-gray-900">{settings.points || 0}점</span>
+                          <span className="w-24 text-gray-500">諛곗젏</span>
+                          <span className="text-gray-900">{settings.points || 0}??</span>
                         </div>
                         <div className="flex items-center">
-                          <span className="w-24 text-gray-500">재응시 가능</span>
+                          <span className="w-24 text-gray-500">?ъ쓳??媛??</span>
                           <span className="text-gray-900">
                             {settings.allowRetake ? (
-                              <>가능 ({settings.retakeScore}점 미만, {settings.retakeCount}회)</>
-                            ) : '불가'}
+                              <>媛??({settings.retakeScore}??誘몃쭔, {settings.retakeCount}??</>
+                            ) : '遺덇?'}
                           </span>
                         </div>
                         <div className="flex items-center">
-                          <span className="w-24 text-gray-500">시험결과노출</span>
+                          <span className="w-24 text-gray-500">?쒗뿕寃곌낵?몄텧</span>
                           <span className="text-gray-900">{settings.showResults !== false ? '노출' : '비노출'}</span>
                         </div>
                       </div>
@@ -1138,14 +1200,14 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                       <button
                         onClick={(e) => { e.stopPropagation(); handleEditPrismExam(exam); }}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="수정"
+                        title="?섏젙"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleDeletePrismExam(exam.id); }}
                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="삭제"
+                        title="??젣"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1160,8 +1222,8 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
         {!loading && exams.length === 0 && (
           <div className="text-center text-gray-500 py-12 border border-dashed border-gray-300 rounded-lg">
             <ClipboardCheck className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-            <p className="mb-2">등록된 시험이 없습니다.</p>
-            <p className="text-sm text-gray-400">시험 추가 버튼을 눌러 시험관리에서 만든 시험을 등록하세요.</p>
+            <p className="mb-2">?깅줉???쒗뿕???놁뒿?덈떎.</p>
+            <p className="text-sm text-gray-400">?쒗뿕 異붽? 踰꾪듉???뚮윭 ?쒗뿕愿由ъ뿉??留뚮뱺 ?쒗뿕???깅줉?섏꽭??</p>
           </div>
         )}
       </div>
@@ -1173,7 +1235,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
         showWeekSession={course?.sourceType === 'haksa'}
         onSave={async (examData) => {
           try {
-            // 왜: 기존 시험을 과목에 연결만 합니다 (시험 복사 없음)
+            // ?? 湲곗〈 ?쒗뿕??怨쇰ぉ???곌껐留??⑸땲??(?쒗뿕 蹂듭궗 ?놁쓬)
             const startDateTime = (examData.startDate || new Date().toISOString().split('T')[0]).replace(/-/g, '') + '090000';
             const endDateTime = (examData.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]).replace(/-/g, '') + '180000';
             
@@ -1211,11 +1273,11 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                   },
                 });
               } catch (e) {
-                alert(e instanceof Error ? e.message : '강의목차에 시험을 등록하는 중 오류가 발생했습니다.');
+                alert(e instanceof Error ? e.message : '媛뺤쓽紐⑹감???쒗뿕???깅줉?섎뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
               }
             }
 
-            // 시험 설정 저장
+            // ?쒗뿕 ?ㅼ젙 ???
             const newSettings = {
               ...prismExamSettings,
               [examData.examId]: {
@@ -1238,42 +1300,42 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
             } catch {}
 
             await fetchExams();
-            alert('시험이 등록되었습니다.');
+            alert('?쒗뿕???깅줉?섏뿀?듬땲??');
           } catch (e) {
-            alert(e instanceof Error ? e.message : '시험 등록 중 오류가 발생했습니다.');
+            alert(e instanceof Error ? e.message : '?쒗뿕 ?깅줉 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
           }
         }}
       />
 
-      {/* 프리즘 시험 수정 모달 */}
+      {/* ?꾨━利??쒗뿕 ?섏젙 紐⑤떖 */}
       {editingPrismExam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setEditingPrismExam(null)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">시험 수정</h3>
+              <h3 className="text-lg font-semibold text-gray-900">?쒗뿕 ?섏젙</h3>
               <button
                 onClick={() => setEditingPrismExam(null)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
               >
-                ×
+                횞
               </button>
             </div>
 
             <div className="p-6 space-y-6">
-              {/* 시험 제목 (수정 불가) */}
+              {/* ?쒗뿕 ?쒕ぉ (?섏젙 遺덇?) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">시험 선택</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">?쒗뿕 ?좏깮</label>
                 <div className="px-4 py-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
                   {editingPrismExam.title}
                 </div>
               </div>
 
-              {/* 시험 상세 설정 */}
+              {/* ?쒗뿕 ?곸꽭 ?ㅼ젙 */}
               <div className="space-y-4 pt-4 border-t border-gray-100">
-                {/* 응시 가능 기간 */}
+                {/* ?묒떆 媛??湲곌컙 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">응시 가능 기간</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">?묒떆 媛??湲곌컙</label>
                   <div className="flex items-center gap-2 flex-wrap">
                     <input
                       type="date"
@@ -1287,7 +1349,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                       onChange={(e) => setExamEditSettings(prev => ({ ...prev, startTime: e.target.value }))}
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-gray-500">부터</span>
+                    <span className="text-gray-500">遺??</span>
                     <input
                       type="date"
                       value={examEditSettings.endDate}
@@ -1301,13 +1363,13 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                       onChange={(e) => setExamEditSettings(prev => ({ ...prev, endTime: e.target.value }))}
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-gray-500">까지</span>
+                    <span className="text-gray-500">源뚯?</span>
                   </div>
                 </div>
 
-                {/* 배점 */}
+                {/* 諛곗젏 */}
                 <div className="flex items-center gap-3">
-                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">배점</label>
+                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">諛곗젏</label>
                   <input
                     type="number"
                     value={examEditSettings.points}
@@ -1315,12 +1377,12 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                     min={0}
                     className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-600">점</span>
+                  <span className="text-sm text-gray-600">??</span>
                 </div>
 
-                {/* 재응시 가능여부 */}
+                {/* ?ъ쓳??媛?μ뿬遺 */}
                 <div className="flex items-center gap-3">
-                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 가능여부</label>
+                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??媛?μ뿬遺</label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1328,16 +1390,16 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                       onChange={(e) => setExamEditSettings(prev => ({ ...prev, allowRetake: e.target.checked }))}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-600">재응시 가능</span>
+                    <span className="text-sm text-gray-600">?ъ쓳??媛??</span>
                   </label>
-                  <span className="text-xs text-gray-400">▶ 재응시를 지정하면 기준점수 미만일 경우 횟수제한 범위안에서 재응시할 수 있습니다.</span>
+                  <span className="text-xs text-gray-400">???ъ쓳?쒕? 吏?뺥븯硫?湲곗??먯닔 誘몃쭔??寃쎌슦 ?잛닔?쒗븳 踰붿쐞?덉뿉???ъ쓳?쒗븷 ???덉뒿?덈떎.</span>
                 </div>
 
-                {/* 재응시 기준 점수 */}
+                {/* ?ъ쓳??湲곗? ?먯닔 */}
                 {examEditSettings.allowRetake && (
                   <>
                     <div className="flex items-center gap-3">
-                      <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 기준 점수</label>
+                      <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??湲곗? ?먯닔</label>
                       <input
                         type="number"
                         value={examEditSettings.retakeScore}
@@ -1346,12 +1408,12 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                         max={100}
                         className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-600">점 미만일때 재응시가 가능합니다.</span>
-                      <span className="text-xs text-gray-400">▶ 100점 만점 기준입니다.</span>
+                      <span className="text-sm text-gray-600">??誘몃쭔?쇰븣 ?ъ쓳?쒓? 媛?ν빀?덈떎.</span>
+                      <span className="text-xs text-gray-400">??100??留뚯젏 湲곗??낅땲??</span>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 가능 횟수</label>
+                      <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??媛???잛닔</label>
                       <input
                         type="number"
                         value={examEditSettings.retakeCount}
@@ -1359,14 +1421,14 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                         min={0}
                         className="w-16 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-600">회까지 재응시가 가능합니다.</span>
+                      <span className="text-sm text-gray-600">?뚭퉴吏 ?ъ쓳?쒓? 媛?ν빀?덈떎.</span>
                     </div>
                   </>
                 )}
 
-                {/* 시험결과노출 */}
+                {/* ?쒗뿕寃곌낵?몄텧 */}
                 <div className="flex items-center gap-3">
-                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">시험결과노출</label>
+                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?쒗뿕寃곌낵?몄텧</label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1374,9 +1436,9 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                       onChange={(e) => setExamEditSettings(prev => ({ ...prev, showResults: e.target.checked }))}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-600">노출</span>
+                    <span className="text-sm text-gray-600">?몄텧</span>
                   </label>
-                  <span className="text-xs text-gray-400">▶ 응시 후 수강생이 정답을 확인할 수 있습니다.</span>
+                  <span className="text-xs text-gray-400">???묒떆 ???섍컯?앹씠 ?뺣떟???뺤씤?????덉뒿?덈떎.</span>
                 </div>
               </div>
             </div>
@@ -1386,13 +1448,13 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
                 onClick={() => setEditingPrismExam(null)}
                 className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                취소
+                痍⑥냼
               </button>
               <button
                 onClick={handleSavePrismExamEdit}
                 className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                시험수정
+                ?쒗뿕?섏젙
               </button>
             </div>
           </div>
@@ -1402,7 +1464,7 @@ function ExamTab({ courseId, course }: { courseId: number; course?: any }) {
   );
 }
 
-// 시험 상세 화면
+// ?쒗뿕 ?곸꽭 ?붾㈃
 function ExamDetailView({
   courseId,
   examId,
@@ -1422,7 +1484,7 @@ function ExamDetailView({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const examTitle = exam?.title ?? '시험';
+  const examTitle = exam?.title ?? '?쒗뿕';
   const examDate = exam?.date ?? '-';
   const examDuration = exam?.duration ?? '-';
 
@@ -1445,7 +1507,7 @@ function ExamDetailView({
       }));
       setStudentScores(mapped);
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '제출 현황을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '?쒖텧 ?꾪솴??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoading(false);
     }
@@ -1457,7 +1519,7 @@ function ExamDetailView({
 
   const submittedScores = studentScores.filter((s) => s.submitted);
   
-  // 통계 계산
+  // ?듦퀎 怨꾩궛
   const stats = {
     average: submittedScores.length > 0 
       ? Math.round(submittedScores.reduce((sum, s) => sum + s.score, 0) / submittedScores.length * 10) / 10
@@ -1468,7 +1530,7 @@ function ExamDetailView({
     total: studentScores.length,
   };
 
-  // 점수 구간별 분포 계산
+  // ?먯닔 援ш컙蹂?遺꾪룷 怨꾩궛
   const getScoreDistribution = () => {
     const ranges = [
       { range: '90-100', min: 90, max: 100, count: 0 },
@@ -1488,13 +1550,13 @@ function ExamDetailView({
 
   const distribution = getScoreDistribution();
 
-  // 엑셀 다운로드 함수
+  // ?묒? ?ㅼ슫濡쒕뱶 ?⑥닔
   const handleDownloadExcel = () => {
-    // 왜: 서버에 별도 파일 생성 기능이 없어도, 화면에 있는 데이터를 CSV로 내려받을 수 있습니다.
+    // ?? ?쒕쾭??蹂꾨룄 ?뚯씪 ?앹꽦 湲곕뒫???놁뼱?? ?붾㈃???덈뒗 ?곗씠?곕? CSV濡??대젮諛쏆쓣 ???덉뒿?덈떎.
     const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const filename = `course_${courseId}_exam_${examId}_${ymd}.csv`;
 
-    const headers = ['No', '학번', '이름', '제출여부', '제출시간', '점수'];
+    const headers = ['No', '?숇쾲', '?대쫫', '?쒖텧?щ?', '?쒖텧?쒓컙', '?먯닔'];
     const rows = studentScores.map((student, index) => ([
       index + 1,
       student.studentId ?? '',
@@ -1507,17 +1569,17 @@ function ExamDetailView({
     downloadCsv(filename, headers, rows);
   };
 
-  // 점수 수정 시작
+  // ?먯닔 ?섏젙 ?쒖옉
   const handleStartEdit = (courseUserId: number, currentScore: number) => {
     setEditingScore(courseUserId);
     setTempScore(currentScore.toString());
   };
 
-  // 점수 수정 저장
+  // ?먯닔 ?섏젙 ???
   const handleSaveScore = async (courseUserId: number) => {
     const newScore = parseInt(tempScore, 10);
     if (isNaN(newScore) || newScore < 0 || newScore > 100) {
-      alert('점수는 0~100 사이의 숫자여야 합니다.');
+      alert('?먯닔??0~100 ?ъ씠???レ옄?ъ빞 ?⑸땲??');
       return;
     }
 
@@ -1535,19 +1597,19 @@ function ExamDetailView({
       setEditingScore(null);
       setTempScore('');
     } catch (e) {
-      alert(e instanceof Error ? e.message : '점수 저장 중 오류가 발생했습니다.');
+      alert(e instanceof Error ? e.message : '?먯닔 ???以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     }
   };
 
-    // 점수 수정 취소
+    // ?먯닔 ?섏젙 痍⑥냼
     const handleCancelEdit = () => {
       setEditingScore(null);
       setTempScore('');
     };
 
-    // 왜: 제출된 시험을 취소하면 응시 기록이 삭제되고 성적이 재계산됩니다.
+    // ?? ?쒖텧???쒗뿕??痍⑥냼?섎㈃ ?묒떆 湲곕줉????젣?섍퀬 ?깆쟻???ш퀎?곕맗?덈떎.
     const handleCancelSubmit = async (courseUserId: number) => {
-      if (!confirm('해당 학생의 시험 응시를 취소하시겠습니까?')) return;
+      if (!confirm('?대떦 ?숈깮???쒗뿕 ?묒떆瑜?痍⑥냼?섏떆寃좎뒿?덇퉴?')) return;
 
       try {
         const res = await tutorLmsApi.cancelExamSubmit({ courseId, examId, courseUserId });
@@ -1555,15 +1617,15 @@ function ExamDetailView({
 
         await fetchExamUsers();
         onRefresh();
-        alert('응시가 취소되었습니다.');
+        alert('?묒떆媛 痍⑥냼?섏뿀?듬땲??');
       } catch (e) {
-        alert(e instanceof Error ? e.message : '응시 취소 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '?묒떆 痍⑥냼 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       }
     };
 
   return (
     <div className="space-y-6">
-      {/* 헤더 */}
+      {/* ?ㅻ뜑 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
@@ -1575,7 +1637,7 @@ function ExamDetailView({
           <div>
             <h3 className="text-xl text-gray-900">{examTitle}</h3>
             <p className="text-sm text-gray-600">
-              시험일: {examDate} · 시험시간: {examDuration}
+              ?쒗뿕?? {examDate} 쨌 ?쒗뿕?쒓컙: {examDuration}
             </p>
           </div>
         </div>
@@ -1584,7 +1646,7 @@ function ExamDetailView({
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Download className="w-4 h-4" />
-          <span>엑셀 다운로드</span>
+          <span>?묒? ?ㅼ슫濡쒕뱶</span>
         </button>
       </div>
 
@@ -1595,42 +1657,42 @@ function ExamDetailView({
       )}
 
       {loading && (
-        <div className="p-6 text-center text-gray-500">제출 현황을 불러오는 중...</div>
+        <div className="p-6 text-center text-gray-500">?쒖텧 ?꾪솴??遺덈윭?ㅻ뒗 以?..</div>
       )}
 
-      {/* 통계 카드 */}
+      {/* ?듦퀎 移대뱶 */}
       <div className="grid grid-cols-5 gap-4">
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="text-sm text-blue-700 mb-1">평균 점수</div>
-          <div className="text-2xl text-blue-900">{stats.average}점</div>
+          <div className="text-sm text-blue-700 mb-1">?됯퇏 ?먯닔</div>
+          <div className="text-2xl text-blue-900">{stats.average}??</div>
         </div>
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="text-sm text-green-700 mb-1">최고 점수</div>
-          <div className="text-2xl text-green-900">{stats.highest}점</div>
+          <div className="text-sm text-green-700 mb-1">理쒓퀬 ?먯닔</div>
+          <div className="text-2xl text-green-900">{stats.highest}??</div>
         </div>
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="text-sm text-red-700 mb-1">최저 점수</div>
-          <div className="text-2xl text-red-900">{stats.lowest}점</div>
+          <div className="text-sm text-red-700 mb-1">理쒖? ?먯닔</div>
+          <div className="text-2xl text-red-900">{stats.lowest}??</div>
         </div>
         <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-          <div className="text-sm text-purple-700 mb-1">제출 인원</div>
-          <div className="text-2xl text-purple-900">{stats.submitted}명</div>
+          <div className="text-sm text-purple-700 mb-1">?쒖텧 ?몄썝</div>
+          <div className="text-2xl text-purple-900">{stats.submitted}紐?</div>
         </div>
         <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <div className="text-sm text-gray-700 mb-1">미제출 인원</div>
-          <div className="text-2xl text-gray-900">{stats.total - stats.submitted}명</div>
+          <div className="text-sm text-gray-700 mb-1">誘몄젣異??몄썝</div>
+          <div className="text-2xl text-gray-900">{stats.total - stats.submitted}紐?</div>
         </div>
       </div>
 
-      {/* 점수 분포 */}
+      {/* ?먯닔 遺꾪룷 */}
       <div className="border border-gray-200 rounded-lg p-6">
-        <h4 className="text-gray-900 mb-4">점수 분포</h4>
+        <h4 className="text-gray-900 mb-4">?먯닔 遺꾪룷</h4>
         <div className="space-y-3">
           {distribution.map((item) => (
             <div key={item.range}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-gray-700">{item.range}점</span>
-                <span className="text-sm text-gray-900">{item.count}명</span>
+                <span className="text-sm text-gray-700">{item.range}??</span>
+                <span className="text-sm text-gray-900">{item.count}紐?</span>
               </div>
               <div className="w-full h-8 bg-gray-200 rounded-lg overflow-hidden">
                 <div
@@ -1651,23 +1713,23 @@ function ExamDetailView({
         </div>
       </div>
 
-      {/* 학생별 점수 테이블 */}
+      {/* ?숈깮蹂??먯닔 ?뚯씠釉?*/}
       <div className="border border-gray-200 rounded-lg">
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h4 className="text-gray-900">학생별 점수</h4>
-          <p className="text-sm text-gray-600">점수를 클릭하여 수정할 수 있습니다</p>
+          <h4 className="text-gray-900">?숈깮蹂??먯닔</h4>
+          <p className="text-sm text-gray-600">?먯닔瑜??대┃?섏뿬 ?섏젙?????덉뒿?덈떎</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-sm text-gray-700">No</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">학번</th>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">이름</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">점수</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">제출 상태</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">제출 시간</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">채점</th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700">?숇쾲</th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700">?대쫫</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">?먯닔</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">?쒖텧 ?곹깭</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">?쒖텧 ?쒓컙</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">梨꾩젏</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -1706,7 +1768,7 @@ function ExamDetailView({
                           <button
                             onClick={handleCancelEdit}
                             className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                            title="취소"
+                            title="痍⑥냼"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1724,7 +1786,7 @@ function ExamDetailView({
                               : 'bg-red-100 text-red-700'
                           }`}
                         >
-                          {student.score}점
+                          {student.score}??
                         </button>
                       )
                     ) : (
@@ -1735,11 +1797,11 @@ function ExamDetailView({
                     {student.submitted ? (
                       <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
                         <CheckCircle className="w-3 h-3" />
-                        제출 완료
+                        ?쒖텧 ?꾨즺
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 rounded text-xs">
-                        미제출
+                        誘몄젣異?
                       </span>
                     )}
                   </td>
@@ -1752,14 +1814,14 @@ function ExamDetailView({
                           <button
                             onClick={() => handleStartEdit(student.courseUserId, student.score)}
                             className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                            title="점수 수정"
+                            title="?먯닔 ?섏젙"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleCancelSubmit(student.courseUserId)}
                             className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                            title="응시 취소"
+                            title="?묒떆 痍⑥냼"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1776,13 +1838,13 @@ function ExamDetailView({
   );
 }
 
-// 과제 탭
+// 怨쇱젣 ??
 function AssignmentTab({ courseId, course }: { courseId: number; course?: any }) {
   const [subTab, setSubTab] = useState<'management' | 'feedback'>('management');
 
   return (
     <div className="space-y-4">
-      {/* 하위 탭 네비게이션 */}
+      {/* ?섏쐞 ???ㅻ퉬寃뚯씠??*/}
       <div className="flex gap-2 border-b border-gray-200">
         <button
           onClick={() => setSubTab('management')}
@@ -1792,7 +1854,7 @@ function AssignmentTab({ courseId, course }: { courseId: number; course?: any })
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          과제 관리
+          怨쇱젣 愿由?
         </button>
         <button
           onClick={() => setSubTab('feedback')}
@@ -1802,24 +1864,24 @@ function AssignmentTab({ courseId, course }: { courseId: number; course?: any })
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          피드백 관리
+          ?쇰뱶諛?愿由?
         </button>
       </div>
 
-      {/* 하위 탭 콘텐츠 */}
+      {/* ?섏쐞 ??肄섑뀗痢?*/}
       {subTab === 'management' && <AssignmentManagementTab courseId={courseId} course={course} />}
       {subTab === 'feedback' && <AssignmentFeedbackTab courseId={courseId} />}
     </div>
   );
 }
 
-// 과제 관리 하위 탭
+// 怨쇱젣 愿由??섏쐞 ??
 function AssignmentManagementTab({ courseId, course }: { courseId: number; course?: any }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
-  // 왜: 과제 수정 모달 노출 여부와 수정 대상 데이터를 분리해서 관리합니다.
+  // ?? 怨쇱젣 ?섏젙 紐⑤떖 ?몄텧 ?щ?? ?섏젙 ????곗씠?곕? 遺꾨━?댁꽌 愿由ы빀?덈떎.
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingHomework, setEditingHomework] = useState<any | null>(null);
-  // 왜: 과제 상세 보기 모달 상태를 관리합니다.
+  // ?? 怨쇱젣 ?곸꽭 蹂닿린 紐⑤떖 ?곹깭瑜?愿由ы빀?덈떎.
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedHomework, setSelectedHomework] = useState<any | null>(null);
 const courseIdNum = Number(course?.mappedCourseId ?? courseId);
@@ -1851,7 +1913,7 @@ const isHaksaCourse =
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // 학사 과목의 경우 로컬스토리지에서 과제 목록 불러오기
+  // ?숈궗 怨쇰ぉ??寃쎌슦 濡쒖뺄?ㅽ넗由ъ??먯꽌 怨쇱젣 紐⑸줉 遺덈윭?ㅺ린
   const [haksaAssignments, setHaksaAssignments] = useState<any[]>([]);
   const [haksaLoading, setHaksaLoading] = useState(false);
 
@@ -1865,7 +1927,7 @@ const isHaksaCourse =
       try {
         const res = await tutorLmsApi.getHaksaCurriculum(haksaKey);
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
-        // 왜: Malgn DataSet 응답이 배열로 올 수 있어 첫 번째 행을 기준으로 해석합니다.
+        // ?? Malgn DataSet ?묐떟??諛곗뿴濡??????덉뼱 泥?踰덉㎏ ?됱쓣 湲곗??쇰줈 ?댁꽍?⑸땲??
         const payload = Array.isArray(res.rst_data) ? res.rst_data[0] : res.rst_data;
         const raw = payload?.curriculum_json || '';
         if (!raw) {
@@ -1884,7 +1946,7 @@ const isHaksaCourse =
       } catch (e) {
         if (!cancelled) {
           setHaksaAssignments([]);
-          setErrorMessage(e instanceof Error ? e.message : '과제 목록을 불러오는 중 오류가 발생했습니다.');
+          setErrorMessage(e instanceof Error ? e.message : '怨쇱젣 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       } finally {
         if (!cancelled) setHaksaLoading(false);
@@ -1897,7 +1959,7 @@ const isHaksaCourse =
     };
   }, [isHaksaCourse, haksaKey]);
 
-  // 왜: 과제 탭은 "새로고침해도 유지되는 실데이터"가 핵심이라서, 화면이 뜰 때마다 DB(서버)에서 다시 읽어옵니다.
+  // ?? 怨쇱젣 ??? "?덈줈怨좎묠?대룄 ?좎??섎뒗 ?ㅻ뜲?댄꽣"媛 ?듭떖?대씪?? ?붾㈃?????뚮쭏??DB(?쒕쾭)?먯꽌 ?ㅼ떆 ?쎌뼱?듬땲??
   const fetchHomeworks = async () => {
     if (!courseId || isHaksaCourse) return;
     setLoading(true);
@@ -1909,7 +1971,7 @@ const isHaksaCourse =
       const rows = res.rst_data ?? [];
       const mapped = rows.map((row: any) => ({
         id: Number(row.homework_id),
-        title: row.homework_nm || row.module_nm || '과제',
+        title: row.homework_nm || row.module_nm || '怨쇱젣',
         description: row.content || '',
         startDate: row.start_date_conv || row.start_date || '-',
         dueDate: row.end_date_conv || row.end_date || '-',
@@ -1917,10 +1979,17 @@ const isHaksaCourse =
         submitted: Number(row.submitted_cnt ?? 0),
         total: Number(row.total_cnt ?? 0),
         homeworkFile: row.homework_file || '',
+        submitFileExtMode: String(row.submit_file_ext_mode || 'ALL'),
+        submitFileExts: String(row.submit_file_exts || ''),
+        allowLateSubmission:
+          row.allowLateSubmission === true ||
+          row.allowLateSubmission === 'true' ||
+          row.allow_late_submission_yn === 'Y',
+        latePenalty: Number(row.latePenalty ?? row.late_penalty ?? 0),
       }));
       setHomeworks(mapped);
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '과제 목록을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '怨쇱젣 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoading(false);
     }
@@ -1930,7 +1999,7 @@ const isHaksaCourse =
     if (!isHaksaCourse) void fetchHomeworks();
   }, [courseId, isHaksaCourse]);
 
-  // 학사 과목인 경우 강의목차에서 등록한 과제 표시
+  // ?숈궗 怨쇰ぉ??寃쎌슦 媛뺤쓽紐⑹감?먯꽌 ?깅줉??怨쇱젣 ?쒖떆
   if (isHaksaCourse) {
     return (
       <div className="space-y-4">
@@ -1941,15 +2010,15 @@ const isHaksaCourse =
         )}
 
         {haksaLoading && (
-          <div className="p-6 text-center text-gray-500">과제 목록을 불러오는 중...</div>
+          <div className="p-6 text-center text-gray-500">怨쇱젣 紐⑸줉??遺덈윭?ㅻ뒗 以?..</div>
         )}
 
         {haksaAssignments.length > 0 ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">등록된 과제</h3>
+              <h3 className="text-lg font-medium text-gray-900">?깅줉??怨쇱젣</h3>
               <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm rounded-full">
-                총 {haksaAssignments.length}개
+                珥?{haksaAssignments.length}媛?
               </span>
             </div>
             {haksaAssignments.map((assignment: any) => (
@@ -1963,7 +2032,7 @@ const isHaksaCourse =
                       <BookOpen className="w-5 h-5 text-purple-600" />
                       <span className="font-medium text-gray-900">{assignment.title}</span>
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                        {assignment.weekNumber}주차
+                        {assignment.weekNumber}二쇱감
                       </span>
                     </div>
                     {assignment.description && (
@@ -1980,8 +2049,8 @@ const isHaksaCourse =
         ) : (
           <div className="text-center text-gray-500 py-12 border border-dashed border-gray-300 rounded-lg">
             <BookOpen className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-            <p className="mb-2">등록된 과제가 없습니다.</p>
-            <p className="text-sm text-gray-400">강의목차에서 주차별로 과제를 추가할 수 있습니다.</p>
+            <p className="mb-2">?깅줉??怨쇱젣媛 ?놁뒿?덈떎.</p>
+            <p className="text-sm text-gray-400">媛뺤쓽紐⑹감?먯꽌 二쇱감蹂꾨줈 怨쇱젣瑜?異붽??????덉뒿?덈떎.</p>
           </div>
         )}
       </div>
@@ -2001,10 +2070,10 @@ const isHaksaCourse =
     return { date, time };
   };
 
-  // 왜: 과제 수정을 시작하면 모달을 열고 기존 데이터를 채웁니다.
+  // ?? 怨쇱젣 ?섏젙???쒖옉?섎㈃ 紐⑤떖???닿퀬 湲곗〈 ?곗씠?곕? 梨꾩썎?덈떎.
   const handleEditHomework = (homework: any) => {
-    // 왜: API 응답이 yyyyMMddHHmmss / yyyy.MM.dd HH:mm / yyyy-MM-dd HH:mm 처럼 섞여 들어올 수 있어
-    //      숫자만 추출해서 입력용 날짜/시간으로 변환합니다.
+    // ?? API ?묐떟??yyyyMMddHHmmss / yyyy.MM.dd HH:mm / yyyy-MM-dd HH:mm 泥섎읆 ?욎뿬 ?ㅼ뼱?????덉뼱
+    //      ?レ옄留?異붿텧?댁꽌 ?낅젰???좎쭨/?쒓컙?쇰줈 蹂?섑빀?덈떎.
     const parsedStart = parseDateTimeInput(homework.startDate || '', '00:00');
     const parsedEnd = parseDateTimeInput(homework.dueDate || '', '23:59');
     
@@ -2017,12 +2086,15 @@ const isHaksaCourse =
       dueDate: parsedEnd.date,
       dueTime: parsedEnd.time || '23:59',
       totalScore: homework.totalScore || 100,
+      fileTypes: homework.submitFileExts || '',
+      allowLateSubmission: Boolean(homework.allowLateSubmission),
+      latePenalty: Number(homework.latePenalty || 0),
       existingFileName: homework.homeworkFile || '',
     });
     setShowEditModal(true);
   };
 
-  // 왜: 과제 수정을 저장하면 서버에 업데이트하고 목록을 새로고침합니다.
+  // ?? 怨쇱젣 ?섏젙????ν븯硫??쒕쾭???낅뜲?댄듃?섍퀬 紐⑸줉???덈줈怨좎묠?⑸땲??
   const handleSaveHomeworkEdit = async (data: any) => {
     if (!editingHomework) return;
     
@@ -2037,24 +2109,29 @@ const isHaksaCourse =
           dueDate: data.dueDate,
           dueTime: data.dueTime,
           totalScore: Number(data.totalScore || 0),
+          deleteHomeworkFileYn: Boolean(data.deleteFile),
+          submitFileExtMode: data.fileTypes && String(data.fileTypes).trim() ? 'CUSTOM' : 'ALL',
+          submitFileExts: data.fileTypes || '',
+          allowLateSubmission: Boolean(data.allowLateSubmission),
+          latePenalty: Number(data.latePenalty || 0),
           file: data.file,
         });
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
       
       await fetchHomeworks();
-      alert('과제가 수정되었습니다.');
+      alert('怨쇱젣媛 ?섏젙?섏뿀?듬땲??');
       setShowEditModal(false);
       setEditingHomework(null);
     } catch (e) {
-      alert(e instanceof Error ? e.message : '과제 수정 중 오류가 발생했습니다.');
+      alert(e instanceof Error ? e.message : '怨쇱젣 ?섏젙 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     }
   };
 
   const handleDeleteHomework = (homeworkId: number, title: string) => {
     void (async () => {
-      // 왜: 제출/채점 데이터가 이미 쌓인 과제를 지우면 운영 데이터가 깨질 수 있어서, 사용자에게 한 번 더 확인받습니다.
+      // ?? ?쒖텧/梨꾩젏 ?곗씠?곌? ?대? ?볦씤 怨쇱젣瑜?吏?곕㈃ ?댁쁺 ?곗씠?곌? 源⑥쭏 ???덉뼱?? ?ъ슜?먯뿉寃???踰????뺤씤諛쏆뒿?덈떎.
       const ok = confirm(
-        `과제 "${title}"을(를) 삭제하시겠습니까?\n\n이미 제출 내역이 있는 경우, 서버에서 삭제가 차단될 수 있습니다.`
+        `怨쇱젣 "${title}"??瑜? ??젣?섏떆寃좎뒿?덇퉴?\n\n?대? ?쒖텧 ?댁뿭???덈뒗 寃쎌슦, ?쒕쾭?먯꽌 ??젣媛 李⑤떒?????덉뒿?덈떎.`
       );
       if (!ok) return;
 
@@ -2063,9 +2140,9 @@ const isHaksaCourse =
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
         await fetchHomeworks();
-        alert('삭제되었습니다.');
+        alert('??젣?섏뿀?듬땲??');
       } catch (e) {
-        alert(e instanceof Error ? e.message : '삭제 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '??젣 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       }
     })();
   };
@@ -2079,7 +2156,7 @@ const isHaksaCourse =
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Briefcase className="w-4 h-4" />
-            <span>과제 등록</span>
+            <span>怨쇱젣 ?깅줉</span>
           </button>
         </div>
 
@@ -2090,12 +2167,12 @@ const isHaksaCourse =
         )}
 
         {loading && (
-          <div className="p-6 text-center text-gray-500">과제 목록을 불러오는 중...</div>
+          <div className="p-6 text-center text-gray-500">怨쇱젣 紐⑸줉??遺덈윭?ㅻ뒗 以?..</div>
         )}
 
         {!loading && homeworks.length === 0 && (
           <div className="p-10 text-center text-gray-500 border border-dashed border-gray-200 rounded-lg">
-            등록된 과제가 없습니다. 우측 상단에서 과제를 등록해 주세요.
+            ?깅줉??怨쇱젣媛 ?놁뒿?덈떎. ?곗륫 ?곷떒?먯꽌 怨쇱젣瑜??깅줉??二쇱꽭??
           </div>
         )}
 
@@ -2116,27 +2193,27 @@ const isHaksaCourse =
                       <Briefcase className="w-5 h-5 text-purple-600" />
                       <span className="font-medium text-gray-900">{assignment.title}</span>
                       <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded">
-                        {assignment.submitted}/{assignment.total}명 제출
+                        {assignment.submitted}/{assignment.total}紐??쒖텧
                       </span>
                     </div>
                     
-                    {/* 설정 항목들 테이블 형태로 표시 (시험과 동일한 스타일) */}
+                    {/* ?ㅼ젙 ??ぉ???뚯씠釉??뺥깭濡??쒖떆 (?쒗뿕怨??숈씪???ㅽ??? */}
                     <div className="ml-7 text-sm space-y-2 bg-gray-50 p-3 rounded-lg">
                       <div className="flex items-center">
-                        <span className="w-24 text-gray-500">제출기간</span>
+                        <span className="w-24 text-gray-500">?쒖텧湲곌컙</span>
                         <span className="text-gray-900">{assignment.startDate || '-'} ~ {assignment.dueDate || '-'}</span>
                       </div>
                       <div className="flex items-center">
-                        <span className="w-24 text-gray-500">배점</span>
-                        <span className="text-gray-900">{assignment.totalScore || 0}점</span>
+                        <span className="w-24 text-gray-500">諛곗젏</span>
+                        <span className="text-gray-900">{assignment.totalScore || 0}??</span>
                       </div>
                       <div className="flex items-center">
-                        <span className="w-24 text-gray-500">제출 현황</span>
-                        <span className="text-gray-900">{assignment.submitted} / {assignment.total}명</span>
+                        <span className="w-24 text-gray-500">?쒖텧 ?꾪솴</span>
+                        <span className="text-gray-900">{assignment.submitted} / {assignment.total}紐?</span>
                       </div>
                       {assignment.homeworkFile && (
                         <div className="flex items-center">
-                          <span className="w-24 text-gray-500">첨부파일</span>
+                          <span className="w-24 text-gray-500">泥⑤??뚯씪</span>
                           <span className="flex items-center gap-1.5 text-blue-600">
                             <Paperclip className="w-3.5 h-3.5" />
                             <span className="truncate max-w-[200px]">{assignment.homeworkFile}</span>
@@ -2153,7 +2230,7 @@ const isHaksaCourse =
                         handleEditHomework(assignment);
                       }}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="수정"
+                      title="?섏젙"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
@@ -2163,7 +2240,7 @@ const isHaksaCourse =
                         handleDeleteHomework(assignment.id, assignment.title);
                       }}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="삭제"
+                      title="??젣"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -2193,6 +2270,10 @@ const isHaksaCourse =
                   dueTime: assignmentData.dueTime,
                   totalScore: Number(assignmentData.totalScore || 0),
                   onoffType: 'N',
+                  submitFileExtMode: assignmentData.fileTypes && String(assignmentData.fileTypes).trim() ? 'CUSTOM' : 'ALL',
+                  submitFileExts: assignmentData.fileTypes || '',
+                  allowLateSubmission: Boolean(assignmentData.allowLateSubmission),
+                  latePenalty: Number(assignmentData.latePenalty || 0),
                   file: assignmentData.file,
                 });
               if (res.rst_code !== '0000') throw new Error(res.rst_message);
@@ -2213,20 +2294,20 @@ const isHaksaCourse =
                     },
                   });
                 } catch (e) {
-                  alert(e instanceof Error ? e.message : '강의목차에 과제를 등록하는 중 오류가 발생했습니다.');
+                  alert(e instanceof Error ? e.message : '媛뺤쓽紐⑹감??怨쇱젣瑜??깅줉?섎뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
                 }
               }
 
               await fetchHomeworks();
-              alert('과제가 등록되었습니다.');
+              alert('怨쇱젣媛 ?깅줉?섏뿀?듬땲??');
             } catch (e) {
-              alert(e instanceof Error ? e.message : '과제 등록 중 오류가 발생했습니다.');
+              alert(e instanceof Error ? e.message : '怨쇱젣 ?깅줉 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
             }
           })();
         }}
       />
       
-      {/* 과제 수정 모달 */}
+      {/* 怨쇱젣 ?섏젙 紐⑤떖 */}
       <AssignmentCreateModal
         isOpen={showEditModal}
         onClose={() => {
@@ -2240,7 +2321,7 @@ const isHaksaCourse =
         initialData={editingHomework || undefined}
       />
 
-      {/* 과제 상세 보기 모달 */}
+      {/* 怨쇱젣 ?곸꽭 蹂닿린 紐⑤떖 */}
       <AssignmentDetailModal
         isOpen={showDetailModal}
         onClose={() => {
@@ -2258,8 +2339,15 @@ const isHaksaCourse =
   );
 }
 
-// 피드백 관리 하위 탭
+// ?쇰뱶諛?愿由??섏쐞 ??
 function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
+  const DEFAULT_FEEDBACK_TEMPLATES = [
+    { id: -1, label: '우수', text: '과제를 매우 충실하게 수행하셨습니다. 우수한 결과입니다.', sort: 1 },
+    { id: -2, label: '양호', text: '전반적으로 잘 작성하셨으나 일부 보완이 필요합니다.', sort: 2 },
+    { id: -3, label: '보완필요', text: '과제 내용이 부족합니다. 요구사항을 다시 확인하고 보완해 주세요.', sort: 3 },
+    { id: -4, label: '지각제출', text: '과제 기한이 지났습니다. 수정 후 지각 제출 바랍니다.', sort: 4 },
+    { id: -5, label: '형식오류', text: '제출 파일 형식 또는 양식이 올바르지 않습니다. 확인 후 다시 제출해 주세요.', sort: 5 },
+  ];
   const [homeworks, setHomeworks] = useState<any[]>([]);
   const [selectedHomeworkId, setSelectedHomeworkId] = useState<number | null>(null);
 
@@ -2268,12 +2356,16 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
 
   const [tempScore, setTempScore] = useState<string>('0');
   const [feedbackText, setFeedbackText] = useState<string>('');
-  // 왜: 교수자가 첨삭 파일을 첨부할 수 있도록 파일 목록을 관리합니다.
-  // TODO: 백엔드 API 연동 후 실제 파일 업로드 활성화
+  // ?? 援먯닔?먭? ?덈줈 泥⑤???泥⑥궘 ?뚯씪 紐⑸줉(?꾩쭅 ?낅줈???????곕줈 愿由ы빀?덈떎.
   const [feedbackFiles, setFeedbackFiles] = useState<File[]>([]);
+  // ?? ?쒕쾭???대? ??λ맂 ?쇰뱶諛??뚯씪怨?濡쒖뺄 ?좏깮 ?뚯씪??援щ텇?댁꽌 蹂댁뿬以섏빞 ?쇱꽑???놁뒿?덈떎.
+  const [uploadedFeedbackFiles, setUploadedFeedbackFiles] = useState<
+    { id: number; filename: string; downloadUrl: string }[]
+  >([]);
+  const [feedbackFileBusy, setFeedbackFileBusy] = useState(false);
   const feedbackFileInputRef = useRef<HTMLInputElement>(null);
 
-  // 왜: 학생 제출물(제목/내용/첨부파일)을 모달로 확인할 수 있어야 합니다.
+  // ?? ?숈깮 ?쒖텧臾??쒕ぉ/?댁슜/泥⑤??뚯씪)??紐⑤떖濡??뺤씤?????덉뼱???⑸땲??
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [submissionLoading, setSubmissionLoading] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
@@ -2283,17 +2375,67 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
     subject: string;
     content: string;
     files: { id: number; filename: string; downloadUrl: string }[];
+    feedbackFiles: { id: number; filename: string; downloadUrl: string }[];
   }>(null);
 
   const [loadingHomeworks, setLoadingHomeworks] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'unsubmitted' | 'need_feedback' | 'done'>('all');
+  const [feedbackTemplates, setFeedbackTemplates] = useState<
+    { id: number; label: string; text: string; sort: number }[]
+  >(DEFAULT_FEEDBACK_TEMPLATES);
 
   const toBool = (value: any) =>
     value === true || value === 1 || value === '1' || value === 'Y' || value === 'true';
 
-  // 왜: 피드백 화면은 "현재 과제 목록"이 먼저 필요하므로, 진입 시 과제 목록을 먼저 불러옵니다.
+  const fetchHomeworkFeedbackFiles = async (homeworkId: number, courseUserId: number) => {
+    try {
+      const res = await tutorLmsApi.getHomeworkFeedbackFiles({ courseId, homeworkId, courseUserId });
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      const rows = Array.isArray(res.rst_data) ? res.rst_data : [];
+      setUploadedFeedbackFiles(
+        rows.map((row: any) => ({
+          id: Number(row.id),
+          filename: String(row.filename ?? ''),
+          downloadUrl: String(row.download_url ?? ''),
+        }))
+      );
+    } catch {
+      setUploadedFeedbackFiles([]);
+    }
+  };
+
+  const fetchFeedbackTemplates = async () => {
+    if (!courseId) return;
+    try {
+      const res = await tutorLmsApi.getHomeworkFeedbackTemplates({ courseId, limit: 20 });
+      if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      const rows = Array.isArray(res.rst_data) ? res.rst_data : [];
+      if (rows.length === 0) {
+        setFeedbackTemplates(DEFAULT_FEEDBACK_TEMPLATES);
+        return;
+      }
+      setFeedbackTemplates(
+        rows
+          .map((row: any, index: number) => {
+            const text = String(row.content ?? '').trim();
+            return {
+              id: Number(row.id ?? index + 1),
+              label: text.length > 10 ? `${text.slice(0, 10)}...` : text || `?쒗뵆由?${index + 1}`,
+              text,
+              sort: Number(row.sort ?? index + 1),
+            };
+          })
+          .filter((row) => row.text)
+          .sort((a, b) => a.sort - b.sort)
+      );
+    } catch {
+      setFeedbackTemplates(DEFAULT_FEEDBACK_TEMPLATES);
+    }
+  };
+
+  // ?? ?쇰뱶諛??붾㈃? "?꾩옱 怨쇱젣 紐⑸줉"??癒쇱? ?꾩슂?섎?濡? 吏꾩엯 ??怨쇱젣 紐⑸줉??癒쇱? 遺덈윭?듬땲??
   const fetchHomeworks = async () => {
     if (!courseId) return;
     setLoadingHomeworks(true);
@@ -2305,7 +2447,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
       const rows = res.rst_data ?? [];
       const mapped = rows.map((row: any) => ({
         id: Number(row.homework_id),
-        title: row.homework_nm || row.module_nm || '과제',
+        title: row.homework_nm || row.module_nm || '怨쇱젣',
       }));
       setHomeworks(mapped);
 
@@ -2322,7 +2464,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
         setFeedbackText('');
       }
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '과제 목록을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '怨쇱젣 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoadingHomeworks(false);
     }
@@ -2351,13 +2493,13 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
       }));
       setStudents(mapped);
 
-      // 왜: 재조회 후 선택된 학생이 목록에서 사라지면(권한/상태 변화 등) 선택을 해제해야 화면이 깨지지 않습니다.
+      // ?? ?ъ“?????좏깮???숈깮??紐⑸줉?먯꽌 ?щ씪吏硫?沅뚰븳/?곹깭 蹂???? ?좏깮???댁젣?댁빞 ?붾㈃??源⑥?吏 ?딆뒿?덈떎.
       setSelectedCourseUserId((prev) => {
         if (prev && mapped.some((s: any) => s.courseUserId === prev)) return prev;
         return null;
       });
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '제출 현황을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '?쒖텧 ?꾪솴??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoadingUsers(false);
     }
@@ -2365,12 +2507,21 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
 
   useEffect(() => {
     void fetchHomeworks();
+    void fetchFeedbackTemplates();
   }, [courseId]);
 
   useEffect(() => {
     if (!selectedHomeworkId) return;
     void fetchHomeworkUsers(selectedHomeworkId);
   }, [courseId, selectedHomeworkId]);
+
+  useEffect(() => {
+    if (!selectedHomeworkId || !selectedCourseUserId) {
+      setUploadedFeedbackFiles([]);
+      return;
+    }
+    void fetchHomeworkFeedbackFiles(selectedHomeworkId, selectedCourseUserId);
+  }, [courseId, selectedHomeworkId, selectedCourseUserId]);
 
   const selectedStudent = students.find((s: any) => s.courseUserId === selectedCourseUserId) ?? null;
 
@@ -2379,8 +2530,9 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
     const student = students.find((s: any) => s.courseUserId === courseUserId);
     setTempScore(String(student?.markingScore ?? 0));
     setFeedbackText(String(student?.feedback ?? ''));
-    // 왜: 학생이 바뀌면 이전 학생용 첨부파일을 초기화해야 혼선이 없습니다.
+    // ?? ?숈깮??諛붾뚮㈃ ?댁쟾 ?숈깮??泥⑤??뚯씪??珥덇린?뷀빐???쇱꽑???놁뒿?덈떎.
     setFeedbackFiles([]);
+    setUploadedFeedbackFiles([]);
   };
 
   const handleOpenSubmissionModal = () => {
@@ -2407,6 +2559,13 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
               downloadUrl: String(f.download_url ?? ''),
             }))
           : [];
+        const feedbackFiles = Array.isArray(d?.feedback_files)
+          ? d.feedback_files.map((f: any) => ({
+              id: Number(f.id),
+              filename: String(f.filename ?? ''),
+              downloadUrl: String(f.download_url ?? ''),
+            }))
+          : [];
 
         setSubmissionDetail({
           submitted: Boolean(d?.submitted),
@@ -2414,27 +2573,29 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
           subject: String(d?.subject ?? ''),
           content: String(d?.content ?? ''),
           files,
+          feedbackFiles,
         });
       } catch (e) {
-        setSubmissionError(e instanceof Error ? e.message : '제출물을 불러오는 중 오류가 발생했습니다.');
+        setSubmissionError(e instanceof Error ? e.message : '?쒖텧臾쇱쓣 遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       } finally {
         setSubmissionLoading(false);
       }
     })();
   };
 
-    const handleSubmitFeedback = () => {
-      if (!selectedHomeworkId || !selectedCourseUserId) return;
+  const handleSubmitFeedback = () => {
+    if (!selectedHomeworkId || !selectedCourseUserId) return;
 
     const score = parseInt(tempScore, 10);
     if (isNaN(score) || score < 0 || score > 100) {
-      alert('점수는 0~100 사이의 숫자여야 합니다.');
+      alert('?먯닔??0~100 ?ъ씠???レ옄?ъ빞 ?⑸땲??');
       return;
     }
 
     void (async () => {
+      setFeedbackFileBusy(true);
       try {
-        // 왜: 저장 즉시 성적(homework_score/total_score)에 반영되어야 "실사용" 흐름이 끊기지 않습니다.
+        // ?? ???利됱떆 ?깆쟻(homework_score/total_score)??諛섏쁺?섏뼱??"?ㅼ궗?? ?먮쫫???딄린吏 ?딆뒿?덈떎.
         const res = await tutorLmsApi.updateHomeworkFeedback({
           courseId,
           homeworkId: selectedHomeworkId,
@@ -2444,18 +2605,59 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
         });
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
-        await fetchHomeworkUsers(selectedHomeworkId);
-        alert('저장되었습니다.');
-      } catch (e) {
-        alert(e instanceof Error ? e.message : '저장 중 오류가 발생했습니다.');
-      }
-      })();
-    };
+        const pendingFiles = [...feedbackFiles];
+        for (const file of pendingFiles) {
+          const uploadRes = await tutorLmsApi.uploadHomeworkFeedbackFile({
+            courseId,
+            homeworkId: selectedHomeworkId,
+            courseUserId: selectedCourseUserId,
+            file,
+          });
+          if (uploadRes.rst_code !== '0000') {
+            throw new Error(`[${file.name}] ${uploadRes.rst_message}`);
+          }
+        }
 
-    // 왜: 제출 취소는 점수/피드백과 별개로 제출 기록 자체를 정리해야 합니다.
+        setFeedbackFiles([]);
+        await fetchHomeworkUsers(selectedHomeworkId);
+        await fetchHomeworkFeedbackFiles(selectedHomeworkId, selectedCourseUserId);
+        alert(pendingFiles.length > 0 ? '?먯닔/?쇰뱶諛깃낵 泥⑥궘 ?뚯씪????λ릺?덉뒿?덈떎.' : '??λ릺?덉뒿?덈떎.');
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '???以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+      } finally {
+        setFeedbackFileBusy(false);
+      }
+    })();
+  };
+
+  const handleDeleteFeedbackFile = (fileId: number) => {
+    if (!selectedHomeworkId || !selectedCourseUserId) return;
+    if (!confirm('?좏깮??泥⑥궘 ?뚯씪????젣?섏떆寃좎뒿?덇퉴?')) return;
+
+    void (async () => {
+      setFeedbackFileBusy(true);
+      try {
+        const res = await tutorLmsApi.deleteHomeworkFeedbackFile({
+          courseId,
+          homeworkId: selectedHomeworkId,
+          courseUserId: selectedCourseUserId,
+          fileId,
+        });
+        if (res.rst_code !== '0000') throw new Error(res.rst_message);
+
+        await fetchHomeworkFeedbackFiles(selectedHomeworkId, selectedCourseUserId);
+      } catch (e) {
+        alert(e instanceof Error ? e.message : '泥⑥궘 ?뚯씪 ??젣 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+      } finally {
+        setFeedbackFileBusy(false);
+      }
+    })();
+  };
+
+    // ?? ?쒖텧 痍⑥냼???먯닔/?쇰뱶諛깃낵 蹂꾧컻濡??쒖텧 湲곕줉 ?먯껜瑜??뺣━?댁빞 ?⑸땲??
     const handleCancelHomeworkSubmit = () => {
       if (!selectedHomeworkId || !selectedCourseUserId) return;
-      if (!confirm('해당 학생의 과제 제출을 취소하시겠습니까?')) return;
+      if (!confirm('?대떦 ?숈깮??怨쇱젣 ?쒖텧??痍⑥냼?섏떆寃좎뒿?덇퉴?')) return;
 
       void (async () => {
         try {
@@ -2470,9 +2672,9 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
           setSelectedCourseUserId(null);
           setTempScore('0');
           setFeedbackText('');
-          alert('제출이 취소되었습니다.');
+          alert('?쒖텧??痍⑥냼?섏뿀?듬땲??');
         } catch (e) {
-          alert(e instanceof Error ? e.message : '제출 취소 중 오류가 발생했습니다.');
+          alert(e instanceof Error ? e.message : '?쒖텧 痍⑥냼 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       })();
     };
@@ -2480,7 +2682,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
   const handleAppendTask = () => {
     if (!selectedHomeworkId || !selectedCourseUserId) return;
 
-    const task = prompt('추가과제 내용을 입력해 주세요.');
+    const task = prompt('異붽?怨쇱젣 ?댁슜???낅젰??二쇱꽭??');
     if (!task || !task.trim()) return;
 
     void (async () => {
@@ -2494,14 +2696,14 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
         await fetchHomeworkUsers(selectedHomeworkId);
-        alert('추가과제가 부여되었습니다.');
+        alert('異붽?怨쇱젣媛 遺?щ릺?덉뒿?덈떎.');
       } catch (e) {
-        alert(e instanceof Error ? e.message : '추가과제 부여 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '異붽?怨쇱젣 遺??以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       }
     })();
   };
 
-  // 왜: 학생별 추가 과제 목록을 조회하여 재제출 현황을 확인합니다.
+  // ?? ?숈깮蹂?異붽? 怨쇱젣 紐⑸줉??議고쉶?섏뿬 ?ъ젣異??꾪솴???뺤씤?⑸땲??
   const [homeworkTasks, setHomeworkTasks] = useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any | null>(null);
@@ -2532,13 +2734,14 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
     doneFeedback: students.filter((s: any) => s.confirm).length,
   };
 
-  // 왜: 학생 간 과제 유사도 분석 결과를 표시하기 위한 상태입니다.
-  // TODO: 백엔드 API 연동 후 실제 데이터로 전환
+  // ?? ?숈깮 媛?怨쇱젣 ?좎궗??遺꾩꽍 寃곌낵瑜??쒖떆?섍린 ?꾪븳 ?곹깭?낅땲??
   type SimilarityResult = {
     studentAId: number;
     studentAName: string;
+    studentALoginId: string;
     studentBId: number;
     studentBName: string;
+    studentBLoginId: string;
     titleScore: number;
     contentScore: number;
     fileScore: number;
@@ -2548,41 +2751,79 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
   const [similarityLoading, setSimilarityLoading] = useState(false);
   const [similarityAnalyzed, setSimilarityAnalyzed] = useState(false);
 
-  // 왜: 선택된 학생과 관련된 유사도 결과만 필터링합니다.
+  // ?? ?좏깮???숈깮怨?愿?⑤맂 ?좎궗??寃곌낵留??꾪꽣留곹빀?덈떎.
   const studentSimilarities = selectedCourseUserId
     ? similarityData.filter(
         (r) => r.studentAId === selectedCourseUserId || r.studentBId === selectedCourseUserId
       )
     : [];
 
-  // 왜: 유사도 임계치 이상인 학생 ID를 빠르게 조회하기 위한 Set입니다.
+  // ?? ?좎궗???꾧퀎移??댁긽???숈깮 ID瑜?鍮좊Ⅴ寃?議고쉶?섍린 ?꾪븳 Set?낅땲??
   const flaggedStudentIds = new Set<number>();
   similarityData.forEach((r) => {
     flaggedStudentIds.add(r.studentAId);
     flaggedStudentIds.add(r.studentBId);
   });
 
+  const toSimilarityNumber = (value: any) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
+
   const handleAnalyzeSimilarity = () => {
     if (!selectedHomeworkId) return;
     setSimilarityLoading(true);
     setSimilarityAnalyzed(false);
 
-    // TODO: 백엔드 API 연동 후 아래 mock을 실제 API 호출로 교체
-    // 예: tutorLmsApi.getHomeworkSimilarity({ courseId, homeworkId: selectedHomeworkId })
-    setTimeout(() => {
-      // 왜: 백엔드 미구현 상태이므로 빈 배열로 응답합니다.
-      //     백엔드 구현 후 실제 API 응답으로 교체합니다.
-      setSimilarityData([]);
-      setSimilarityLoading(false);
-      setSimilarityAnalyzed(true);
-    }, 800);
+    void (async () => {
+      try {
+        // ?? 紐⑸줉 議고쉶 ?꾩뿉 理쒖떊 寃곌낵瑜?媛뺤젣濡?媛깆떊??援먯닔?먭? 諛붾줈 ?뺤씤?????덇쾶 ?⑸땲??
+        const runRes = await tutorLmsApi.runHomeworkSimilarity({
+          courseId,
+          homeworkId: selectedHomeworkId,
+          thresholdScore: 70,
+        });
+        if (runRes.rst_code !== '0000') throw new Error(runRes.rst_message);
+
+        const listRes = await tutorLmsApi.getHomeworkSimilarityList({
+          courseId,
+          homeworkId: selectedHomeworkId,
+          page: 1,
+          pageSize: 200,
+          minScore: 70,
+        });
+        if (listRes.rst_code !== '0000') throw new Error(listRes.rst_message);
+
+        const rows = Array.isArray(listRes.rst_data) ? listRes.rst_data : [];
+        const mapped: SimilarityResult[] = rows.map((row: any) => ({
+          studentAId: toSimilarityNumber(row.left_course_user_id),
+          studentAName: String(row.left_user_nm ?? ''),
+          studentALoginId: String(row.left_login_id ?? ''),
+          studentBId: toSimilarityNumber(row.right_course_user_id),
+          studentBName: String(row.right_user_nm ?? ''),
+          studentBLoginId: String(row.right_login_id ?? ''),
+          titleScore: toSimilarityNumber(row.subject_score),
+          contentScore: toSimilarityNumber(row.content_score),
+          fileScore: toSimilarityNumber(row.file_score),
+          totalScore: toSimilarityNumber(row.total_score),
+        }));
+
+        setSimilarityData(mapped);
+        setSimilarityAnalyzed(true);
+      } catch (e) {
+        setSimilarityData([]);
+        setErrorMessage(e instanceof Error ? e.message : '?좎궗??遺꾩꽍 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+      } finally {
+        setSimilarityLoading(false);
+      }
+    })();
   };
 
   return (
     <div className="space-y-4">
-      {/* 과제 선택 + 유사도 분석 버튼 */}
+      {/* 怨쇱젣 ?좏깮 + ?좎궗??遺꾩꽍 踰꾪듉 */}
       <div className="flex items-center gap-4">
-        <label className="text-sm text-gray-700">과제 선택:</label>
+        <label className="text-sm text-gray-700">怨쇱젣 ?좏깮:</label>
         <select
           value={selectedHomeworkId ?? ''}
           onChange={(e) => {
@@ -2592,21 +2833,21 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
             setTempScore('0');
             setFeedbackText('');
             setStatusFilter('all');
-            // 왜: 과제가 바뀌면 이전 유사도 결과를 초기화해야 혼선이 없습니다.
+            // ?? 怨쇱젣媛 諛붾뚮㈃ ?댁쟾 ?좎궗??寃곌낵瑜?珥덇린?뷀빐???쇱꽑???놁뒿?덈떎.
             setSimilarityData([]);
             setSimilarityAnalyzed(false);
           }}
           disabled={loadingHomeworks || homeworks.length === 0}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
         >
-          {homeworks.length === 0 && <option value="">과제가 없습니다</option>}
+          {homeworks.length === 0 && <option value="">怨쇱젣媛 ?놁뒿?덈떎</option>}
           {homeworks.map((hw: any) => (
             <option key={hw.id} value={hw.id}>
               {hw.title}
             </option>
           ))}
         </select>
-        {/* 왜: 교수자가 원할 때 유사도 분석을 실행할 수 있도록 버튼을 배치합니다. */}
+        {/* ?? 援먯닔?먭? ?먰븷 ???좎궗??遺꾩꽍???ㅽ뻾?????덈룄濡?踰꾪듉??諛곗튂?⑸땲?? */}
         <button
           type="button"
           onClick={handleAnalyzeSimilarity}
@@ -2614,13 +2855,13 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
           className="flex items-center gap-1.5 px-4 py-2 text-sm border border-amber-300 bg-amber-50 text-amber-800 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <AlertTriangle className="w-4 h-4" />
-          {similarityLoading ? '분석 중...' : '유사도 분석'}
+          {similarityLoading ? '遺꾩꽍 以?..' : '?좎궗??遺꾩꽍'}
         </button>
         {similarityAnalyzed && similarityData.length === 0 && (
-          <span className="text-xs text-green-600">✓ 유사 과제가 발견되지 않았습니다.</span>
+          <span className="text-xs text-green-600">???좎궗 怨쇱젣媛 諛쒓껄?섏? ?딆븯?듬땲??</span>
         )}
         {similarityAnalyzed && similarityData.length > 0 && (
-          <span className="text-xs text-red-600">⚠ {similarityData.length}건의 유사 과제가 발견되었습니다.</span>
+          <span className="text-xs text-red-600">??{similarityData.length}嫄댁쓽 ?좎궗 怨쇱젣媛 諛쒓껄?섏뿀?듬땲??</span>
         )}
       </div>
 
@@ -2631,28 +2872,28 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
       )}
 
       {loadingUsers && (
-        <div className="p-6 text-center text-gray-500">제출 현황을 불러오는 중...</div>
+        <div className="p-6 text-center text-gray-500">?쒖텧 ?꾪솴??遺덈윭?ㅻ뒗 以?..</div>
       )}
 
       {homeworks.length === 0 && !loadingHomeworks ? (
         <div className="p-10 text-center text-gray-500 border border-dashed border-gray-200 rounded-lg">
-          먼저 과제를 등록해 주세요. (과제 관리 탭에서 등록할 수 있습니다.)
+          癒쇱? 怨쇱젣瑜??깅줉??二쇱꽭?? (怨쇱젣 愿由???뿉???깅줉?????덉뒿?덈떎.)
         </div>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-6">
-            {/* 왼쪽: 수강생 목록 */}
+            {/* ?쇱そ: ?섍컯??紐⑸줉 */}
             <div>
               <div className="bg-gray-50 px-4 py-3 rounded-t-lg border border-b-0 border-gray-200">
-                <h4 className="text-gray-900">수강생 목록 ({students.length}명)</h4>
+                <h4 className="text-gray-900">?섍컯??紐⑸줉 ({students.length}紐?</h4>
               </div>
-              {/* 필터 버튼 */}
+              {/* ?꾪꽣 踰꾪듉 */}
               <div className="flex gap-2 px-4 py-2.5 border border-b-0 border-gray-200 bg-white">
                 {[
                   { key: 'all' as const, label: '전체', count: summary.total, bg: 'bg-gray-100 text-gray-700', activeBg: 'bg-gray-700 text-white' },
                   { key: 'unsubmitted' as const, label: '미제출', count: summary.total - summary.needFeedback - summary.doneFeedback, bg: 'bg-red-50 text-red-600', activeBg: 'bg-red-600 text-white' },
-                  { key: 'need_feedback' as const, label: '피드백 필요', count: summary.needFeedback, bg: 'bg-orange-50 text-orange-600', activeBg: 'bg-orange-500 text-white' },
-                  { key: 'done' as const, label: '피드백 완료', count: summary.doneFeedback, bg: 'bg-green-50 text-green-600', activeBg: 'bg-green-600 text-white' },
+                  { key: 'need_feedback' as const, label: '피드백필요', count: summary.needFeedback, bg: 'bg-orange-50 text-orange-600', activeBg: 'bg-orange-500 text-white' },
+                  { key: 'done' as const, label: '피드백완료', count: summary.doneFeedback, bg: 'bg-green-50 text-green-600', activeBg: 'bg-green-600 text-white' },
                 ].map((f) => (
                   <button
                     key={f.key}
@@ -2676,8 +2917,8 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                   const badge = !student.submitted
                     ? { label: '미제출', className: 'bg-red-100 text-red-700' }
                     : student.confirm
-                    ? { label: '피드백 완료', className: 'bg-green-100 text-green-700' }
-                    : { label: '피드백 필요', className: 'bg-orange-100 text-orange-700' };
+                    ? { label: '피드백완료', className: 'bg-green-100 text-green-700' }
+                    : { label: '피드백필요', className: 'bg-orange-100 text-orange-700' };
 
                   return (
                     <button
@@ -2699,35 +2940,35 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                           <span className={`px-2 py-1 rounded text-xs ${badge.className}`}>
                             {badge.label}
                           </span>
-                          {/* 왜: 유사도 임계치 이상인 학생에게 경고 뱃지를 표시합니다. */}
+                          {/* ?? ?좎궗???꾧퀎移??댁긽???숈깮?먭쾶 寃쎄퀬 諭껋?瑜??쒖떆?⑸땲?? */}
                           {flaggedStudentIds.has(student.courseUserId) && (
-                            <span className="px-1.5 py-1 rounded text-xs bg-red-100 text-red-700 flex items-center gap-0.5" title="유사 과제 감지">
+                            <span className="px-1.5 py-1 rounded text-xs bg-red-100 text-red-700 flex items-center gap-0.5" title="?좎궗 怨쇱젣 媛먯?">
                               <AlertTriangle className="w-3 h-3" />
-                              유사
+                              ?좎궗
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>제출: {student.submittedAt}</span>
+                        <span>?쒖텧: {student.submittedAt}</span>
                         <span>
                           점수: {student.markingScore}점{student.scoreConv ? ` (${student.scoreConv})` : ''}
                         </span>
                       </div>
                       {0 < student.taskCnt && (
-                        <div className="mt-2 text-xs text-blue-700">추가과제 {student.taskCnt}건</div>
+                        <div className="mt-2 text-xs text-blue-700">異붽?怨쇱젣 {student.taskCnt}嫄?</div>
                       )}
                     </button>
                   );
                 })}
 
                 {students.length === 0 && (
-                  <div className="p-8 text-center text-gray-500">수강생이 없습니다.</div>
+                  <div className="p-8 text-center text-gray-500">?섍컯?앹씠 ?놁뒿?덈떎.</div>
                 )}
               </div>
             </div>
 
-            {/* 오른쪽: 피드백/채점 */}
+            {/* ?ㅻⅨ履? ?쇰뱶諛?梨꾩젏 */}
             <div>
               {selectedStudent ? (
                 <div className="border border-gray-200 rounded-lg">
@@ -2736,14 +2977,14 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                       {selectedStudent.name} ({selectedStudent.studentId})
                     </h4>
                     <div className="mt-1 flex items-center justify-between gap-3">
-                      <p className="text-xs text-gray-500">제출시간: {selectedStudent.submittedAt}</p>
+                      <p className="text-xs text-gray-500">?쒖텧?쒓컙: {selectedStudent.submittedAt}</p>
                       {selectedStudent.submitted && (
                         <button
                           type="button"
                           onClick={handleOpenSubmissionModal}
                           className="px-3 py-1.5 text-xs border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
                         >
-                          제출물 보기
+                          ?쒖텧臾?蹂닿린
                         </button>
                       )}
                     </div>
@@ -2751,7 +2992,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                   <div className="p-4 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm text-gray-700 mb-2">점수(0~100)</label>
+                        <label className="block text-sm text-gray-700 mb-2">?먯닔(0~100)</label>
                         <input
                           type="number"
                           min="0"
@@ -2767,7 +3008,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                           className="flex items-center gap-2 px-4 py-2 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
                         >
                           <Plus className="w-4 h-4" />
-                          <span>추가과제 부여</span>
+                          <span>異붽?怨쇱젣 遺??</span>
                         </button>
                       </div>
                     </div>
@@ -2777,82 +3018,90 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                         <label className="block text-sm text-gray-700">피드백</label>
                       </div>
 
-                      {/* 피드백 빠른 템플릿 */}
-                      {(() => {
-                        const FB_STORAGE_KEY = 'feedback-templates';
-                        const DEFAULT_TEMPLATES = [
-                          { label: '우수', text: '과제를 매우 훌륭하게 수행하였습니다. 우수한 성과입니다.' },
-                          { label: '양호', text: '전반적으로 잘 작성하였으나, 일부 보완이 필요합니다.' },
-                          { label: '보완필요', text: '과제 내용이 부족합니다. 요구사항을 다시 확인하고 보완해 주세요.' },
-                          { label: '재제출', text: '과제 기준에 미달합니다. 수정 후 재제출 바랍니다.' },
-                          { label: '형식오류', text: '제출 파일 형식 또는 양식이 올바르지 않습니다. 확인 후 다시 제출해 주세요.' },
-                        ];
-                        let templates: { label: string; text: string }[];
-                        try {
-                          const stored = localStorage.getItem(FB_STORAGE_KEY);
-                          templates = stored ? JSON.parse(stored) : DEFAULT_TEMPLATES;
-                          if (!Array.isArray(templates) || templates.length === 0) templates = DEFAULT_TEMPLATES;
-                        } catch {
-                          templates = DEFAULT_TEMPLATES;
-                        }
-                        return (
-                          <div className="flex flex-wrap gap-1.5 mb-2">
-                            {templates.map((tpl, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => {
-                                  setFeedbackText((prev: string) => {
-                                    if (!prev.trim()) return tpl.text;
-                                    return prev + '\n' + tpl.text;
-                                  });
-                                }}
-                                className="px-2.5 py-1 text-xs rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-                                title={tpl.text}
-                              >
-                                {tpl.label}
-                              </button>
-                            ))}
-                          </div>
-                        );
-                      })()}
+                      {/* ?쇰뱶諛?鍮좊Ⅸ ?쒗뵆由?*/}
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {feedbackTemplates.map((tpl) => (
+                          <button
+                            key={tpl.id}
+                            type="button"
+                            onClick={() => {
+                              setFeedbackText((prev: string) => {
+                                if (!prev.trim()) return tpl.text;
+                                return `${prev}\n${tpl.text}`;
+                              });
+                            }}
+                            className="px-2.5 py-1 text-xs rounded-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                            title={tpl.text}
+                          >
+                            {tpl.label}
+                          </button>
+                        ))}
+                      </div>
 
                       <textarea
                         value={feedbackText}
                         onChange={(e) => setFeedbackText(e.target.value)}
-                        placeholder="학생에게 전달할 피드백을 입력하세요..."
+                        placeholder="?숈깮?먭쾶 ?꾨떖???쇰뱶諛깆쓣 ?낅젰?섏꽭??.."
                         rows={6}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       />
 
-                      {/* 왜: 교수자가 첨삭한 파일을 첨부하여 학생에게 전달할 수 있도록 합니다. */}
-                      {/* TODO: 백엔드 API 연동 후 실제 파일 업로드 활성화 */}
+                      {/* ?? ?쒕쾭 ????뚯씪怨??대쾲??異붽????뚯씪??遺꾨━??蹂댁뿬以섏빞 ?ㅽ빐 ?놁씠 愿由ы븷 ???덉뒿?덈떎. */}
                       <div className="mt-3 space-y-2">
                         <div className="flex items-center gap-2">
                           <Paperclip className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-700">첨부파일</span>
+                          <span className="text-sm text-gray-700">泥⑤??뚯씪</span>
                           <button
                             type="button"
                             onClick={() => feedbackFileInputRef.current?.click()}
+                            disabled={feedbackFileBusy}
                             className="px-3 py-1 text-xs border border-blue-200 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
                           >
-                            + 파일 선택
+                            + ?뚯씪 ?좏깮
                           </button>
                           <input
                             ref={feedbackFileInputRef}
                             type="file"
                             multiple
                             className="hidden"
+                            disabled={feedbackFileBusy}
                             onChange={(e) => {
                               const newFiles = Array.from(e.target.files || []);
                               if (newFiles.length > 0) {
                                 setFeedbackFiles((prev) => [...prev, ...newFiles]);
                               }
-                              // 왜: 같은 파일을 다시 선택할 수 있도록 value를 초기화합니다.
+                              // ?? 媛숈? ?뚯씪???ㅼ떆 ?좏깮?????덈룄濡?value瑜?珥덇린?뷀빀?덈떎.
                               e.target.value = '';
                             }}
                           />
                         </div>
+                        {uploadedFeedbackFiles.length > 0 && (
+                          <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                            {uploadedFeedbackFiles.map((file) => (
+                              <div key={file.id} className="flex items-center justify-between px-3 py-2">
+                                <a
+                                  href={file.downloadUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center gap-2 text-sm text-blue-700 hover:underline truncate"
+                                  title={file.filename}
+                                >
+                                  <Paperclip className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                  <span className="truncate">{file.filename}</span>
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteFeedbackFile(file.id)}
+                                  disabled={feedbackFileBusy}
+                                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0 disabled:opacity-50"
+                                  title="?쒕쾭 ?뚯씪 ??젣"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {feedbackFiles.length > 0 && (
                           <div className="border border-gray-200 rounded-lg divide-y divide-gray-100">
                             {feedbackFiles.map((file, idx) => (
@@ -2867,8 +3116,9 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                                 <button
                                   type="button"
                                   onClick={() => setFeedbackFiles((prev) => prev.filter((_, i) => i !== idx))}
-                                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
-                                  title="삭제"
+                                  disabled={feedbackFileBusy}
+                                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0 disabled:opacity-50"
+                                  title="??젣"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -2876,9 +3126,9 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                             ))}
                           </div>
                         )}
-                        {feedbackFiles.length === 0 && (
+                        {uploadedFeedbackFiles.length === 0 && feedbackFiles.length === 0 && (
                           <div className="text-xs text-gray-400 pl-6">
-                            첨삭 파일이 있으면 선택해 주세요. (선택사항)
+                            泥⑥궘 ?뚯씪???덉쑝硫??좏깮??二쇱꽭?? (?좏깮?ы빆)
                           </div>
                         )}
                       </div>
@@ -2892,47 +3142,47 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                         }}
                         className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                         >
-                          취소
+                          痍⑥냼
                         </button>
                         {selectedStudent.submitted && (
                           <button
                             onClick={handleCancelHomeworkSubmit}
                             className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                           >
-                            제출 취소
+                            ?쒖텧 痍⑥냼
                           </button>
                         )}
                         <button
                           onClick={handleSubmitFeedback}
-                          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          disabled={feedbackFileBusy}
+                          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
                         >
-                          저장
+                          {feedbackFileBusy ? '저장 중...' : '저장'}
                       </button>
                     </div>
 
                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="text-sm text-blue-900 mb-2">피드백 안내</div>
+                      <div className="text-sm text-blue-900 mb-2">?쇰뱶諛??덈궡</div>
                       <div className="text-sm text-blue-700">
-                        - 저장을 누르면 점수/피드백이 DB에 저장되고, 성적(과제 점수)에 즉시 반영됩니다.
-                        <br />- 오프라인 과제처럼 제출 기록이 없어도, 필요하면 점수 입력이 가능합니다.
+                        - ??μ쓣 ?꾨Ⅴ硫??먯닔/?쇰뱶諛깆씠 DB????λ릺怨? ?깆쟻(怨쇱젣 ?먯닔)??利됱떆 諛섏쁺?⑸땲??
+                        <br />- ?ㅽ봽?쇱씤 怨쇱젣泥섎읆 ?쒖텧 湲곕줉???놁뼱?? ?꾩슂?섎㈃ ?먯닔 ?낅젰??媛?ν빀?덈떎.
                       </div>
                     </div>
 
-                    {/* 왜: 선택된 학생과 관련된 유사도 분석 결과를 상세하게 표시합니다. */}
-                    {/* TODO: 백엔드 API 연동 후 실제 데이터 표시 */}
+                    {/* ?? ?좏깮???숈깮怨?愿?⑤맂 ?좎궗??遺꾩꽍 寃곌낵瑜??곸꽭?섍쾶 ?쒖떆?⑸땲?? */}
                     {similarityAnalyzed && (
                       <div className="mt-4 border border-amber-200 rounded-lg overflow-hidden">
                         <div className="bg-amber-50 px-4 py-2.5 flex items-center gap-2">
                           <AlertTriangle className="w-4 h-4 text-amber-600" />
-                          <span className="text-sm font-medium text-amber-900">유사도 분석 결과</span>
+                          <span className="text-sm font-medium text-amber-900">?좎궗??遺꾩꽍 寃곌낵</span>
                         </div>
                         {studentSimilarities.length > 0 ? (
                           <div className="divide-y divide-amber-100">
                             {studentSimilarities.map((sim, idx) => {
-                              // 왜: 선택된 학생 기준으로 비교 대상 학생 정보를 가져옵니다.
+                              // ?? ?좏깮???숈깮 湲곗??쇰줈 鍮꾧탳 ????숈깮 ?뺣낫瑜?媛?몄샃?덈떎.
                               const isA = sim.studentAId === selectedCourseUserId;
                               const peerName = isA ? sim.studentBName : sim.studentAName;
-                              const peerId = isA ? sim.studentBId : sim.studentAId;
+                              const peerLoginId = isA ? sim.studentBLoginId : sim.studentALoginId;
                               const scoreColor =
                                 sim.totalScore >= 90
                                   ? 'text-red-700 bg-red-50'
@@ -2945,18 +3195,18 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                                   <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm text-gray-900">
                                       {peerName}
-                                      <span className="text-gray-400 ml-1">({peerId})</span>
+                                      {peerLoginId && <span className="text-gray-400 ml-1">({peerLoginId})</span>}
                                     </span>
                                     <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${scoreColor}`}>
-                                      유사도 {sim.totalScore}%
+                                      ?좎궗??{sim.totalScore}%
                                     </span>
                                   </div>
                                   <div className="flex gap-3 text-xs text-gray-500">
-                                    <span>제목: <span className="font-medium text-gray-700">{sim.titleScore}%</span></span>
-                                    <span>본문: <span className="font-medium text-gray-700">{sim.contentScore}%</span></span>
-                                    <span>파일: <span className="font-medium text-gray-700">{sim.fileScore}%</span></span>
+                                    <span>?쒕ぉ: <span className="font-medium text-gray-700">{sim.titleScore}%</span></span>
+                                    <span>蹂몃Ц: <span className="font-medium text-gray-700">{sim.contentScore}%</span></span>
+                                    <span>?뚯씪: <span className="font-medium text-gray-700">{sim.fileScore}%</span></span>
                                   </div>
-                                  {/* 왜: 가중치 정보를 표시하여 교수자가 판단 근거를 알 수 있게 합니다. */}
+                                  {/* ?? 媛以묒튂 ?뺣낫瑜??쒖떆?섏뿬 援먯닔?먭? ?먮떒 洹쇨굅瑜??????덇쾶 ?⑸땲?? */}
                                   <div className="mt-1.5">
                                     <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                                       <div
@@ -2973,16 +3223,16 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                           </div>
                         ) : (
                           <div className="px-4 py-4 text-sm text-gray-500 text-center">
-                            이 학생의 과제와 유사한 과제가 없습니다.
+                            ???숈깮??怨쇱젣? ?좎궗??怨쇱젣媛 ?놁뒿?덈떎.
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* 추가 과제 목록 */}
+                    {/* 異붽? 怨쇱젣 紐⑸줉 */}
                     {homeworkTasks.length > 0 && (
                       <div className="mt-4">
-                        <div className="text-sm font-medium text-gray-700 mb-2">추가 과제 목록 ({homeworkTasks.length}건)</div>
+                        <div className="text-sm font-medium text-gray-700 mb-2">異붽? 怨쇱젣 紐⑸줉 ({homeworkTasks.length}嫄?</div>
                         <div className="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-[300px] overflow-y-auto">
                           {homeworkTasks.map((task: any) => (
                             <button
@@ -2996,7 +3246,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                                 </div>
                                 <div className="flex gap-1 flex-shrink-0 ml-2">
                                   {task.need_review ? (
-                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded border border-orange-200">재평가 필요</span>
+                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded border border-orange-200">?ы룊媛 ?꾩슂</span>
                                   ) : (
                                     <>
                                       <span className={`px-2 py-0.5 text-xs rounded ${
@@ -3010,24 +3260,24 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                                 </div>
                               </div>
                               <div className="text-xs text-gray-500">
-                                부여: {task.reg_date_conv}
-                                {task.submit_yn === 'Y' && <span className="ml-3">제출: {task.submit_date_conv}</span>}
+                                遺?? {task.reg_date_conv}
+                                {task.submit_yn === 'Y' && <span className="ml-3">?쒖텧: {task.submit_date_conv}</span>}
                               </div>
                               {task.subject && (
                                 <div className="mt-1 text-xs text-gray-700">
-                                  <span className="font-medium">제출 제목:</span> {task.subject}
+                                  <span className="font-medium">?쒖텧 ?쒕ぉ:</span> {task.subject}
                                 </div>
                               )}
                             </button>
                           ))}
                         </div>
                         <div className="mt-2 text-[11px] text-gray-400">
-                          * 각 항목을 클릭하면 제출 상세 내용 확인 및 평가가 가능합니다.
+                          * 媛???ぉ???대┃?섎㈃ ?쒖텧 ?곸꽭 ?댁슜 ?뺤씤 諛??됯?媛 媛?ν빀?덈떎.
                         </div>
                       </div>
                     )}
                     {loadingTasks && (
-                      <div className="text-center text-gray-500 text-sm py-2">추가 과제 목록 불러오는 중...</div>
+                      <div className="text-center text-gray-500 text-sm py-2">異붽? 怨쇱젣 紐⑸줉 遺덈윭?ㅻ뒗 以?..</div>
                     )}
                   </div>
                 </div>
@@ -3036,8 +3286,8 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
                 <div className="border border-gray-200 rounded-lg">
                   <div className="p-12 text-center text-gray-500">
                     <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p>학생을 선택하여</p>
-                    <p>점수와 피드백을 저장하세요</p>
+                    <p>?숈깮???좏깮?섏뿬</p>
+                    <p>?먯닔? ?쇰뱶諛깆쓣 ??ν븯?몄슂</p>
                   </div>
                 </div>
               )}
@@ -3047,7 +3297,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
           <HomeworkSubmissionDetailModal
             open={showSubmissionModal}
             onOpenChange={setShowSubmissionModal}
-            title="학생 제출물 확인"
+            title="?숈깮 ?쒖텧臾??뺤씤"
             meta={
               selectedStudent
                 ? {
@@ -3062,29 +3312,31 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
             detail={submissionDetail}
           />
 
-          {/* 통계 요약 */}
+          {/* ?듦퀎 ?붿빟 */}
           <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
             <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600 mb-1">총 인원</div>
-              <div className="text-2xl text-gray-900">{summary.total}명</div>
+              <div className="text-sm text-gray-600 mb-1">珥??몄썝</div>
+              <div className="text-2xl text-gray-900">{summary.total}紐?</div>
             </div>
             <div className="p-4 bg-orange-50 rounded-lg">
-              <div className="text-sm text-orange-600 mb-1">피드백 필요</div>
-              <div className="text-2xl text-orange-900">{summary.needFeedback}명</div>
+              <div className="text-sm text-orange-600 mb-1">?쇰뱶諛??꾩슂</div>
+              <div className="text-2xl text-orange-900">{summary.needFeedback}紐?</div>
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
-              <div className="text-sm text-green-600 mb-1">피드백 완료</div>
-              <div className="text-2xl text-green-900">{summary.doneFeedback}명</div>
+              <div className="text-sm text-green-600 mb-1">?쇰뱶諛??꾨즺</div>
+              <div className="text-2xl text-green-900">{summary.doneFeedback}紐?</div>
             </div>
           </div>
         </>
       )}
 
-      {/* 추가과제 상세 모달 */}
+      {/* 異붽?怨쇱젣 ?곸꽭 紐⑤떖 */}
       <HomeworkTaskDetailModal
         isOpen={!!selectedTask}
         onClose={() => setSelectedTask(null)}
         courseId={courseId}
+        homeworkId={selectedHomeworkId ?? 0}
+        courseUserId={selectedCourseUserId ?? 0}
         task={selectedTask}
         onRefresh={() => {
           if (selectedHomeworkId && selectedCourseUserId) {
@@ -3097,7 +3349,7 @@ function AssignmentFeedbackTab({ courseId }: { courseId: number }) {
   );
 }
 
-// 자료 탭
+// ?먮즺 ??
 function MaterialsTab({
   courseId,
   showWeekSession = false,
@@ -3119,7 +3371,7 @@ function MaterialsTab({
   const [resolvedCourseId, setResolvedCourseId] = useState<number | null>(null);
 
   const isHaksaCourse = course?.sourceType === 'haksa';
-  // 왜: 학사 과목은 목록의 id가 아닌 매핑된 과정 ID만 유효하므로, 매핑값이 없으면 0으로 취급합니다.
+  // ?? ?숈궗 怨쇰ぉ? 紐⑸줉??id媛 ?꾨땶 留ㅽ븨??怨쇱젙 ID留??좏슚?섎?濡? 留ㅽ븨媛믪씠 ?놁쑝硫?0?쇰줈 痍④툒?⑸땲??
   const baseCourseId = isHaksaCourse
     ? Number(course?.mappedCourseId ?? 0)
     : Number.isFinite(courseId)
@@ -3177,7 +3429,7 @@ function MaterialsTab({
     }
 
     if (!haksaKey) {
-      setErrorMessage('학사 과목 키가 비어 있어 과정 매핑을 진행할 수 없습니다.');
+      setErrorMessage('?숈궗 怨쇰ぉ ?ㅺ? 鍮꾩뼱 ?덉뼱 怨쇱젙 留ㅽ븨??吏꾪뻾?????놁뒿?덈떎.');
       return;
     }
 
@@ -3191,13 +3443,13 @@ function MaterialsTab({
 
         const payload = Array.isArray(res.rst_data) ? res.rst_data[0] : res.rst_data;
         const mapped = Number(payload?.mapped_course_id ?? 0);
-        if (!mapped || Number.isNaN(mapped)) throw new Error('매핑된 과정ID를 찾지 못했습니다.');
+        if (!mapped || Number.isNaN(mapped)) throw new Error('留ㅽ븨??怨쇱젙ID瑜?李얠? 紐삵뻽?듬땲??');
 
         if (!cancelled) setResolvedCourseId(mapped);
       } catch (e) {
         if (!cancelled) {
           setResolvedCourseId(null);
-          setErrorMessage(e instanceof Error ? e.message : '과정 매핑 중 오류가 발생했습니다.');
+          setErrorMessage(e instanceof Error ? e.message : '怨쇱젙 留ㅽ븨 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       } finally {
         if (!cancelled) setResolvingCourseId(false);
@@ -3210,7 +3462,7 @@ function MaterialsTab({
     };
   }, [isHaksaCourse, baseCourseId, haksaKey]);
 
-  // 왜: 자료 목록은 DB가 기준이므로, 탭 진입/업로드/삭제 후에는 서버에서 다시 읽어와야 합니다.
+  // ?? ?먮즺 紐⑸줉? DB媛 湲곗??대?濡? ??吏꾩엯/?낅줈????젣 ?꾩뿉???쒕쾭?먯꽌 ?ㅼ떆 ?쎌뼱????⑸땲??
   const fetchMaterials = async () => {
     if (!effectiveCourseId) return;
     setLoading(true);
@@ -3231,7 +3483,7 @@ function MaterialsTab({
       }));
       setMaterials(mapped);
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '자료 목록을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '?먮즺 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoading(false);
     }
@@ -3244,7 +3496,7 @@ function MaterialsTab({
   const handleDownload = (material: any) => {
     const url = material.downloadUrl;
     if (!url) {
-      alert('다운로드할 파일/링크가 없습니다.');
+      alert('?ㅼ슫濡쒕뱶???뚯씪/留곹겕媛 ?놁뒿?덈떎.');
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -3253,11 +3505,11 @@ function MaterialsTab({
   const handleDelete = (libraryId: number, title: string) => {
     void (async () => {
       if (!effectiveCourseId) {
-        alert('과정 ID가 없어 삭제할 수 없습니다. 과정 매핑 후 다시 시도해 주세요.');
+        alert('怨쇱젙 ID媛 ?놁뼱 ??젣?????놁뒿?덈떎. 怨쇱젙 留ㅽ븨 ???ㅼ떆 ?쒕룄??二쇱꽭??');
         return;
       }
-      // 왜: 삭제는 되돌리기 어렵기 때문에, 운영 환경에서는 반드시 확인을 한 번 더 받습니다.
-      const ok = confirm(`자료 "${title}"을(를) 삭제하시겠습니까?`);
+      // ?? ??젣???섎룎由ш린 ?대졄湲??뚮Ц?? ?댁쁺 ?섍꼍?먯꽌??諛섎뱶???뺤씤????踰???諛쏆뒿?덈떎.
+      const ok = confirm(`?먮즺 "${title}"??瑜? ??젣?섏떆寃좎뒿?덇퉴?`);
       if (!ok) return;
 
       try {
@@ -3265,9 +3517,9 @@ function MaterialsTab({
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
         await fetchMaterials();
-        alert('삭제되었습니다.');
+        alert('??젣?섏뿀?듬땲??');
       } catch (e) {
-        alert(e instanceof Error ? e.message : '삭제 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '??젣 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       }
     })();
   };
@@ -3279,15 +3531,15 @@ function MaterialsTab({
       const hasLink = !!uploadForm.link.trim();
 
       if (!title) {
-        alert('자료명을 입력해 주세요.');
+        alert('?먮즺紐낆쓣 ?낅젰??二쇱꽭??');
         return;
       }
       if (!effectiveCourseId) {
-        alert('과정 ID가 없어 업로드할 수 없습니다. 과정 매핑 후 다시 시도해 주세요.');
+        alert('怨쇱젙 ID媛 ?놁뼱 ?낅줈?쒗븷 ???놁뒿?덈떎. 怨쇱젙 留ㅽ븨 ???ㅼ떆 ?쒕룄??二쇱꽭??');
         return;
       }
       if (!hasFile && !hasLink) {
-        alert('자료 파일 또는 링크 중 하나는 필요합니다.');
+        alert('?먮즺 ?뚯씪 ?먮뒗 留곹겕 以??섎굹???꾩슂?⑸땲??');
         return;
       }
 
@@ -3317,16 +3569,16 @@ function MaterialsTab({
               },
             });
           } catch (e) {
-            alert(e instanceof Error ? e.message : '강의목차에 자료를 등록하는 중 오류가 발생했습니다.');
+            alert(e instanceof Error ? e.message : '媛뺤쓽紐⑹감???먮즺瑜??깅줉?섎뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
           }
         }
 
         await fetchMaterials();
         setShowUploadModal(false);
         resetUploadForm();
-        alert('업로드되었습니다.');
+        alert('?낅줈?쒕릺?덉뒿?덈떎.');
       } catch (e) {
-        alert(e instanceof Error ? e.message : '업로드 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '?낅줈??以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       } finally {
         setUploading(false);
       }
@@ -3342,7 +3594,7 @@ function MaterialsTab({
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Upload className="w-4 h-4" />
-            <span>자료 업로드</span>
+            <span>?먮즺 ?낅줈??</span>
           </button>
         </div>
 
@@ -3353,17 +3605,17 @@ function MaterialsTab({
         )}
         {resolvingCourseId && (
           <div className="p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg">
-            과정 매핑 중입니다. 잠시만 기다려 주세요.
+            怨쇱젙 留ㅽ븨 以묒엯?덈떎. ?좎떆留?湲곕떎??二쇱꽭??
           </div>
         )}
 
         {loading && (
-          <div className="p-6 text-center text-gray-500">자료 목록을 불러오는 중...</div>
+          <div className="p-6 text-center text-gray-500">?먮즺 紐⑸줉??遺덈윭?ㅻ뒗 以?..</div>
         )}
 
         {!loading && materials.length === 0 && (
           <div className="p-10 text-center text-gray-500 border border-dashed border-gray-200 rounded-lg">
-            등록된 자료가 없습니다. 우측 상단에서 자료를 업로드해 주세요.
+            ?깅줉???먮즺媛 ?놁뒿?덈떎. ?곗륫 ?곷떒?먯꽌 ?먮즺瑜??낅줈?쒗빐 二쇱꽭??
           </div>
         )}
 
@@ -3378,8 +3630,8 @@ function MaterialsTab({
                 <div>
                   <div className="text-gray-900">{material.title}</div>
                   <div className="text-sm text-gray-600">
-                    {material.uploadDate} · {material.size}
-                    {material.hasLink && !material.hasFile && <span className="ml-2">(링크)</span>}
+                    {material.uploadDate} 쨌 {material.size}
+                    {material.hasLink && !material.hasFile && <span className="ml-2">(留곹겕)</span>}
                   </div>
                 </div>
               </div>
@@ -3388,12 +3640,12 @@ function MaterialsTab({
                   onClick={() => handleDownload(material)}
                   className="px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-50 rounded transition-colors"
                 >
-                  다운로드
+                  ?ㅼ슫濡쒕뱶
                 </button>
                 <button
                   onClick={() => handleDelete(material.id, material.title)}
                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="삭제"
+                  title="??젣"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -3407,7 +3659,7 @@ function MaterialsTab({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-gray-900">자료 업로드</h3>
+              <h3 className="text-gray-900">?먮즺 ?낅줈??</h3>
               <button
                 onClick={() => {
                   setShowUploadModal(false);
@@ -3415,7 +3667,7 @@ function MaterialsTab({
                 }}
                 className="text-gray-500 hover:text-gray-700 transition-colors"
               >
-                닫기
+                ?リ린
               </button>
             </div>
 
@@ -3428,24 +3680,24 @@ function MaterialsTab({
             >
               <div>
                 <label className="block text-sm text-gray-700 mb-2">
-                  자료명 <span className="text-red-500">*</span>
+                  ?먮즺紐?<span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={uploadForm.title}
                   onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="예: 강의자료.pdf"
+                  placeholder="?? 媛뺤쓽?먮즺.pdf"
                   required
                 />
               </div>
 
-              {/* 왜: 학사 과목은 자료 등록 시 주차/차시 기준이 필요합니다. */}
+              {/* ?? ?숈궗 怨쇰ぉ? ?먮즺 ?깅줉 ??二쇱감/李⑥떆 湲곗????꾩슂?⑸땲?? */}
               {showWeekSession && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-gray-700 mb-2">
-                      주차 <span className="text-red-500">*</span>
+                      二쇱감 <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={uploadForm.weekNumber}
@@ -3457,14 +3709,14 @@ function MaterialsTab({
                     >
                       {Array.from({ length: weekCount }, (_, i) => i + 1).map((week) => (
                         <option key={week} value={week}>
-                          {week}주차
+                          {week}二쇱감
                         </option>
                       ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm text-gray-700 mb-2">
-                      차시 <span className="text-red-500">*</span>
+                      李⑥떆 <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={uploadForm.sessionNumber}
@@ -3476,7 +3728,7 @@ function MaterialsTab({
                     >
                       {Array.from({ length: 10 }, (_, i) => i + 1).map((session) => (
                         <option key={session} value={session}>
-                          {session}차시
+                          {session}李⑥떆
                         </option>
                       ))}
                     </select>
@@ -3485,18 +3737,18 @@ function MaterialsTab({
               )}
 
               <div>
-                <label className="block text-sm text-gray-700 mb-2">설명</label>
+                <label className="block text-sm text-gray-700 mb-2">?ㅻ챸</label>
                 <textarea
                   value={uploadForm.content}
                   onChange={(e) => setUploadForm({ ...uploadForm, content: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
-                  placeholder="자료에 대한 간단한 설명을 입력하세요"
+                  placeholder="자료에 대한 간단한 설명을 입력해 주세요"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700 mb-2">링크(선택)</label>
+                <label className="block text-sm text-gray-700 mb-2">留곹겕(?좏깮)</label>
                 <input
                   type="url"
                   value={uploadForm.link}
@@ -3504,11 +3756,11 @@ function MaterialsTab({
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="https://..."
                 />
-                <p className="text-sm text-gray-500 mt-1">파일 업로드 대신 링크만 등록할 수도 있습니다.</p>
+                <p className="text-sm text-gray-500 mt-1">?뚯씪 ?낅줈?????留곹겕留??깅줉???섎룄 ?덉뒿?덈떎.</p>
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700 mb-2">파일(선택)</label>
+                <label className="block text-sm text-gray-700 mb-2">?뚯씪(?좏깮)</label>
                 <input
                   type="file"
                   onChange={(e) =>
@@ -3516,7 +3768,7 @@ function MaterialsTab({
                   }
                   className="w-full"
                 />
-                <p className="text-sm text-gray-500 mt-1">파일 또는 링크 중 하나는 필수입니다.</p>
+                <p className="text-sm text-gray-500 mt-1">?뚯씪 ?먮뒗 留곹겕 以??섎굹???꾩닔?낅땲??</p>
               </div>
 
               <div className="flex gap-3 pt-4">
@@ -3529,14 +3781,14 @@ function MaterialsTab({
                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   disabled={uploading}
                 >
-                  취소
+                  痍⑥냼
                 </button>
                 <button
                   type="submit"
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300"
                   disabled={uploading}
                 >
-                  {uploading ? '업로드 중...' : '업로드'}
+                    {uploading ? '업로드 중...' : '업로드'}
                 </button>
               </div>
             </form>
@@ -3547,7 +3799,7 @@ function MaterialsTab({
   );
 }
 
-// Q&A 탭
+// Q&A ??
 function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?: number }) {
   const [keyword, setKeyword] = useState('');
   const [qnas, setQnas] = useState<any[]>([]);
@@ -3563,7 +3815,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
   const toBool = (value: any) =>
     value === true || value === 1 || value === '1' || value === 'Y' || value === 'true';
 
-  // 왜: Q&A는 새 글/답변이 수시로 생기므로, 목록은 항상 서버(DB)에서 다시 읽는 방식이 안전합니다.
+  // ?? Q&A????湲/?듬????섏떆濡??앷린誘濡? 紐⑸줉? ??긽 ?쒕쾭(DB)?먯꽌 ?ㅼ떆 ?쎈뒗 諛⑹떇???덉쟾?⑸땲??
   const fetchQnas = async (params?: { keyword?: string }) => {
     if (!courseId) return;
     setLoading(true);
@@ -3582,7 +3834,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
       }));
       setQnas(mapped);
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : 'Q&A 목록을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : 'Q&A 紐⑸줉??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoading(false);
     }
@@ -3600,7 +3852,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
       setDetail(payload ?? null);
       setAnswerText(String(payload?.answer_content ?? ''));
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : 'Q&A 상세를 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : 'Q&A ?곸꽭瑜?遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setDetailLoading(false);
     }
@@ -3611,8 +3863,8 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
   }, [courseId]);
 
   useEffect(() => {
-    // 왜: 대시보드 "최근 Q&A"에서 들어온 경우, Q&A 탭에서 해당 글 상세로 바로 열어줍니다.
-    //     (주소 파라미터는 선택 후 정리될 수 있어, 최초 1회만 적용합니다.)
+    // ?? ??쒕낫??"理쒓렐 Q&A"?먯꽌 ?ㅼ뼱??寃쎌슦, Q&A ??뿉???대떦 湲 ?곸꽭濡?諛붾줈 ?댁뼱以띾땲??
+    //     (二쇱냼 ?뚮씪誘명꽣???좏깮 ???뺣━?????덉뼱, 理쒖큹 1?뚮쭔 ?곸슜?⑸땲??)
     initialAppliedRef.current = false;
     setSelectedPostId(null);
     setDetail(null);
@@ -3635,7 +3887,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
     if (!selectedPostId) return;
     const content = answerText.trim();
     if (!content) {
-      alert('답변 내용을 입력해 주세요.');
+      alert('?듬? ?댁슜???낅젰??二쇱꽭??');
       return;
     }
 
@@ -3646,9 +3898,9 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
 
         await fetchDetail(selectedPostId);
         await fetchQnas({ keyword: keyword.trim() ? keyword.trim() : undefined });
-        alert('저장되었습니다.');
+        alert('??λ릺?덉뒿?덈떎.');
       } catch (e) {
-        alert(e instanceof Error ? e.message : '저장 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '???以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       }
     })();
   };
@@ -3672,7 +3924,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
             </button>
             <div>
               <h3 className="text-xl text-gray-900">Q&A</h3>
-              <p className="text-sm text-gray-600">질문 상세 및 답변</p>
+              <p className="text-sm text-gray-600">吏덈Ц ?곸꽭 諛??듬?</p>
             </div>
           </div>
           <span
@@ -3680,7 +3932,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
               answered ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
             }`}
           >
-            {answered ? '답변완료' : '대기중'}
+            {answered ? '?듬??꾨즺' : '?湲곗쨷'}
           </span>
         </div>
 
@@ -3691,7 +3943,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
         )}
 
         {detailLoading && (
-          <div className="p-6 text-center text-gray-500">상세를 불러오는 중...</div>
+          <div className="p-6 text-center text-gray-500">?곸꽭瑜?遺덈윭?ㅻ뒗 以?..</div>
         )}
 
         {detail && (
@@ -3700,7 +3952,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
               <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                 <div className="text-gray-900 mb-1">{detail.subject}</div>
                 <div className="text-sm text-gray-600">
-                  {detail.question_user_nm} · {detail.question_reg_date_conv || '-'}
+                  {detail.question_user_nm} 쨌 {detail.question_reg_date_conv || '-'}
                 </div>
               </div>
               <div
@@ -3711,9 +3963,9 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
 
             <div className="border border-gray-200 rounded-lg">
               <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <div className="text-gray-900">답변</div>
+                <div className="text-gray-900">?듬?</div>
                 <div className="text-xs text-gray-500">
-                  {detail.answer_reg_date_conv ? `최근 저장: ${detail.answer_reg_date_conv}` : ''}
+                  {detail.answer_reg_date_conv ? `理쒓렐 ??? ${detail.answer_reg_date_conv}` : ''}
                 </div>
               </div>
               <div className="p-4 space-y-3">
@@ -3722,14 +3974,14 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
                   onChange={(e) => setAnswerText(e.target.value)}
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="답변 내용을 입력하세요..."
+                  placeholder="?듬? ?댁슜???낅젰?섏꽭??.."
                 />
                 <div className="flex justify-end">
                   <button
                     onClick={handleSaveAnswer}
                     className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    {answered ? '답변 수정' : '답변 등록'}
+                    {answered ? '?듬? ?섏젙' : '?듬? ?깅줉'}
                   </button>
                 </div>
               </div>
@@ -3747,7 +3999,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
           type="text"
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
-          placeholder="검색어(제목)"
+          placeholder="寃?됱뼱(?쒕ぉ)"
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           onKeyDown={(e) => {
             if (e.key === 'Enter') void fetchQnas({ keyword: keyword.trim() ? keyword.trim() : undefined });
@@ -3757,7 +4009,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
           onClick={() => void fetchQnas({ keyword: keyword.trim() ? keyword.trim() : undefined })}
           className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
         >
-          검색
+          寃??
         </button>
       </div>
 
@@ -3767,11 +4019,11 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
         </div>
       )}
 
-      {loading && <div className="p-6 text-center text-gray-500">Q&A 목록을 불러오는 중...</div>}
+      {loading && <div className="p-6 text-center text-gray-500">Q&A 紐⑸줉??遺덈윭?ㅻ뒗 以?..</div>}
 
       {!loading && qnas.length === 0 && (
         <div className="p-10 text-center text-gray-500 border border-dashed border-gray-200 rounded-lg">
-          Q&A 글이 없습니다.
+          Q&A 湲???놁뒿?덈떎.
         </div>
       )}
 
@@ -3786,7 +4038,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
               <div className="flex-1">
                 <div className="text-gray-900 mb-1">{qna.subject}</div>
                 <div className="text-sm text-gray-600">
-                  {qna.student} · {qna.date}
+                  {qna.student} 쨌 {qna.date}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -3795,7 +4047,7 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
                     qna.answered ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                   }`}
                 >
-                  {qna.answered ? '답변완료' : '대기중'}
+                  {qna.answered ? '?듬??꾨즺' : '?湲곗쨷'}
                 </span>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </div>
@@ -3807,10 +4059,12 @@ function QnaTab({ courseId, initialPostId }: { courseId: number; initialPostId?:
   );
 }
 
-// 성적관리 탭
+// ?깆쟻愿由???
 function GradesTab({ courseId }: { courseId: number }) {
   const [grades, setGrades] = useState<any[]>([]);
   const [courseInfo, setCourseInfo] = useState<any | null>(null);
+  const [distributionRows, setDistributionRows] = useState<any[]>([]);
+  const [distributionSummary, setDistributionSummary] = useState<any | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [recalcLoading, setRecalcLoading] = useState(false);
@@ -3822,16 +4076,16 @@ function GradesTab({ courseId }: { courseId: number }) {
   };
 
   const getCourseValue = (key: string) => {
-    // 왜: 서버에서 내려오는 DataSet 컬럼명이 환경에 따라 대문자(ASSIGN_EXAM)로 내려올 수 있어,
-    //     프론트에서는 소문자/대문자 키를 모두 지원해 화면 표시를 안정화합니다.
-    //     또한 DataSet이 JSON으로 변환될 때 배열 형태로 내려올 수 있어 첫 번째 요소로 접근합니다.
+    // ?? ?쒕쾭?먯꽌 ?대젮?ㅻ뒗 DataSet 而щ읆紐낆씠 ?섍꼍???곕씪 ?臾몄옄(ASSIGN_EXAM)濡??대젮?????덉뼱,
+    //     ?꾨줎?몄뿉?쒕뒗 ?뚮Ц???臾몄옄 ?ㅻ? 紐⑤몢 吏?먰빐 ?붾㈃ ?쒖떆瑜??덉젙?뷀빀?덈떎.
+    //     ?먰븳 DataSet??JSON?쇰줈 蹂?섎맆 ??諛곗뿴 ?뺥깭濡??대젮?????덉뼱 泥?踰덉㎏ ?붿냼濡??묎렐?⑸땲??
     if (!courseInfo) return undefined;
     const obj = Array.isArray(courseInfo) ? courseInfo[0] : courseInfo;
     if (!obj || typeof obj !== 'object') return undefined;
     return (obj as any)[key] ?? (obj as any)[key.toUpperCase()];
   };
 
-  // 왜: 성적 화면은 "현재 DB 점수"가 기준이므로, 탭 진입/재계산 후에는 서버에서 다시 불러옵니다.
+  // ?? ?깆쟻 ?붾㈃? "?꾩옱 DB ?먯닔"媛 湲곗??대?濡? ??吏꾩엯/?ш퀎???꾩뿉???쒕쾭?먯꽌 ?ㅼ떆 遺덈윭?듬땲??
   const fetchGrades = async () => {
     if (!courseId) return;
     setLoading(true);
@@ -3854,8 +4108,19 @@ function GradesTab({ courseId }: { courseId: number }) {
       }));
       setGrades(mapped);
       setCourseInfo(res.rst_course ?? null);
+
+      // ?? ?깆쟻 遺꾪룷 洹몃옒?꾧? ?쒕쾭 吏묎퀎? ?숈씪?댁빞 ?ㅼ젣 ?깆쟻?쒖? 遺덉씪移섍? ?섏? ?딆뒿?덈떎.
+      const distRes = await tutorLmsApi.getGradesDistribution({ courseId });
+      if (distRes.rst_code === '0000') {
+        setDistributionRows(distRes.rst_data ?? []);
+        const summary = Array.isArray(distRes.rst_summary) ? distRes.rst_summary[0] : distRes.rst_summary;
+        setDistributionSummary(summary ?? null);
+      } else {
+        setDistributionRows([]);
+        setDistributionSummary(null);
+      }
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '성적을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '?깆쟻??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoading(false);
     }
@@ -3866,8 +4131,8 @@ function GradesTab({ courseId }: { courseId: number }) {
   }, [courseId]);
 
   const getStatusBadge = (label: string) => {
-    if (label === '합격') return 'bg-green-100 text-green-700';
-    if (label === '수료') return 'bg-blue-100 text-blue-700';
+    if (label === '?⑷꺽') return 'bg-green-100 text-green-700';
+    if (label === '?섎즺') return 'bg-blue-100 text-blue-700';
     return 'bg-red-100 text-red-700';
   };
 
@@ -3894,8 +4159,8 @@ function GradesTab({ courseId }: { courseId: number }) {
 
   const handleRecalc = () => {
     void (async () => {
-      // 왜: 재계산은 전체 수강생 점수/총점을 다시 계산하므로 시간이 걸릴 수 있어, 명시적으로 눌렀을 때만 실행합니다.
-      const ok = confirm('성적을 재계산하시겠습니까?\n\n(시험/과제 점수, 진도율 등을 기준으로 총점이 다시 계산됩니다.)');
+      // ?? ?ш퀎?곗? ?꾩껜 ?섍컯???먯닔/珥앹젏???ㅼ떆 怨꾩궛?섎?濡??쒓컙??嫄몃┫ ???덉뼱, 紐낆떆?곸쑝濡??뚮????뚮쭔 ?ㅽ뻾?⑸땲??
+      const ok = confirm('?깆쟻???ш퀎?고븯?쒓쿋?듬땲源?\n\n(?쒗뿕/怨쇱젣 ?먯닔, 吏꾨룄???깆쓣 湲곗??쇰줈 珥앹젏???ㅼ떆 怨꾩궛?⑸땲??)');
       if (!ok) return;
 
       setRecalcLoading(true);
@@ -3904,9 +4169,9 @@ function GradesTab({ courseId }: { courseId: number }) {
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
         await fetchGrades();
-        alert('재계산이 완료되었습니다.');
+        alert('?ш퀎?곗씠 ?꾨즺?섏뿀?듬땲??');
       } catch (e) {
-        alert(e instanceof Error ? e.message : '재계산 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '?ш퀎??以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       } finally {
         setRecalcLoading(false);
       }
@@ -3914,7 +4179,7 @@ function GradesTab({ courseId }: { courseId: number }) {
   };
 
   const handleDownloadGrades = () => {
-    // 왜: 성적표는 “현재 화면에 보이는 결과”가 중요하므로, 화면 상태(grades)를 그대로 CSV로 내려받습니다.
+    // ?? ?깆쟻?쒕뒗 ?쒗쁽???붾㈃??蹂댁씠??寃곌낵?앷? 以묒슂?섎?濡? ?붾㈃ ?곹깭(grades)瑜?洹몃?濡?CSV濡??대젮諛쏆뒿?덈떎.
     const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const filename = `course_${courseId}_grades_${ymd}.csv`;
 
@@ -3940,7 +4205,7 @@ function GradesTab({ courseId }: { courseId: number }) {
   return (
     <div>
       <div className="mb-4 flex justify-between items-center">
-        <div className="text-sm text-gray-600">성적 조회 및 관리</div>
+        <div className="text-sm text-gray-600">?깆쟻 議고쉶 諛?愿由?</div>
         <div className="flex gap-2">
           <button
             onClick={handleRecalc}
@@ -3948,41 +4213,41 @@ function GradesTab({ courseId }: { courseId: number }) {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300"
           >
             <Play className="w-4 h-4" />
-            <span>{recalcLoading ? '재계산 중...' : '성적 재계산'}</span>
+              <span>{recalcLoading ? '재계산 중...' : '성적 재계산'}</span>
           </button>
           <button
             onClick={handleDownloadGrades}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Download className="w-4 h-4" />
-            <span>성적표 다운로드(CSV)</span>
+            <span>?깆쟻???ㅼ슫濡쒕뱶(CSV)</span>
           </button>
         </div>
       </div>
 
-      {/* 기준 안내 */}
+      {/* 湲곗? ?덈궡 */}
       <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <div className="mb-3 text-sm">
-          <div className="text-gray-700 mb-1">배점 비율</div>
+          <div className="text-gray-700 mb-1">諛곗젏 鍮꾩쑉</div>
           <div className="text-gray-600">
-            출석 {scoreWeights.progress} / 중간 {scoreWeights.exam} / 기말 {scoreWeights.final} / 과제 {scoreWeights.homework}
-             / 기타 {scoreWeights.etc} / 참여도 {scoreWeights.forum}
-            {scoreWeightSum > 0 ? ` (합계 ${scoreWeightSum})` : ''}
+            異쒖꽍 {scoreWeights.progress} / 以묎컙 {scoreWeights.exam} / 湲곕쭚 {scoreWeights.final} / 怨쇱젣 {scoreWeights.homework}
+             / 湲고? {scoreWeights.etc} / 李몄뿬??{scoreWeights.forum}
+            {scoreWeightSum > 0 ? ` (?⑷퀎 ${scoreWeightSum})` : ''}
           </div>
         </div>
         <div className={`grid gap-4 text-sm ${passEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
           <div>
-            <div className="text-gray-700 mb-1">수료 기준</div>
+            <div className="text-gray-700 mb-1">?섎즺 湲곗?</div>
             <div className="text-gray-600">
-              진도율 {completionCriteria.progressRate}% 이상
-              {completionCriteria.totalScore > 0 ? `, 총점 ${completionCriteria.totalScore}점 이상` : ''}
+              吏꾨룄??{completionCriteria.progressRate}% ?댁긽
+              {completionCriteria.totalScore > 0 ? `, 珥앹젏 ${completionCriteria.totalScore}???댁긽` : ''}
             </div>
           </div>
           {passEnabled && (
             <div>
-              <div className="text-gray-700 mb-1">합격 기준</div>
+              <div className="text-gray-700 mb-1">?⑷꺽 湲곗?</div>
               <div className="text-gray-600">
-                진도율 {passCriteria.progressRate}% 이상{passCriteria.totalScore > 0 ? `, 총점 ${passCriteria.totalScore}점 이상` : ''}
+                吏꾨룄??{passCriteria.progressRate}% ?댁긽{passCriteria.totalScore > 0 ? `, 珥앹젏 ${passCriteria.totalScore}???댁긽` : ''}
               </div>
             </div>
           )}
@@ -3995,23 +4260,23 @@ function GradesTab({ courseId }: { courseId: number }) {
         </div>
       )}
 
-      {loading && <div className="p-6 text-center text-gray-500">성적을 불러오는 중...</div>}
+      {loading && <div className="p-6 text-center text-gray-500">?깆쟻??遺덈윭?ㅻ뒗 以?..</div>}
 
       {!loading && (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">이름</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">학번</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">출석</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">중간</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">기말</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">과제</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">기타</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">참여도</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">총점</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">결과</th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700">?대쫫</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">?숇쾲</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">異쒖꽍</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">以묎컙</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">湲곕쭚</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">怨쇱젣</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">湲고?</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">李몄뿬??</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">珥앹젏</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">寃곌낵</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -4034,7 +4299,7 @@ function GradesTab({ courseId }: { courseId: number }) {
                   </td>
                   <td className="px-4 py-4 text-center">
                     <span className={`inline-flex px-3 py-1 rounded-full ${getStatusBadge(grade.statusLabel)}`}>
-                      {grade.statusLabel || '미달'}
+                      {grade.statusLabel || '誘몃떖'}
                     </span>
                   </td>
                 </tr>
@@ -4043,7 +4308,7 @@ function GradesTab({ courseId }: { courseId: number }) {
               {grades.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-4 py-10 text-center text-gray-500">
-                    성적 데이터가 없습니다.
+                    ?깆쟻 ?곗씠?곌? ?놁뒿?덈떎.
                   </td>
                 </tr>
               )}
@@ -4052,17 +4317,29 @@ function GradesTab({ courseId }: { courseId: number }) {
         </div>
       )}
 
-      {/* 성적 분포 그래프 */}
+      {/* ?깆쟻 遺꾪룷 洹몃옒??*/}
       {!loading && grades.length > 0 && (
-        <GradeDistributionChart grades={grades} />
+        <GradeDistributionChart
+          grades={grades}
+          distributionRows={distributionRows}
+          summary={distributionSummary}
+        />
       )}
     </div>
   );
 }
 
-// 성적 분포 그래프 (CSS-only 가로 바 차트)
-function GradeDistributionChart({ grades }: { grades: any[] }) {
-  // 왜: 10점 단위 구간별 학생 수를 세어 바 차트로 시각화합니다.
+// ?깆쟻 遺꾪룷 洹몃옒??(CSS-only 媛濡?諛?李⑦듃)
+function GradeDistributionChart({
+  grades,
+  distributionRows,
+  summary,
+}: {
+  grades: any[];
+  distributionRows?: any[];
+  summary?: any | null;
+}) {
+  // ?? 10???⑥쐞 援ш컙蹂??숈깮 ?섎? ?몄뼱 諛?李⑦듃濡??쒓컖?뷀빀?덈떎.
   const bins = [
     { label: '90~100', min: 90, max: 100 },
     { label: '80~89', min: 80, max: 89.99 },
@@ -4076,22 +4353,28 @@ function GradeDistributionChart({ grades }: { grades: any[] }) {
     { label: '0~9', min: 0, max: 9.99 },
   ];
 
-  const binCounts = bins.map(bin => ({
+  const fallbackBinCounts = bins.map(bin => ({
     ...bin,
     count: grades.filter(g => {
       const score = Number(g.totalScore) || 0;
       return score >= bin.min && score <= bin.max;
     }).length,
   }));
+  const binCounts = (distributionRows && distributionRows.length > 0)
+    ? distributionRows.map((row: any) => ({
+      label: row.bucket_label || `${Number(row.min_score ?? 0)}~${Number(row.max_score ?? 0)}`,
+      count: Number(row.student_count ?? 0),
+    }))
+    : fallbackBinCounts;
 
   const maxCount = Math.max(...binCounts.map(b => b.count), 1);
-  const total = grades.length;
+  const total = Number(summary?.total_count ?? grades.length ?? 0);
 
-  // 평균, 최고, 최저
+  // ?됯퇏, 理쒓퀬, 理쒖?
   const scores = grades.map(g => Number(g.totalScore) || 0);
-  const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-  const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
-  const minScore = scores.length > 0 ? Math.min(...scores) : 0;
+  const avg = Number(summary?.avg_score ?? (scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0));
+  const maxScore = Number(summary?.max_score ?? (scores.length > 0 ? Math.max(...scores) : 0));
+  const minScore = Number(summary?.min_score ?? (scores.length > 0 ? Math.min(...scores) : 0));
 
   const barColors = [
     'bg-blue-600', 'bg-blue-500', 'bg-blue-400', 'bg-sky-500',
@@ -4103,30 +4386,30 @@ function GradeDistributionChart({ grades }: { grades: any[] }) {
     <div className="mt-6 p-5 bg-white border border-gray-200 rounded-xl">
       <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <BarChart3 className="w-5 h-5 text-blue-600" />
-        성적 분포
+        ?깆쟻 遺꾪룷
       </h4>
 
-      {/* 통계 요약 */}
+      {/* ?듦퀎 ?붿빟 */}
       <div className="grid grid-cols-4 gap-3 mb-5">
         <div className="p-3 bg-blue-50 rounded-lg text-center">
-          <div className="text-xs text-blue-600 mb-1">수강생</div>
-          <div className="text-lg font-bold text-blue-900">{total}명</div>
+          <div className="text-xs text-blue-600 mb-1">?섍컯??</div>
+          <div className="text-lg font-bold text-blue-900">{total}紐?</div>
         </div>
         <div className="p-3 bg-green-50 rounded-lg text-center">
-          <div className="text-xs text-green-600 mb-1">평균</div>
-          <div className="text-lg font-bold text-green-900">{avg.toFixed(1)}점</div>
+          <div className="text-xs text-green-600 mb-1">?됯퇏</div>
+          <div className="text-lg font-bold text-green-900">{avg.toFixed(1)}??</div>
         </div>
         <div className="p-3 bg-purple-50 rounded-lg text-center">
-          <div className="text-xs text-purple-600 mb-1">최고점</div>
-          <div className="text-lg font-bold text-purple-900">{maxScore.toFixed(1)}점</div>
+          <div className="text-xs text-purple-600 mb-1">理쒓퀬??</div>
+          <div className="text-lg font-bold text-purple-900">{maxScore.toFixed(1)}??</div>
         </div>
         <div className="p-3 bg-orange-50 rounded-lg text-center">
-          <div className="text-xs text-orange-600 mb-1">최저점</div>
-          <div className="text-lg font-bold text-orange-900">{minScore.toFixed(1)}점</div>
+          <div className="text-xs text-orange-600 mb-1">理쒖???</div>
+          <div className="text-lg font-bold text-orange-900">{minScore.toFixed(1)}??</div>
         </div>
       </div>
 
-      {/* 바 차트 */}
+      {/* 諛?李⑦듃 */}
       <div className="space-y-2">
         {binCounts.map((bin, idx) => {
           const pct = maxCount > 0 ? (bin.count / maxCount) * 100 : 0;
@@ -4141,7 +4424,7 @@ function GradeDistributionChart({ grades }: { grades: any[] }) {
                 />
                 {bin.count > 0 && (
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
-                    {bin.count}명 ({ratio}%)
+                    {bin.count}紐?({ratio}%)
                   </span>
                 )}
               </div>
@@ -4153,9 +4436,9 @@ function GradeDistributionChart({ grades }: { grades: any[] }) {
   );
 }
 
-// 수료관리 탭(API 연동)
+// ?섎즺愿由???API ?곕룞)
 function CompletionTab({ courseId, course }: { courseId: number; course?: any }) {
-  // 학사 과목 여부 체크
+  // ?숈궗 怨쇰ぉ ?щ? 泥댄겕
   const isHaksaCourse =
     course?.sourceType === 'haksa' && (!course?.mappedCourseId || Number.isNaN(courseId) || courseId <= 0);
   const [selectedCourseUserIds, setSelectedCourseUserIds] = useState<number[]>([]);
@@ -4173,14 +4456,14 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
   };
 
   const getCourseValue = (key: string) => {
-    // 왜: DataSet이 JSON으로 변환될 때 배열 형태로 내려올 수 있어 첫 번째 요소로 접근합니다.
+    // ?? DataSet??JSON?쇰줈 蹂?섎맆 ??諛곗뿴 ?뺥깭濡??대젮?????덉뼱 泥?踰덉㎏ ?붿냼濡??묎렐?⑸땲??
     if (!courseInfo) return undefined;
     const obj = Array.isArray(courseInfo) ? courseInfo[0] : courseInfo;
     if (!obj || typeof obj !== 'object') return undefined;
     return (obj as any)[key] ?? (obj as any)[key.toUpperCase()];
   };
 
-  // 왜: 수료/종료/증명서 출력은 "운영 DB 상태"가 기준이므로, 화면 진입/처리 후에는 반드시 다시 조회합니다.
+  // ?? ?섎즺/醫낅즺/利앸챸??異쒕젰? "?댁쁺 DB ?곹깭"媛 湲곗??대?濡? ?붾㈃ 吏꾩엯/泥섎━ ?꾩뿉??諛섎뱶???ㅼ떆 議고쉶?⑸땲??
   const fetchCompletions = async () => {
     if (!courseId) return;
     setLoading(true);
@@ -4206,12 +4489,12 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
       setRows(mapped);
       setCourseInfo(res.rst_course ?? null);
 
-      // 선택된 항목이 목록에서 사라진 경우(상태 변화 등) 선택을 정리합니다.
+      // ?좏깮????ぉ??紐⑸줉?먯꽌 ?щ씪吏?寃쎌슦(?곹깭 蹂???? ?좏깮???뺣━?⑸땲??
       setSelectedCourseUserIds((prev) =>
         prev.filter((id) => mapped.some((r: any) => r.courseUserId === id))
       );
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '수료 정보를 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '?섎즺 ?뺣낫瑜?遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     } finally {
       setLoading(false);
     }
@@ -4235,9 +4518,9 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
   const canPrintPass = (row: any) => row.completeStatus === 'P';
 
   const getStatusBadge = (label: string) => {
-    if (label === '합격') return 'bg-green-100 text-green-700';
-    if (label === '수료') return 'bg-blue-100 text-blue-700';
-    if (label === '종료') return 'bg-gray-100 text-gray-700';
+    if (label === '?⑷꺽') return 'bg-green-100 text-green-700';
+    if (label === '?섎즺') return 'bg-blue-100 text-blue-700';
+    if (label === '醫낅즺') return 'bg-gray-100 text-gray-700';
     if (label === '미수료') return 'bg-red-100 text-red-700';
     return 'bg-yellow-100 text-yellow-800';
   };
@@ -4258,12 +4541,12 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
 
   const handleAction = (action: 'complete_y' | 'complete_n' | 'close_y' | 'close_n', label: string) => {
     if (selectedCourseUserIds.length === 0) {
-      alert('처리할 학생을 선택해 주세요.');
+      alert('泥섎━???숈깮???좏깮??二쇱꽭??');
       return;
     }
 
     void (async () => {
-      const ok = confirm(`${label}을(를) 실행하시겠습니까?\n\n선택 인원: ${selectedCourseUserIds.length}명`);
+      const ok = confirm(`${label}를 실행하시겠습니까?\n\n선택 인원: ${selectedCourseUserIds.length}명`);
       if (!ok) return;
 
       setActionLoading(true);
@@ -4272,9 +4555,9 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
 
         await fetchCompletions();
-        alert('처리가 완료되었습니다.');
+        alert('泥섎━媛 ?꾨즺?섏뿀?듬땲??');
       } catch (e) {
-        alert(e instanceof Error ? e.message : '처리 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '泥섎━ 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       } finally {
         setActionLoading(false);
       }
@@ -4282,10 +4565,10 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
   };
 
   const openCertificate = (courseUserId: number, type: 'C' | 'P') => {
-    // 왜: 팝업 차단을 피하려면(브라우저 정책), 클릭 직후에 창을 먼저 열어 둔 뒤 URL을 채워야 합니다.
+    // ?? ?앹뾽 李⑤떒???쇳븯?ㅻ㈃(釉뚮씪?곗? ?뺤콉), ?대┃ 吏곹썑??李쎌쓣 癒쇱? ?댁뼱 ????URL??梨꾩썙???⑸땲??
     const win = window.open('', '_blank');
     if (!win) {
-      alert('팝업이 차단되었습니다. 브라우저에서 팝업 허용 후 다시 시도해 주세요.');
+      alert('?앹뾽??李⑤떒?섏뿀?듬땲?? 釉뚮씪?곗??먯꽌 ?앹뾽 ?덉슜 ???ㅼ떆 ?쒕룄??二쇱꽭??');
       return;
     }
 
@@ -4294,18 +4577,18 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
         const res = await tutorLmsApi.issueCertificate({ courseUserId, type });
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
         const url = res.rst_data;
-        if (!url) throw new Error('인쇄 URL을 받지 못했습니다.');
+        if (!url) throw new Error('?몄뇙 URL??諛쏆? 紐삵뻽?듬땲??');
         win.location.href = url;
       } catch (e) {
         try { win.close(); } catch (ignore) {}
-        alert(e instanceof Error ? e.message : '증명서 출력 중 오류가 발생했습니다.');
+        alert(e instanceof Error ? e.message : '利앸챸??異쒕젰 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       }
     })();
   };
 
   const handlePrintBulk = (type: 'C' | 'P') => {
     if (selectedCourseUserIds.length === 0) {
-      alert('출력할 학생을 선택해 주세요.');
+      alert('異쒕젰???숈깮???좏깮??二쇱꽭??');
       return;
     }
 
@@ -4313,16 +4596,16 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
     const eligible = selectedRows.filter((r) => (type === 'P' ? canPrintPass(r) : canPrintCompletion(r)));
 
     if (eligible.length === 0) {
-      alert(type === 'P' ? '합격증을 출력할 대상이 없습니다.' : '수료증을 출력할 대상이 없습니다.');
+      alert(type === 'P' ? '?⑷꺽利앹쓣 異쒕젰????곸씠 ?놁뒿?덈떎.' : '?섎즺利앹쓣 異쒕젰????곸씠 ?놁뒿?덈떎.');
       return;
     }
 
     if (eligible.length > 20) {
-      alert('한 번에 너무 많이 출력하면 팝업 차단이 될 수 있습니다. 20명 이하로 나눠서 출력해 주세요.');
+      alert('??踰덉뿉 ?덈Т 留롮씠 異쒕젰?섎㈃ ?앹뾽 李⑤떒???????덉뒿?덈떎. 20紐??댄븯濡??섎닠??異쒕젰??二쇱꽭??');
       return;
     }
 
-    // 팝업은 동기적으로 먼저 열어 둡니다.
+    // ?앹뾽? ?숆린?곸쑝濡?癒쇱? ?댁뼱 ?〓땲??
     const opened = eligible.map((r) => ({
       row: r,
       win: window.open('', '_blank'),
@@ -4332,7 +4615,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
       opened.forEach((x) => {
         try { x.win?.close(); } catch (ignore) {}
       });
-      alert('팝업이 차단되었습니다. 브라우저에서 팝업 허용 후 다시 시도해 주세요.');
+      alert('?앹뾽??李⑤떒?섏뿀?듬땲?? 釉뚮씪?곗??먯꽌 ?앹뾽 ?덉슜 ???ㅼ떆 ?쒕룄??二쇱꽭??');
       return;
     }
 
@@ -4343,7 +4626,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
           const res = await tutorLmsApi.issueCertificate({ courseUserId: x.row.courseUserId, type });
           if (res.rst_code !== '0000') throw new Error(res.rst_message);
           const url = res.rst_data;
-          if (!url) throw new Error('인쇄 URL을 받지 못했습니다.');
+          if (!url) throw new Error('?몄뇙 URL??諛쏆? 紐삵뻽?듬땲??');
           x.win!.location.href = url;
         } catch (e) {
           try { x.win?.close(); } catch (ignore) {}
@@ -4351,7 +4634,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
         }
       }
       if (errors.length > 0) {
-        alert(`일부 출력이 실패했습니다.\n\n${errors.join('\n')}`);
+        alert(`?쇰? 異쒕젰???ㅽ뙣?덉뒿?덈떎.\n\n${errors.join('\n')}`);
       }
     })();
   };
@@ -4360,30 +4643,30 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
     (r) => selectedCourseUserIds.includes(r.courseUserId) && canPrintPass(r)
   ).length;
 
-  // 학사 과목: A/B/C/D/F 성적 판정 UI
+  // ?숈궗 怨쇰ぉ: A/B/C/D/F ?깆쟻 ?먯젙 UI
   if (isHaksaCourse) {
     return (
       <HaksaGradingContent course={course} />
     );
   }
 
-  // 프리즘 과목: 기존 수료/과락 판정 UI
+  // ?꾨━利?怨쇰ぉ: 湲곗〈 ?섎즺/怨쇰씫 ?먯젙 UI
   return (
     <div>
       <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <div className={`grid gap-4 text-sm ${passEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
           <div>
-            <div className="text-gray-700 mb-1">수료 기준</div>
+            <div className="text-gray-700 mb-1">?섎즺 湲곗?</div>
             <div className="text-gray-600">
-              진도율 {completionCriteria.progressRate}% 이상
-              {completionCriteria.totalScore > 0 ? `, 총점 ${completionCriteria.totalScore}점 이상` : ''}
+              吏꾨룄??{completionCriteria.progressRate}% ?댁긽
+              {completionCriteria.totalScore > 0 ? `, 珥앹젏 ${completionCriteria.totalScore}???댁긽` : ''}
             </div>
           </div>
           {passEnabled && (
             <div>
-              <div className="text-gray-700 mb-1">합격 기준</div>
+              <div className="text-gray-700 mb-1">?⑷꺽 湲곗?</div>
               <div className="text-gray-600">
-                진도율 {passCriteria.progressRate}% 이상{passCriteria.totalScore > 0 ? `, 총점 ${passCriteria.totalScore}점 이상` : ''}
+                吏꾨룄??{passCriteria.progressRate}% ?댁긽{passCriteria.totalScore > 0 ? `, 珥앹젏 ${passCriteria.totalScore}???댁긽` : ''}
               </div>
             </div>
           )}
@@ -4396,35 +4679,35 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
           className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           disabled={loading || actionLoading}
         >
-          새로고침
+          ?덈줈怨좎묠
         </button>
         <button
-          onClick={() => handleAction('complete_y', passEnabled ? '수료/합격 처리' : '수료 처리')}
+          onClick={() => handleAction('complete_y', passEnabled ? '?섎즺/?⑷꺽 泥섎━' : '?섎즺 泥섎━')}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300"
           disabled={actionLoading}
         >
-          {passEnabled ? '수료/합격 처리' : '수료 처리'}
+          {passEnabled ? '?섎즺/?⑷꺽 泥섎━' : '?섎즺 泥섎━'}
+        </button>
+          <button
+            onClick={() => handleAction('complete_n', '판정 초기화')}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-200"
+            disabled={actionLoading}
+          >
+          ?먯젙 珥덇린??
         </button>
         <button
-          onClick={() => handleAction('complete_n', '판정 초기화')}
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:bg-gray-200"
-          disabled={actionLoading}
-        >
-          판정 초기화
-        </button>
-        <button
-          onClick={() => handleAction('close_y', '종료(마감) 처리')}
+          onClick={() => handleAction('close_y', '醫낅즺(留덇컧) 泥섎━')}
           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300"
           disabled={actionLoading}
         >
-          종료(마감)
+          醫낅즺(留덇컧)
         </button>
         <button
-          onClick={() => handleAction('close_n', '종료 해제')}
+          onClick={() => handleAction('close_n', '醫낅즺 ?댁젣')}
           className="px-4 py-2 border border-purple-200 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors disabled:bg-gray-200"
           disabled={actionLoading}
         >
-          종료 해제
+          醫낅즺 ?댁젣
         </button>
       </div>
 
@@ -4435,7 +4718,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" />
-          <span>수료증 일괄출력 ({selectedCourseUserIds.length})</span>
+          <span>?섎즺利??쇨큵異쒕젰 ({selectedCourseUserIds.length})</span>
         </button>
         {passEnabled && (
           <button
@@ -4444,7 +4727,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
-            <span>합격증 일괄출력 ({passEligibleCount})</span>
+            <span>?⑷꺽利??쇨큵異쒕젰 ({passEligibleCount})</span>
           </button>
         )}
       </div>
@@ -4455,7 +4738,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
         </div>
       )}
 
-      {loading && <div className="p-6 text-center text-gray-500">수료 정보를 불러오는 중...</div>}
+      {loading && <div className="p-6 text-center text-gray-500">?섎즺 ?뺣낫瑜?遺덈윭?ㅻ뒗 以?..</div>}
 
       {!loading && (
         <div className="overflow-x-auto">
@@ -4470,13 +4753,13 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
                     className="w-4 h-4 text-blue-600 rounded"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-sm text-gray-700">이름</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">학번</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">진도율</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">총점</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">상태</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">판정/종료</th>
-                <th className="px-4 py-3 text-center text-sm text-gray-700">증명서 출력</th>
+                <th className="px-4 py-3 text-left text-sm text-gray-700">?대쫫</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">?숇쾲</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">吏꾨룄??</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">珥앹젏</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">?곹깭</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">?먯젙/醫낅즺</th>
+                <th className="px-4 py-3 text-center text-sm text-gray-700">利앸챸??異쒕젰</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -4496,16 +4779,16 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
                     {Math.round(data.progressRatio * 10) / 10}%
                   </td>
                   <td className="px-4 py-4 text-center text-sm text-gray-900">
-                    {Math.round(data.totalScore * 100) / 100}점
+                    {Math.round(data.totalScore * 100) / 100}??
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <span className={`inline-flex px-3 py-1 rounded-full text-xs ${getStatusBadge(data.statusLabel)}`}>
-                      {data.statusLabel || '미판정'}
-                    </span>
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs ${getStatusBadge(data.statusLabel)}`}>
+                        {data.statusLabel || '미판정'}
+                      </span>
                   </td>
                   <td className="px-4 py-4 text-center text-xs text-gray-600">
-                    <div>판정: {data.completeStatus || '-'}</div>
-                    <div>종료: {data.closeYn || '-'}</div>
+                    <div>?먯젙: {data.completeStatus || '-'}</div>
+                    <div>醫낅즺: {data.closeYn || '-'}</div>
                   </td>
                   <td className="px-4 py-4 text-center">
                     <div className="flex gap-2 justify-center">
@@ -4514,7 +4797,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
                         disabled={!canPrintCompletion(data)}
                         className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                       >
-                        수료증
+                        ?섎즺利?
                       </button>
                       {passEnabled && (
                         <button
@@ -4522,7 +4805,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
                           disabled={!canPrintPass(data)}
                           className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
-                          합격증
+                          ?⑷꺽利?
                         </button>
                       )}
                     </div>
@@ -4533,7 +4816,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
-                    수료 데이터가 없습니다.
+                    ?섎즺 ?곗씠?곌? ?놁뒿?덈떎.
                   </td>
                 </tr>
               )}
@@ -4545,7 +4828,7 @@ function CompletionTab({ courseId, course }: { courseId: number; course?: any })
   );
 }
 
-// 학사 과목 시험 관리 컴포넌트
+// ?숈궗 怨쇰ぉ ?쒗뿕 愿由?而댄룷?뚰듃
 function HaksaExamContent({
   haksaKey,
   haksaExams,
@@ -4558,14 +4841,14 @@ function HaksaExamContent({
   weekCount: number;
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingExam, setEditingExam] = useState<any | null>(null); // 수정 중인 시험
+  const [editingExam, setEditingExam] = useState<any | null>(null); // ?섏젙 以묒씤 ?쒗뿕
   const [examList, setExamList] = useState<any[]>([]);
   const [selectedExamId, setSelectedExamId] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedSession, setSelectedSession] = useState(1);
   
-  // 오늘 날짜 기본값
+  // ?ㅻ뒛 ?좎쭨 湲곕낯媛?
   const today = new Date().toISOString().split('T')[0];
   const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
@@ -4581,7 +4864,7 @@ function HaksaExamContent({
     showResults: true,
   });
 
-  // 시험관리(템플릿) 목록 불러오기
+  // ?쒗뿕愿由??쒗뵆由? 紐⑸줉 遺덈윭?ㅺ린
   useEffect(() => {
     if (!showAddModal) return;
     let cancelled = false;
@@ -4594,7 +4877,7 @@ function HaksaExamContent({
         const rows = res.rst_data ?? [];
         const mapped = rows.map((row: any) => ({
           id: String(row.id),
-          title: row.exam_nm || '시험',
+          title: row.exam_nm || '?쒗뿕',
           description: row.content || '',
           questionCount: Number(row.question_cnt ?? 0),
           totalPoints: Number(row.total_points ?? 0),
@@ -4603,7 +4886,7 @@ function HaksaExamContent({
       } catch (e) {
         if (!cancelled) {
           setExamList([]);
-          setErrorMessage(e instanceof Error ? e.message : '시험 템플릿을 불러오는 중 오류가 발생했습니다.');
+          setErrorMessage(e instanceof Error ? e.message : '?쒗뿕 ?쒗뵆由우쓣 遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       }
     };
@@ -4614,7 +4897,7 @@ function HaksaExamContent({
     };
   }, [showAddModal]);
 
-  // 선택한 시험 정보
+  // ?좏깮???쒗뿕 ?뺣낫
   const selectedExam = examList.find(e => e.id === selectedExamId);
 
   useEffect(() => {
@@ -4650,7 +4933,7 @@ function HaksaExamContent({
       });
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '시험 저장 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '?쒗뿕 ???以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
     }
   };
 
@@ -4667,7 +4950,7 @@ function HaksaExamContent({
       type: 'exam',
       weekNumber: selectedWeek,
       sessionNumber: selectedSession,
-      sessionName: `${selectedSession}차시`,
+      sessionName: `${selectedSession}李⑥떆`,
       createdAt: new Date().toISOString(),
       settings: { ...examSettings },
     };
@@ -4679,7 +4962,7 @@ function HaksaExamContent({
     resetSettings();
   };
 
-  // 시험 수정 시작
+  // ?쒗뿕 ?섏젙 ?쒖옉
   const handleEditExam = (exam: any) => {
     setEditingExam(exam);
     setSelectedExamId(exam.examId);
@@ -4698,7 +4981,7 @@ function HaksaExamContent({
     });
   };
 
-  // 시험 수정 저장
+  // ?쒗뿕 ?섏젙 ???
   const handleSaveEdit = () => {
     if (!editingExam) return;
 
@@ -4708,7 +4991,7 @@ function HaksaExamContent({
           ...e,
           weekNumber: selectedWeek,
           sessionNumber: selectedSession,
-          sessionName: `${selectedSession}차시`,
+          sessionName: `${selectedSession}李⑥떆`,
           settings: { ...examSettings },
         };
       }
@@ -4722,7 +5005,7 @@ function HaksaExamContent({
   };
 
   const handleDeleteExam = (examId: string) => {
-    if (!confirm('이 시험을 삭제하시겠습니까?')) return;
+    if (!confirm('???쒗뿕????젣?섏떆寃좎뒿?덇퉴?')) return;
     const updated = haksaExams.filter(e => e.id !== examId);
     void persistHaksaExams(updated);
   };
@@ -4736,13 +5019,13 @@ function HaksaExamContent({
       )}
 
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">등록된 시험</h3>
+        <h3 className="text-lg font-medium text-gray-900">?깅줉???쒗뿕</h3>
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>시험 추가</span>
+          <span>?쒗뿕 異붽?</span>
         </button>
       </div>
 
@@ -4759,38 +5042,38 @@ function HaksaExamContent({
                     <ClipboardCheck className="w-5 h-5 text-red-600" />
                     <span className="font-medium text-gray-900">{exam.title}</span>
                     <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">
-                      {exam.questionCount || 0}문제
+                      {exam.questionCount || 0}臾몄젣
                     </span>
                     <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded">
-                      {exam.weekNumber || 1}주차
+                      {exam.weekNumber || 1}二쇱감
                     </span>
                     <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded">
-                      {exam.sessionName || `${exam.sessionNumber || 1}차시`}
+                      {exam.sessionName || `${exam.sessionNumber || 1}李⑥떆`}
                     </span>
                   </div>
                   
-                  {/* 설정 항목들 테이블 형태로 표시 */}
+                  {/* ?ㅼ젙 ??ぉ???뚯씠釉??뺥깭濡??쒖떆 */}
                   <div className="ml-7 text-sm space-y-2 bg-gray-50 p-3 rounded-lg">
                     <div className="flex items-center">
-                      <span className="w-24 text-gray-500">응시기간</span>
+                      <span className="w-24 text-gray-500">?묒떆湲곌컙</span>
                       <span className="text-gray-900">
                         {exam.settings?.startDate || '-'} {exam.settings?.startTime || ''} ~ {exam.settings?.endDate || '-'} {exam.settings?.endTime || ''}
                       </span>
                     </div>
                     <div className="flex items-center">
-                      <span className="w-24 text-gray-500">배점</span>
-                      <span className="text-gray-900">{exam.settings?.points || exam.totalPoints || 0}점</span>
+                      <span className="w-24 text-gray-500">諛곗젏</span>
+                      <span className="text-gray-900">{exam.settings?.points || exam.totalPoints || 0}??</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="w-24 text-gray-500">재응시 가능</span>
+                      <span className="w-24 text-gray-500">?ъ쓳??媛??</span>
                       <span className="text-gray-900">
                         {exam.settings?.allowRetake ? (
-                          <>가능 ({exam.settings.retakeScore}점 미만, {exam.settings.retakeCount}회)</>
-                        ) : '불가'}
+                          <>媛??({exam.settings.retakeScore}??誘몃쭔, {exam.settings.retakeCount}??</>
+                        ) : '遺덇?'}
                       </span>
                     </div>
                     <div className="flex items-center">
-                      <span className="w-24 text-gray-500">시험결과노출</span>
+                      <span className="w-24 text-gray-500">?쒗뿕寃곌낵?몄텧</span>
                       <span className="text-gray-900">{exam.settings?.showResults ? '노출' : '비노출'}</span>
                     </div>
                   </div>
@@ -4800,14 +5083,14 @@ function HaksaExamContent({
                   <button
                     onClick={() => handleEditExam(exam)}
                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="수정"
+                    title="?섏젙"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteExam(exam.id)}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="삭제"
+                    title="??젣"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -4819,32 +5102,32 @@ function HaksaExamContent({
       ) : (
         <div className="text-center text-gray-500 py-12 border border-dashed border-gray-300 rounded-lg">
           <ClipboardCheck className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-          <p className="mb-2">등록된 시험이 없습니다.</p>
-          <p className="text-sm text-gray-400">시험 추가 버튼을 눌러 시험관리에서 만든 시험을 등록하세요.</p>
+          <p className="mb-2">?깅줉???쒗뿕???놁뒿?덈떎.</p>
+          <p className="text-sm text-gray-400">?쒗뿕 異붽? 踰꾪듉???뚮윭 ?쒗뿕愿由ъ뿉??留뚮뱺 ?쒗뿕???깅줉?섏꽭??</p>
         </div>
       )}
 
-      {/* 시험 추가 모달 */}
+      {/* ?쒗뿕 異붽? 紐⑤떖 */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowAddModal(false)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">시험 추가</h3>
+              <h3 className="text-lg font-semibold text-gray-900">?쒗뿕 異붽?</h3>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
               >
-                ×
+                횞
               </button>
             </div>
 
             <div className="p-6 space-y-6">
-              {/* 왜: 학사 시험 등록은 주차/차시 정보를 함께 저장해야 해서 선택 UI를 추가합니다. */}
+              {/* ?? ?숈궗 ?쒗뿕 ?깅줉? 二쇱감/李⑥떆 ?뺣낫瑜??④퍡 ??ν빐???댁꽌 ?좏깮 UI瑜?異붽??⑸땲?? */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    주차 <span className="text-red-500">*</span>
+                    二쇱감 <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={selectedWeek}
@@ -4853,14 +5136,14 @@ function HaksaExamContent({
                   >
                     {Array.from({ length: weekCount }, (_, i) => i + 1).map((week) => (
                       <option key={week} value={week}>
-                        {week}주차
+                        {week}二쇱감
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    차시 <span className="text-red-500">*</span>
+                    李⑥떆 <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={selectedSession}
@@ -4869,17 +5152,17 @@ function HaksaExamContent({
                   >
                     {Array.from({ length: 10 }, (_, i) => i + 1).map((session) => (
                       <option key={session} value={session}>
-                        {session}차시
+                        {session}李⑥떆
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* 시험 선택 */}
+              {/* ?쒗뿕 ?좏깮 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  시험 선택 <span className="text-red-500">*</span>
+                  ?쒗뿕 ?좏깮 <span className="text-red-500">*</span>
                 </label>
                 {examList.length > 0 ? (
                   <select
@@ -4887,27 +5170,27 @@ function HaksaExamContent({
                     onChange={(e) => setSelectedExamId(e.target.value)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">시험을 선택하세요</option>
+                    <option value="">?쒗뿕???좏깮?섏꽭??</option>
                     {examList.map(exam => (
                       <option key={exam.id} value={exam.id}>
-                        {exam.title} ({exam.questionCount || 0}문제, {exam.totalPoints}점)
+                        {exam.title} ({exam.questionCount || 0}臾몄젣, {exam.totalPoints}??
                       </option>
                     ))}
                   </select>
                 ) : (
                   <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
-                    <p className="text-sm">등록된 시험이 없습니다.</p>
-                    <p className="text-xs mt-1">좌측 메뉴의 시험관리에서 먼저 시험을 생성해주세요.</p>
+                    <p className="text-sm">?깅줉???쒗뿕???놁뒿?덈떎.</p>
+                    <p className="text-xs mt-1">醫뚯륫 硫붾돱???쒗뿕愿由ъ뿉??癒쇱? ?쒗뿕???앹꽦?댁＜?몄슂.</p>
                   </div>
                 )}
               </div>
 
-              {/* 시험 상세 설정 */}
+              {/* ?쒗뿕 ?곸꽭 ?ㅼ젙 */}
               {selectedExamId && (
                 <div className="space-y-4 pt-4 border-t border-gray-100">
-                  {/* 응시 가능 기간 */}
+                  {/* ?묒떆 媛??湲곌컙 */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">응시 가능 기간</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">?묒떆 媛??湲곌컙</label>
                     <div className="flex items-center gap-2 flex-wrap">
                       <input
                         type="date"
@@ -4921,7 +5204,7 @@ function HaksaExamContent({
                         onChange={(e) => setExamSettings(prev => ({ ...prev, startTime: e.target.value }))}
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="text-gray-500">부터</span>
+                      <span className="text-gray-500">遺??</span>
                       <input
                         type="date"
                         value={examSettings.endDate}
@@ -4935,13 +5218,13 @@ function HaksaExamContent({
                         onChange={(e) => setExamSettings(prev => ({ ...prev, endTime: e.target.value }))}
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="text-gray-500">까지</span>
+                      <span className="text-gray-500">源뚯?</span>
                     </div>
                   </div>
 
-                  {/* 배점 */}
+                  {/* 諛곗젏 */}
                   <div className="flex items-center gap-3">
-                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">배점</label>
+                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">諛곗젏</label>
                     <input
                       type="number"
                       value={examSettings.points}
@@ -4949,12 +5232,12 @@ function HaksaExamContent({
                       min={0}
                       className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-600">점</span>
+                    <span className="text-sm text-gray-600">??</span>
                   </div>
 
-                  {/* 재응시 가능여부 */}
+                  {/* ?ъ쓳??媛?μ뿬遺 */}
                   <div className="flex items-center gap-3">
-                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 가능여부</label>
+                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??媛?μ뿬遺</label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -4962,15 +5245,15 @@ function HaksaExamContent({
                         onChange={(e) => setExamSettings(prev => ({ ...prev, allowRetake: e.target.checked }))}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-600">재응시 가능</span>
+                      <span className="text-sm text-gray-600">?ъ쓳??媛??</span>
                     </label>
                   </div>
 
-                  {/* 재응시 기준 점수 */}
+                  {/* ?ъ쓳??湲곗? ?먯닔 */}
                   {examSettings.allowRetake && (
                     <>
                       <div className="flex items-center gap-3">
-                        <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 기준 점수</label>
+                        <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??湲곗? ?먯닔</label>
                         <input
                           type="number"
                           value={examSettings.retakeScore}
@@ -4979,11 +5262,11 @@ function HaksaExamContent({
                           max={100}
                           className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-gray-600">점 미만일때 재응시 가능</span>
+                        <span className="text-sm text-gray-600">??誘몃쭔?쇰븣 ?ъ쓳??媛??</span>
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 가능 횟수</label>
+                        <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??媛???잛닔</label>
                         <input
                           type="number"
                           value={examSettings.retakeCount}
@@ -4991,14 +5274,14 @@ function HaksaExamContent({
                           min={0}
                           className="w-16 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <span className="text-sm text-gray-600">회</span>
+                        <span className="text-sm text-gray-600">??</span>
                       </div>
                     </>
                   )}
 
-                  {/* 시험결과노출 */}
+                  {/* ?쒗뿕寃곌낵?몄텧 */}
                   <div className="flex items-center gap-3">
-                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">시험결과노출</label>
+                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?쒗뿕寃곌낵?몄텧</label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -5006,9 +5289,9 @@ function HaksaExamContent({
                         onChange={(e) => setExamSettings(prev => ({ ...prev, showResults: e.target.checked }))}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-600">노출</span>
+                      <span className="text-sm text-gray-600">?몄텧</span>
                     </label>
-                    <span className="text-xs text-gray-400">▶ 응시 후 수강생이 정답을 확인할 수 있습니다.</span>
+                    <span className="text-xs text-gray-400">???묒떆 ???섍컯?앹씠 ?뺣떟???뺤씤?????덉뒿?덈떎.</span>
                   </div>
                 </div>
               )}
@@ -5019,41 +5302,41 @@ function HaksaExamContent({
                 onClick={() => setShowAddModal(false)}
                 className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                취소
+                痍⑥냼
               </button>
               <button
                 onClick={handleAddExam}
                 disabled={!selectedExamId}
                 className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
-                시험추가
+                ?쒗뿕異붽?
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 시험 수정 모달 */}
+      {/* ?쒗뿕 ?섏젙 紐⑤떖 */}
       {editingExam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setEditingExam(null)} />
           <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">시험 수정</h3>
+              <h3 className="text-lg font-semibold text-gray-900">?쒗뿕 ?섏젙</h3>
               <button
                 onClick={() => setEditingExam(null)}
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
               >
-                ×
+                횞
               </button>
             </div>
 
             <div className="p-6 space-y-6">
-              {/* 왜: 시험 수정에서도 주차/차시 변경이 가능해야 일관성이 유지됩니다. */}
+              {/* ?? ?쒗뿕 ?섏젙?먯꽌??二쇱감/李⑥떆 蹂寃쎌씠 媛?ν빐???쇨??깆씠 ?좎??⑸땲?? */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    주차 <span className="text-red-500">*</span>
+                    二쇱감 <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={selectedWeek}
@@ -5062,14 +5345,14 @@ function HaksaExamContent({
                   >
                     {Array.from({ length: weekCount }, (_, i) => i + 1).map((week) => (
                       <option key={week} value={week}>
-                        {week}주차
+                        {week}二쇱감
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    차시 <span className="text-red-500">*</span>
+                    李⑥떆 <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={selectedSession}
@@ -5078,26 +5361,26 @@ function HaksaExamContent({
                   >
                     {Array.from({ length: 10 }, (_, i) => i + 1).map((session) => (
                       <option key={session} value={session}>
-                        {session}차시
+                        {session}李⑥떆
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* 시험 선택 (수정 불가) */}
+              {/* ?쒗뿕 ?좏깮 (?섏젙 遺덇?) */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">시험 선택</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">?쒗뿕 ?좏깮</label>
                 <div className="px-4 py-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
                   {editingExam.title}
                 </div>
               </div>
 
-              {/* 시험 상세 설정 */}
+              {/* ?쒗뿕 ?곸꽭 ?ㅼ젙 */}
               <div className="space-y-4 pt-4 border-t border-gray-100">
-                {/* 응시 가능 기간 */}
+                {/* ?묒떆 媛??湲곌컙 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">응시 가능 기간</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">?묒떆 媛??湲곌컙</label>
                   <div className="flex items-center gap-2 flex-wrap">
                     <input
                       type="date"
@@ -5111,7 +5394,7 @@ function HaksaExamContent({
                       onChange={(e) => setExamSettings(prev => ({ ...prev, startTime: e.target.value }))}
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-gray-500">부터</span>
+                    <span className="text-gray-500">遺??</span>
                     <input
                       type="date"
                       value={examSettings.endDate}
@@ -5125,13 +5408,13 @@ function HaksaExamContent({
                       onChange={(e) => setExamSettings(prev => ({ ...prev, endTime: e.target.value }))}
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-gray-500">까지</span>
+                    <span className="text-gray-500">源뚯?</span>
                   </div>
                 </div>
 
-                {/* 배점 */}
+                {/* 諛곗젏 */}
                 <div className="flex items-center gap-3">
-                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">배점</label>
+                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">諛곗젏</label>
                   <input
                     type="number"
                     value={examSettings.points}
@@ -5139,12 +5422,12 @@ function HaksaExamContent({
                     min={0}
                     className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-600">점</span>
+                  <span className="text-sm text-gray-600">??</span>
                 </div>
 
-                {/* 재응시 가능여부 */}
+                {/* ?ъ쓳??媛?μ뿬遺 */}
                 <div className="flex items-center gap-3">
-                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 가능여부</label>
+                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??媛?μ뿬遺</label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -5152,16 +5435,16 @@ function HaksaExamContent({
                       onChange={(e) => setExamSettings(prev => ({ ...prev, allowRetake: e.target.checked }))}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-600">재응시 가능</span>
+                    <span className="text-sm text-gray-600">?ъ쓳??媛??</span>
                   </label>
-                  <span className="text-xs text-gray-400">▶ 재응시를 지정하면 기준점수 미만일 경우 횟수제한 범위안에서 재응시할 수 있습니다.</span>
+                  <span className="text-xs text-gray-400">???ъ쓳?쒕? 吏?뺥븯硫?湲곗??먯닔 誘몃쭔??寃쎌슦 ?잛닔?쒗븳 踰붿쐞?덉뿉???ъ쓳?쒗븷 ???덉뒿?덈떎.</span>
                 </div>
 
-                {/* 재응시 기준 점수 */}
+                {/* ?ъ쓳??湲곗? ?먯닔 */}
                 {examSettings.allowRetake && (
                   <>
                     <div className="flex items-center gap-3">
-                      <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 기준 점수</label>
+                      <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??湲곗? ?먯닔</label>
                       <input
                         type="number"
                         value={examSettings.retakeScore}
@@ -5170,12 +5453,12 @@ function HaksaExamContent({
                         max={100}
                         className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-600">점 미만일때 재응시가 가능합니다.</span>
-                      <span className="text-xs text-gray-400">▶ 100점 만점 기준입니다.</span>
+                      <span className="text-sm text-gray-600">??誘몃쭔?쇰븣 ?ъ쓳?쒓? 媛?ν빀?덈떎.</span>
+                      <span className="text-xs text-gray-400">??100??留뚯젏 湲곗??낅땲??</span>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 가능 횟수</label>
+                      <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??媛???잛닔</label>
                       <input
                         type="number"
                         value={examSettings.retakeCount}
@@ -5183,14 +5466,14 @@ function HaksaExamContent({
                         min={0}
                         className="w-16 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <span className="text-sm text-gray-600">회까지 재응시가 가능합니다.</span>
+                      <span className="text-sm text-gray-600">?뚭퉴吏 ?ъ쓳?쒓? 媛?ν빀?덈떎.</span>
                     </div>
                   </>
                 )}
 
-                {/* 시험결과노출 */}
+                {/* ?쒗뿕寃곌낵?몄텧 */}
                 <div className="flex items-center gap-3">
-                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">시험결과노출</label>
+                  <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?쒗뿕寃곌낵?몄텧</label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -5198,9 +5481,9 @@ function HaksaExamContent({
                       onChange={(e) => setExamSettings(prev => ({ ...prev, showResults: e.target.checked }))}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-600">노출</span>
+                    <span className="text-sm text-gray-600">?몄텧</span>
                   </label>
-                  <span className="text-xs text-gray-400">▶ 응시 후 수강생이 정답을 확인할 수 있습니다.</span>
+                  <span className="text-xs text-gray-400">???묒떆 ???섍컯?앹씠 ?뺣떟???뺤씤?????덉뒿?덈떎.</span>
                 </div>
               </div>
             </div>
@@ -5210,13 +5493,13 @@ function HaksaExamContent({
                 onClick={() => setEditingExam(null)}
                 className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                취소
+                痍⑥냼
               </button>
               <button
                 onClick={handleSaveEdit}
                 className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                시험수정
+                ?쒗뿕?섏젙
               </button>
             </div>
           </div>
@@ -5226,7 +5509,7 @@ function HaksaExamContent({
   );
 }
 
-// 시험 선택 모달 (시험관리에서 생성한 시험 선택)
+// ?쒗뿕 ?좏깮 紐⑤떖 (?쒗뿕愿由ъ뿉???앹꽦???쒗뿕 ?좏깮)
 function ExamSelectModal({
   isOpen,
   onClose,
@@ -5262,7 +5545,7 @@ function ExamSelectModal({
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedSession, setSelectedSession] = useState(1);
   
-  // 오늘 날짜 기본값
+  // ?ㅻ뒛 ?좎쭨 湲곕낯媛?
   const today = new Date().toISOString().split('T')[0];
   const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   
@@ -5276,7 +5559,7 @@ function ExamSelectModal({
     showResults: true,
   });
 
-  // 시험관리 목록 불러오기
+  // ?쒗뿕愿由?紐⑸줉 遺덈윭?ㅺ린
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
@@ -5289,7 +5572,7 @@ function ExamSelectModal({
         const rows = res.rst_data ?? [];
         const mapped = rows.map((row: any) => ({
           id: String(row.id),
-          title: row.exam_nm || '시험',
+          title: row.exam_nm || '?쒗뿕',
           description: row.content || '',
           duration: Number(row.exam_time ?? 60),
           questionCount: Number(row.question_cnt ?? 0),
@@ -5299,7 +5582,7 @@ function ExamSelectModal({
       } catch (e) {
         if (!cancelled) {
           setExamList([]);
-          setErrorMessage(e instanceof Error ? e.message : '시험 템플릿을 불러오는 중 오류가 발생했습니다.');
+          setErrorMessage(e instanceof Error ? e.message : '?쒗뿕 ?쒗뵆由우쓣 遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       }
     };
@@ -5310,7 +5593,7 @@ function ExamSelectModal({
     };
   }, [isOpen]);
 
-  // 선택한 시험 정보
+  // ?좏깮???쒗뿕 ?뺣낫
   const selectedExam = examList.find(e => e.id === selectedExamId);
 
   useEffect(() => {
@@ -5339,7 +5622,7 @@ function ExamSelectModal({
       sessionNumber: selectedSession,
     });
     
-    // 초기화
+    // 珥덇린??
     setSelectedExamId('');
     setExamSettings({
       startDate: today,
@@ -5360,22 +5643,22 @@ function ExamSelectModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">시험 추가</h3>
+          <h3 className="text-lg font-semibold text-gray-900">?쒗뿕 異붽?</h3>
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
           >
-            ×
+            횞
           </button>
         </div>
 
         <div className="p-6 space-y-6">
-          {/* 왜: 학사 과목은 등록 시 주차/차시를 지정해야 하므로 선택 UI를 보여줍니다. */}
+          {/* ?? ?숈궗 怨쇰ぉ? ?깅줉 ??二쇱감/李⑥떆瑜?吏?뺥빐???섎?濡??좏깮 UI瑜?蹂댁뿬以띾땲?? */}
           {showWeekSession && (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  주차 <span className="text-red-500">*</span>
+                  二쇱감 <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedWeek}
@@ -5384,14 +5667,14 @@ function ExamSelectModal({
                 >
                   {Array.from({ length: weekCount }, (_, i) => i + 1).map((week) => (
                     <option key={week} value={week}>
-                      {week}주차
+                      {week}二쇱감
                     </option>
                   ))}
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  차시 <span className="text-red-500">*</span>
+                  李⑥떆 <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedSession}
@@ -5400,7 +5683,7 @@ function ExamSelectModal({
                 >
                   {Array.from({ length: 10 }, (_, i) => i + 1).map((session) => (
                     <option key={session} value={session}>
-                      {session}차시
+                      {session}李⑥떆
                     </option>
                   ))}
                 </select>
@@ -5408,10 +5691,10 @@ function ExamSelectModal({
             </div>
           )}
 
-          {/* 시험 선택 */}
+          {/* ?쒗뿕 ?좏깮 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              시험 선택 <span className="text-red-500">*</span>
+              ?쒗뿕 ?좏깮 <span className="text-red-500">*</span>
             </label>
             {examList.length > 0 ? (
               <select
@@ -5419,27 +5702,27 @@ function ExamSelectModal({
                 onChange={(e) => setSelectedExamId(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">시험을 선택하세요</option>
+                <option value="">?쒗뿕???좏깮?섏꽭??</option>
                 {examList.map(exam => (
                   <option key={exam.id} value={exam.id}>
-                    {exam.title} ({exam.questionCount || 0}문제, {exam.totalPoints}점)
+                    {exam.title} ({exam.questionCount || 0}臾몄젣, {exam.totalPoints}??
                   </option>
                 ))}
               </select>
             ) : (
               <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
-                <p className="text-sm">등록된 시험이 없습니다.</p>
-                <p className="text-xs mt-1">좌측 메뉴의 시험관리에서 먼저 시험을 생성해주세요.</p>
+                <p className="text-sm">?깅줉???쒗뿕???놁뒿?덈떎.</p>
+                <p className="text-xs mt-1">醫뚯륫 硫붾돱???쒗뿕愿由ъ뿉??癒쇱? ?쒗뿕???앹꽦?댁＜?몄슂.</p>
               </div>
             )}
           </div>
 
-          {/* 시험 상세 설정 */}
+          {/* ?쒗뿕 ?곸꽭 ?ㅼ젙 */}
           {selectedExamId && (
             <div className="space-y-4 pt-4 border-t border-gray-100">
-              {/* 응시 가능 기간 */}
+              {/* ?묒떆 媛??湲곌컙 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">응시 가능 기간</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">?묒떆 媛??湲곌컙</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
@@ -5458,9 +5741,9 @@ function ExamSelectModal({
                 </div>
               </div>
 
-              {/* 배점 */}
+              {/* 諛곗젏 */}
               <div className="flex items-center gap-3">
-                <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">배점</label>
+                <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">諛곗젏</label>
                 <input
                   type="number"
                   value={examSettings.points}
@@ -5468,12 +5751,12 @@ function ExamSelectModal({
                   min={0}
                   className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-600">점</span>
+                <span className="text-sm text-gray-600">??</span>
               </div>
 
-              {/* 재응시 가능여부 */}
+              {/* ?ъ쓳??媛?μ뿬遺 */}
               <div className="flex items-center gap-3">
-                <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 가능여부</label>
+                <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??媛?μ뿬遺</label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -5481,15 +5764,15 @@ function ExamSelectModal({
                     onChange={(e) => setExamSettings(prev => ({ ...prev, allowRetake: e.target.checked }))}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-600">재응시 가능</span>
+                  <span className="text-sm text-gray-600">?ъ쓳??媛??</span>
                 </label>
               </div>
 
-              {/* 재응시 기준 점수 */}
+              {/* ?ъ쓳??湲곗? ?먯닔 */}
               {examSettings.allowRetake && (
                 <>
                   <div className="flex items-center gap-3">
-                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 기준 점수</label>
+                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??湲곗? ?먯닔</label>
                     <input
                       type="number"
                       value={examSettings.retakeScore}
@@ -5498,11 +5781,11 @@ function ExamSelectModal({
                       max={100}
                       className="w-20 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-600">점 미만일때 재응시 가능</span>
+                    <span className="text-sm text-gray-600">??誘몃쭔?쇰븣 ?ъ쓳??媛??</span>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">재응시 가능 횟수</label>
+                    <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?ъ쓳??媛???잛닔</label>
                     <input
                       type="number"
                       value={examSettings.retakeCount}
@@ -5510,14 +5793,14 @@ function ExamSelectModal({
                       min={0}
                       className="w-16 px-3 py-2 border border-gray-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-600">회</span>
+                    <span className="text-sm text-gray-600">??</span>
                   </div>
                 </>
               )}
 
-              {/* 시험결과노출 */}
+              {/* ?쒗뿕寃곌낵?몄텧 */}
               <div className="flex items-center gap-3">
-                <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">시험결과노출</label>
+                <label className="w-28 text-sm font-medium text-gray-700 flex-shrink-0">?쒗뿕寃곌낵?몄텧</label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -5525,9 +5808,9 @@ function ExamSelectModal({
                     onChange={(e) => setExamSettings(prev => ({ ...prev, showResults: e.target.checked }))}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="text-sm text-gray-600">노출</span>
+                  <span className="text-sm text-gray-600">?몄텧</span>
                 </label>
-                <span className="text-xs text-gray-400">▶ 응시 후 수강생이 정답을 확인할 수 있습니다.</span>
+                <span className="text-xs text-gray-400">???묒떆 ???섍컯?앹씠 ?뺣떟???뺤씤?????덉뒿?덈떎.</span>
               </div>
             </div>
           )}
@@ -5544,7 +5827,7 @@ function ExamSelectModal({
             onClick={onClose}
             className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            취소
+            痍⑥냼
           </button>
           <button
             onClick={handleSave}
@@ -5558,7 +5841,7 @@ function ExamSelectModal({
   );
 }
 
-// 학사 과목 성적 판정 컴포넌트 (A/B/C/D/F)
+// ?숈궗 怨쇰ぉ ?깆쟻 ?먯젙 而댄룷?뚰듃 (A/B/C/D/F)
 function HaksaGradingContent({
   course,
 }: {
@@ -5588,8 +5871,11 @@ function HaksaGradingContent({
   const [loading, setLoading] = useState(false);
   const [recalcLoading, setRecalcLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [scoreDistributionRows, setScoreDistributionRows] = useState<any[]>([]);
+  const [gradeDistributionRows, setGradeDistributionRows] = useState<any[]>([]);
+  const [distributionSummary, setDistributionSummary] = useState<any | null>(null);
 
-  // 성적 기준 (A+~F, A~D까지 + 등급 포함)
+  // ?깆쟻 湲곗? (A+~F, A~D源뚯? + ?깃툒 ?ы븿)
   const GRADES = [
     { value: 'A+', label: 'A+ (95-100)', min: 95, color: 'bg-blue-200 text-blue-800' },
     { value: 'A', label: 'A (90-94)', min: 90, color: 'bg-blue-100 text-blue-700' },
@@ -5602,7 +5888,7 @@ function HaksaGradingContent({
     { value: 'F', label: 'F (0-59)', min: 0, color: 'bg-red-100 text-red-700' },
   ];
 
-  // 점수에서 자동 등급 계산
+  // ?먯닔?먯꽌 ?먮룞 ?깃툒 怨꾩궛
   const calculateGrade = (score: number): string => {
     if (score >= 95) return 'A+';
     if (score >= 90) return 'A';
@@ -5615,7 +5901,7 @@ function HaksaGradingContent({
     return 'F';
   };
 
-  // API에서 수강생 + 저장된 성적 로드
+  // API?먯꽌 ?섍컯??+ ??λ맂 ?깆쟻 濡쒕뱶
   useEffect(() => {
     if (!haksaKey) return;
     let cancelled = false;
@@ -5624,7 +5910,7 @@ function HaksaGradingContent({
       setLoading(true);
       setErrorMessage(null);
       try {
-        const [studentRes, gradeRes] = await Promise.all([
+        const [studentRes, gradeRes, distRes] = await Promise.all([
           tutorLmsApi.getHaksaCourseStudents({
             courseCode: haksaKey.courseCode,
             openYear: haksaKey.openYear,
@@ -5633,10 +5919,21 @@ function HaksaGradingContent({
             groupCode: haksaKey.groupCode,
           }),
           tutorLmsApi.getHaksaGrades(haksaKey),
+          tutorLmsApi.getHaksaGradeDistribution(haksaKey),
         ]);
 
         if (studentRes.rst_code !== '0000') throw new Error(studentRes.rst_message);
         if (gradeRes.rst_code !== '0000') throw new Error(gradeRes.rst_message);
+        if (distRes.rst_code === '0000') {
+          setScoreDistributionRows(distRes.rst_data ?? []);
+          setGradeDistributionRows(distRes.rst_grade_data ?? []);
+          const summary = Array.isArray(distRes.rst_summary) ? distRes.rst_summary[0] : distRes.rst_summary;
+          setDistributionSummary(summary ?? null);
+        } else {
+          setScoreDistributionRows([]);
+          setGradeDistributionRows([]);
+          setDistributionSummary(null);
+        }
 
         const gradeMap = new Map<string, { grade?: string; score?: number }>();
         (gradeRes.rst_data ?? []).forEach((row: any) => {
@@ -5659,7 +5956,7 @@ function HaksaGradingContent({
           };
         });
 
-        // 왜: 이전 로컬스토리지 성적이 있다면 초기 한 번 DB로 마이그레이션합니다.
+        // ?? ?댁쟾 濡쒖뺄?ㅽ넗由ъ? ?깆쟻???덈떎硫?珥덇린 ??踰?DB濡?留덉씠洹몃젅?댁뀡?⑸땲??
         if (courseId && mapped.length > 0 && gradeMap.size === 0) {
           try {
             const saved = localStorage.getItem(`haksa_grades_${courseId}`);
@@ -5689,7 +5986,10 @@ function HaksaGradingContent({
       } catch (e) {
         if (!cancelled) {
           setStudents([]);
-          setErrorMessage(e instanceof Error ? e.message : '성적을 불러오는 중 오류가 발생했습니다.');
+          setScoreDistributionRows([]);
+          setGradeDistributionRows([]);
+          setDistributionSummary(null);
+          setErrorMessage(e instanceof Error ? e.message : '?깆쟻??遺덈윭?ㅻ뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -5699,7 +5999,7 @@ function HaksaGradingContent({
     void loadStudents();
   }, [haksaKey, courseId]);
 
-  // 저장
+  // ???
   const persistGrades = async (updatedStudents: any[]) => {
     if (!haksaKey) return false;
     try {
@@ -5713,9 +6013,16 @@ function HaksaGradingContent({
         gradesJson: JSON.stringify(payload),
       });
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
+      const distRes = await tutorLmsApi.getHaksaGradeDistribution(haksaKey);
+      if (distRes.rst_code === '0000') {
+        setScoreDistributionRows(distRes.rst_data ?? []);
+        setGradeDistributionRows(distRes.rst_grade_data ?? []);
+        const summary = Array.isArray(distRes.rst_summary) ? distRes.rst_summary[0] : distRes.rst_summary;
+        setDistributionSummary(summary ?? null);
+      }
       return true;
     } catch (e) {
-      setErrorMessage(e instanceof Error ? e.message : '성적 저장 중 오류가 발생했습니다.');
+      setErrorMessage(e instanceof Error ? e.message : '?깆쟻 ???以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
       return false;
     }
   };
@@ -5725,7 +6032,7 @@ function HaksaGradingContent({
     void persistGrades(updatedStudents);
   };
 
-  // 개별 성적 변경
+  // 媛쒕퀎 ?깆쟻 蹂寃?
   const handleGradeChange = (studentId: string, grade: string) => {
     const updated = students.map(s => 
       s.id === studentId ? { ...s, grade } : s
@@ -5733,10 +6040,10 @@ function HaksaGradingContent({
     saveGrades(updated);
   };
 
-  // 성적 재계산(점수 기반)
+  // ?깆쟻 ?ш퀎???먯닔 湲곕컲)
   const handleRecalc = () => {
     void (async () => {
-      const ok = confirm('성적을 재계산하시겠습니까?\n\n(현재 점수를 기준으로 A/B/C/D/F가 다시 판정됩니다.)');
+      const ok = confirm('?깆쟻???ш퀎?고븯?쒓쿋?듬땲源?\n\n(?꾩옱 ?먯닔瑜?湲곗??쇰줈 A/B/C/D/F媛 ?ㅼ떆 ?먯젙?⑸땲??)');
       if (!ok) return;
       setRecalcLoading(true);
       const updated = students.map(s => ({
@@ -5745,12 +6052,12 @@ function HaksaGradingContent({
       }));
       setStudents(updated);
       const saved = await persistGrades(updated);
-      if (saved) alert('재계산이 완료되었습니다.');
+      if (saved) alert('?ш퀎?곗씠 ?꾨즺?섏뿀?듬땲??');
       setRecalcLoading(false);
     })();
   };
 
-  // 선택된 학생 일괄 성적 적용
+  // ?좏깮???숈깮 ?쇨큵 ?깆쟻 ?곸슜
   const handleBulkGrade = () => {
     if (!bulkGrade || selectedIds.length === 0) return;
     const updated = students.map(s =>
@@ -5761,7 +6068,7 @@ function HaksaGradingContent({
     setBulkGrade('');
   };
 
-  // 전체 선택/해제
+  // ?꾩껜 ?좏깮/?댁젣
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedIds(students.map(s => s.id));
@@ -5770,7 +6077,7 @@ function HaksaGradingContent({
     }
   };
 
-  // 개별 선택
+  // 媛쒕퀎 ?좏깮
   const handleSelect = (studentId: string) => {
     setSelectedIds(prev =>
       prev.includes(studentId)
@@ -5784,6 +6091,28 @@ function HaksaGradingContent({
     return found?.color || 'bg-gray-100 text-gray-700';
   };
 
+  const gradeCountMap = new Map<string, number>();
+  if (gradeDistributionRows.length > 0) {
+    gradeDistributionRows.forEach((row: any) => {
+      gradeCountMap.set(String(row.grade_key || '').toUpperCase(), Number(row.student_count ?? 0));
+    });
+  }
+
+  const chartGradeRows = GRADES.map((g) => ({
+    ...g,
+    count: gradeCountMap.has(g.value)
+      ? Number(gradeCountMap.get(g.value) ?? 0)
+      : students.filter((s) => s.grade === g.value).length,
+  }));
+  const ungradedCount = gradeCountMap.has('ETC')
+    ? Number(gradeCountMap.get('ETC') ?? 0)
+    : students.filter((s) => !s.grade).length;
+  const maxGradeCount = Math.max(...chartGradeRows.map((g) => g.count), ungradedCount, 1);
+  const summaryTotalCount = Number(distributionSummary?.total_count ?? students.length ?? 0);
+  const summaryAvgScore = Number(distributionSummary?.avg_score ?? 0);
+  const summaryMaxScore = Number(distributionSummary?.max_score ?? 0);
+  const summaryMinScore = Number(distributionSummary?.min_score ?? 0);
+
   return (
     <div className="space-y-6">
       {errorMessage && (
@@ -5792,9 +6121,9 @@ function HaksaGradingContent({
         </div>
       )}
 
-      {/* 성적 기준 안내 */}
+      {/* ?깆쟻 湲곗? ?덈궡 */}
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-2">학사 과목 성적 기준</h4>
+        <h4 className="font-medium text-blue-900 mb-2">?숈궗 怨쇰ぉ ?깆쟻 湲곗?</h4>
         <div className="flex flex-wrap gap-3 text-sm">
           {GRADES.map(g => (
             <span key={g.value} className={`px-3 py-1 rounded-full ${g.color}`}>
@@ -5804,7 +6133,7 @@ function HaksaGradingContent({
         </div>
       </div>
 
-      {/* 액션 버튼 */}
+      {/* ?≪뀡 踰꾪듉 */}
       <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={handleRecalc}
@@ -5815,24 +6144,16 @@ function HaksaGradingContent({
         </button>
         <button
           onClick={() => {
-            // 왜: 화면에 보이는 학생 성적을 그대로 CSV로 내려받아, 교수자가 엑셀로 활용할 수 있게 합니다.
-            const ymd = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const filename = `haksa_grades_${ymd}.csv`;
-            const headers = ['No', '이름', '학번', '점수', '성적'];
-            const rows = students.map((s, i) => ([
-              i + 1,
-              s.name ?? '',
-              s.studentId ?? '',
-              s.score ?? 0,
-              s.grade || '미판정',
-            ]));
-            downloadCsv(filename, headers, rows);
+            if (!haksaKey) return;
+            // ?? ?숈궗 ?깆쟻?쒕뒗 ?쒕쾭 而룹삤??洹쒖튃??諛섏쁺???대젮諛쏆븘???붾㈃怨??됱젙?먮즺媛 ?쇱튂?⑸땲??
+            const url = tutorLmsApi.getHaksaGradeExportUrl(haksaKey);
+            window.open(url, '_blank', 'noopener,noreferrer');
           }}
-          disabled={students.length === 0}
+          disabled={students.length === 0 || !haksaKey}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
         >
           <Download className="w-4 h-4" />
-          <span>성적표 다운로드(CSV)</span>
+          <span>?깆쟻???ㅼ슫濡쒕뱶(CSV)</span>
         </button>
 
         {selectedIds.length > 0 && (
@@ -5842,7 +6163,7 @@ function HaksaGradingContent({
               onChange={(e) => setBulkGrade(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">성적 선택</option>
+              <option value="">?깆쟻 ?좏깮</option>
               {GRADES.map(g => (
                 <option key={g.value} value={g.value}>{g.value}</option>
               ))}
@@ -5852,13 +6173,13 @@ function HaksaGradingContent({
               disabled={!bulkGrade}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
             >
-              선택 학생 일괄 적용 ({selectedIds.length}명)
+              ?좏깮 ?숈깮 ?쇨큵 ?곸슜 ({selectedIds.length}紐?
             </button>
           </div>
         )}
       </div>
 
-      {/* 학생 목록 테이블 */}
+      {/* ?숈깮 紐⑸줉 ?뚯씠釉?*/}
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
@@ -5871,18 +6192,18 @@ function HaksaGradingContent({
                   className="w-4 h-4 text-blue-600 rounded"
                 />
               </th>
-              <th className="px-4 py-3 text-left text-gray-700">이름</th>
-              <th className="px-4 py-3 text-center text-gray-700">학번</th>
-              <th className="px-4 py-3 text-center text-gray-700">점수</th>
-              <th className="px-4 py-3 text-center text-gray-700">성적</th>
-              <th className="px-4 py-3 text-center text-gray-700">성적 변경</th>
+              <th className="px-4 py-3 text-left text-gray-700">?대쫫</th>
+              <th className="px-4 py-3 text-center text-gray-700">?숇쾲</th>
+              <th className="px-4 py-3 text-center text-gray-700">?먯닔</th>
+              <th className="px-4 py-3 text-center text-gray-700">?깆쟻</th>
+              <th className="px-4 py-3 text-center text-gray-700">?깆쟻 蹂寃?</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {loading && (
               <tr>
                 <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
-                  불러오는 중...
+                  遺덈윭?ㅻ뒗 以?..
                 </td>
               </tr>
             )}
@@ -5899,14 +6220,14 @@ function HaksaGradingContent({
                 </td>
                 <td className="px-4 py-4 text-gray-900">{student.name}</td>
                 <td className="px-4 py-4 text-center text-gray-600">{student.studentId}</td>
-                <td className="px-4 py-4 text-center text-gray-900 font-medium">{student.score}점</td>
+                <td className="px-4 py-4 text-center text-gray-900 font-medium">{student.score}??</td>
                 <td className="px-4 py-4 text-center">
                   {student.grade ? (
                     <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getGradeBadge(student.grade)}`}>
                       {student.grade}
                     </span>
                   ) : (
-                    <span className="text-gray-400">미판정</span>
+                    <span className="text-gray-400">誘명뙋??</span>
                   )}
                 </td>
                 <td className="px-4 py-4 text-center">
@@ -5915,7 +6236,7 @@ function HaksaGradingContent({
                     onChange={(e) => handleGradeChange(student.id, e.target.value)}
                     className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    <option value="">선택</option>
+                    <option value="">?좏깮</option>
                     {GRADES.map(g => (
                       <option key={g.value} value={g.value}>{g.value}</option>
                     ))}
@@ -5927,7 +6248,7 @@ function HaksaGradingContent({
             {!loading && students.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
-                  등록된 학생이 없습니다.
+                  ?깅줉???숈깮???놁뒿?덈떎.
                 </td>
               </tr>
             )}
@@ -5935,77 +6256,84 @@ function HaksaGradingContent({
         </table>
       </div>
 
-      {/* 성적 분포 그래프 */}
-      {students.length > 0 && (() => {
-        const gradeCounts = GRADES.map(g => ({
-          ...g,
-          count: students.filter(s => s.grade === g.value).length,
-        }));
-        const ungraded = students.filter(s => !s.grade).length;
-        const maxGradeCount = Math.max(...gradeCounts.map(g => g.count), ungraded, 1);
+      {/* ?깆쟻 遺꾪룷 洹몃옒??*/}
+      {students.length > 0 && (
+        <div className="p-5 bg-white border border-gray-200 rounded-xl">
+          <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+            ?? ??
+          </h4>
 
-        return (
-          <div className="p-5 bg-white border border-gray-200 rounded-xl">
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-600" />
-              성적 분포
-            </h4>
-
-            {/* 뱃지 요약 */}
-            <div className="flex flex-wrap gap-3 mb-4">
-              {gradeCounts.map(g => (
-                <div key={g.value} className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-sm ${g.color}`}>{g.value}</span>
-                  <span className="text-gray-600 text-sm">{g.count}명</span>
-                </div>
-              ))}
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">미판정</span>
-                <span className="text-gray-600 text-sm">{ungraded}명</span>
-              </div>
+          <div className="grid grid-cols-4 gap-3 mb-5">
+            <div className="p-3 bg-blue-50 rounded-lg text-center">
+              <div className="text-xs text-blue-600 mb-1">???</div>
+              <div className="text-lg font-bold text-blue-900">{summaryTotalCount}?</div>
             </div>
+            <div className="p-3 bg-green-50 rounded-lg text-center">
+              <div className="text-xs text-green-600 mb-1">??</div>
+              <div className="text-lg font-bold text-green-900">{summaryAvgScore.toFixed(1)}?</div>
+            </div>
+            <div className="p-3 bg-purple-50 rounded-lg text-center">
+              <div className="text-xs text-purple-600 mb-1">???</div>
+              <div className="text-lg font-bold text-purple-900">{summaryMaxScore.toFixed(1)}?</div>
+            </div>
+            <div className="p-3 bg-orange-50 rounded-lg text-center">
+              <div className="text-xs text-orange-600 mb-1">???</div>
+              <div className="text-lg font-bold text-orange-900">{summaryMinScore.toFixed(1)}?</div>
+            </div>
+          </div>
 
-            {/* 바 차트 */}
-            <div className="space-y-2">
-              {gradeCounts.map(g => {
-                const pct = maxGradeCount > 0 ? (g.count / maxGradeCount) * 100 : 0;
-                const ratio = students.length > 0 ? ((g.count / students.length) * 100).toFixed(0) : '0';
-                return (
-                  <div key={g.value} className="flex items-center gap-3">
-                    <div className="w-10 text-right text-xs font-semibold text-gray-600">{g.value}</div>
-                    <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
-                      <div
-                        className="h-full bg-blue-500 rounded-md transition-all duration-500 ease-out"
-                        style={{ width: `${pct}%`, minWidth: g.count > 0 ? '2px' : '0' }}
-                      />
-                      {g.count > 0 && (
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
-                          {g.count}명 ({ratio}%)
-                        </span>
-                      )}
-                    </div>
+          <div className="flex flex-wrap gap-3 mb-4">
+            {chartGradeRows.map((g) => (
+              <div key={g.value} className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-sm ${g.color}`}>{g.value}</span>
+                <span className="text-gray-600 text-sm">{g.count}?</span>
+              </div>
+            ))}
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">???</span>
+              <span className="text-gray-600 text-sm">{ungradedCount}?</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {chartGradeRows.map((g) => {
+              const pct = maxGradeCount > 0 ? (g.count / maxGradeCount) * 100 : 0;
+              const ratio = summaryTotalCount > 0 ? ((g.count / summaryTotalCount) * 100).toFixed(0) : '0';
+              return (
+                <div key={g.value} className="flex items-center gap-3">
+                  <div className="w-10 text-right text-xs font-semibold text-gray-600">{g.value}</div>
+                  <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                    <div
+                      className="h-full bg-blue-500 rounded-md transition-all duration-500 ease-out"
+                      style={{ width: `${pct}%`, minWidth: g.count > 0 ? '2px' : '0' }}
+                    />
+                    {g.count > 0 && (
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+                        {g.count}?({ratio}%)
+                      </span>
+                    )}
                   </div>
-                );
-              })}
-              {/* 미판정 */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 text-right text-xs font-semibold text-gray-400">-</div>
-                <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
-                  <div
-                    className="h-full bg-gray-400 rounded-md transition-all duration-500 ease-out"
-                    style={{ width: `${maxGradeCount > 0 ? (ungraded / maxGradeCount) * 100 : 0}%`, minWidth: ungraded > 0 ? '2px' : '0' }}
-                  />
-                  {ungraded > 0 && (
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
-                      {ungraded}명
-                    </span>
-                  )}
                 </div>
+              );
+            })}
+            <div className="flex items-center gap-3">
+              <div className="w-10 text-right text-xs font-semibold text-gray-400">-</div>
+              <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                <div
+                  className="h-full bg-gray-400 rounded-md transition-all duration-500 ease-out"
+                  style={{ width: `${maxGradeCount > 0 ? (ungradedCount / maxGradeCount) * 100 : 0}%`, minWidth: ungradedCount > 0 ? '2px' : '0' }}
+                />
+                {ungradedCount > 0 && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600">
+                    {ungradedCount}?
+                  </span>
+                )}
               </div>
             </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ export type HomeworkSubmissionDetail = {
   subject: string;
   content: string;
   files: { id: number; filename: string; downloadUrl: string }[];
+  feedbackFiles?: { id: number; filename: string; downloadUrl: string }[];
 };
 
 function toPlainText(htmlOrText: string) {
@@ -114,6 +115,29 @@ export function HomeworkSubmissionDetailModal(props: {
                   ) : (
                     <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
                       첨부파일이 없습니다.
+                    </div>
+                  )}
+                </section>
+
+                <section className="space-y-2">
+                  <h4 className="text-sm font-semibold text-foreground">교수자 피드백 첨부</h4>
+                  {detail.feedbackFiles?.length ? (
+                    <div className="divide-y divide-border rounded-lg border border-border bg-background">
+                      {detail.feedbackFiles.map((f) => (
+                        <a
+                          key={f.id}
+                          href={f.downloadUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block px-3 py-2 text-sm text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {f.filename}
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+                      등록된 피드백 첨부파일이 없습니다.
                     </div>
                   )}
                 </section>

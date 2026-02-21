@@ -84,8 +84,13 @@ const serverToLocal = (row: TutorQuestionBankRow): Question => {
   }
 
   // 왜: 백엔드에서 is_public 필드가 아직 없을 수 있으므로 기본값 true
-  const isPublicRaw = getRowField(row, 'is_public', 'IS_PUBLIC');
-  const isPublic = isPublicRaw === undefined || isPublicRaw === null ? true : Boolean(Number(isPublicRaw));
+  const openYnRaw = getRowField(row, 'open_yn', 'OPEN_YN');
+  const isPublicRaw = openYnRaw ?? getRowField(row, 'is_public', 'IS_PUBLIC');
+  const isPublic = (() => {
+    if (typeof isPublicRaw === 'string') return isPublicRaw.toUpperCase() !== 'N';
+    if (isPublicRaw === undefined || isPublicRaw === null) return true;
+    return Boolean(Number(isPublicRaw));
+  })();
 
   return {
     id: String(getRowField(row, 'id', 'ID') ?? row.id),
@@ -168,9 +173,8 @@ export function QuestionBankPage() {
         categoryId: filterCategory ? Number(filterCategory) : undefined,
         questionType,
         keyword: searchQuery || undefined,
+        mineOnly: filterMineOnly,
         limit: 100,
-        // TODO: 백엔드에 mineOnly 파라미터 추가 후 활성화
-        // mineOnly: filterMineOnly || undefined,
       });
 
       if (res.rst_code !== '0000') throw new Error(res.rst_message);
@@ -195,19 +199,8 @@ export function QuestionBankPage() {
     loadData();
   }, [searchQuery, filterCategory, filterType, filterMineOnly]);
 
-  // 왜: 백엔드가 mineOnly 필터를 지원하기 전까지 클라이언트에서 필터링합니다.
-  // 현재 로그인한 사용자 ID는 tutorLmsApi에서 가져와야 하지만, 아직 미구현이므로
-  // creatorId가 있는 경우에만 프론트엔드 필터가 작동합니다.
-  // TODO: 백엔드에서 mineOnly 파라미터 지원 시 이 필터 제거
-  const displayQuestions = filterMineOnly
-    ? questions.filter(q => {
-        // creatorId가 없으면(백엔드 미지원) 모두 표시
-        if (!q.creatorId) return true;
-        // TODO: 실제 로그인 사용자 ID와 비교
-        // 현재는 백엔드에서 mineOnly 필터링을 해야 정상 동작
-        return true;
-      })
-    : questions;
+  // 왜: mineOnly는 서버 필터로 처리하므로 화면에서는 응답 목록을 그대로 사용합니다.
+  const displayQuestions = questions;
 
   const openAddModal = () => {
     setEditingQuestion(null);
@@ -277,6 +270,7 @@ export function QuestionBankPage() {
           answer,
           points: formData.points,
           items,
+          openYn: formData.isPublic ? 'Y' : 'N',
         });
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
       } else {
@@ -289,6 +283,7 @@ export function QuestionBankPage() {
           answer,
           points: formData.points,
           items,
+          openYn: formData.isPublic ? 'Y' : 'N',
         });
         if (res.rst_code !== '0000') throw new Error(res.rst_message);
       }
