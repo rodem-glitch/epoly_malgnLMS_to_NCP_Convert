@@ -61,7 +61,14 @@ sync_stack_files() {
   fi
 
   mkdir -p "${STACK_TARGET}"
-  rsync -av --delete "${STACK_SOURCE}/" "${STACK_TARGET}/"
+  # 왜: --delete로 번들에 없는 파일을 정리하되, 운영 중 생성되는 런타임 데이터는 보호합니다.
+  # data/file(업로드), data/log(로그), data/tmp(업로드 임시), WEB-INF/work(JSP 컴파일 캐시)
+  rsync -av --delete \
+    --exclude 'legacy/public_html/data/file/' \
+    --exclude 'legacy/public_html/data/log/' \
+    --exclude 'legacy/public_html/data/tmp/' \
+    --exclude 'legacy/public_html/WEB-INF/work/' \
+    "${STACK_SOURCE}/" "${STACK_TARGET}/"
 }
 
 prepare_legacy_permissions() {

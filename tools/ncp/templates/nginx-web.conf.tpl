@@ -108,6 +108,7 @@ server {
         proxy_read_timeout 120s;
         proxy_redirect http://was_api/ /;
     }
+    # 왜: 라이브 세션은 WebSocket을 사용할 수 있어 Upgrade/Connection 헤더가 필요합니다.
     location ^~ /livesession/ {
         proxy_pass http://was_api;
         proxy_http_version 1.1;
@@ -115,6 +116,8 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_read_timeout 120s;
         proxy_redirect http://was_api/ /;
     }

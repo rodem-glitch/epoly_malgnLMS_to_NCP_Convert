@@ -282,6 +282,18 @@
   - 운영 확인 시 `MemberKeyPopulationJdbcRepository`의 `학번 기반 인구 SQL 시작/성공/실패` 로그를 먼저 확인하면, 뷰테이블 조회 자체 문제인지 후처리 문제인지 빠르게 분리할 수 있습니다.
   - 인구 탭 필터 연속 변경 시 학번 그래프도 비동기 충돌이 날 수 있으므로 `memberKeyPopulationAbortController`와 요청 순번 검증(`requestSeq`)을 함께 유지해야 합니다.
 
+- NCP/GCP 배포 rsync --delete 런타임 데이터 보호(주의):
+  - `deploy-was.sh.tpl`(NCP) 및 `deploy-stack.sh.tpl`(GCP)의 `sync_stack_files()`는 `rsync -av --delete`로 번들을 서버에 동기화합니다.
+  - `--delete`가 런타임 데이터(`data/file/`, `data/log/`, `data/tmp/`, `WEB-INF/work/`)를 삭제하면 업로드 파일 손실, 로그 유실, JSP 재컴파일 오류가 발생합니다.
+  - 2026-02-22 수정: `--exclude` 옵션으로 런타임 디렉토리 4개를 보호하도록 변경했습니다.
+  - 확인 근거: `rsync --exclude` 옵션 4개가 `sync_stack_files()` 내에 존재하는지 확인합니다.
+  - 관련 코드: `tools/ncp/templates/deploy-was.sh.tpl`, `tools/gcp/templates/deploy-stack.sh.tpl`
+- NCP Nginx /livesession/ WebSocket 라우팅(주의):
+  - `nginx-web.conf.tpl`의 `/livesession/` location에 WebSocket 업그레이드 헤더(`Upgrade`, `Connection`)가 필요합니다.
+  - 누락되면 WebSocket 핸드셰이크가 Nginx에서 차단되어 라이브 세션 실시간 통신이 불가능합니다.
+  - 2026-02-22 수정: `proxy_set_header Upgrade $http_upgrade;`, `proxy_set_header Connection "upgrade";` 추가.
+  - 관련 코드: `tools/ncp/templates/nginx-web.conf.tpl`
+
 ## 갱신 기준(강제)
 - 권한/세션/결제/수료/통계/업로드처럼 “운영 영향이 큰” 부분을 수정했으면,
   무엇이 위험했고 무엇을 확인했는지(근거)를 1~2줄로 추가합니다.

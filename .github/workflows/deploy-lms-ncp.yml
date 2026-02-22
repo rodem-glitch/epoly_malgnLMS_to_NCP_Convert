@@ -173,30 +173,28 @@ jobs:
             tools/ncp/templates/resin-web.xml.tpl \
             > "${LEGACY_DIR}/public_html/WEB-INF/resin-web.xml"
 
-          # .env 생성
+          # 왜: .env를 echo로 한 줄씩 추가하여 YAML 들여쓰기에 의존하지 않게 합니다.
           QDRANT_COLLECTION_VAL="${QDRANT_COLLECTION:-video_summary_vectors_gemini}"
           KOLLUS_CLIENT_USER_ID_VAL="${KOLLUS_CLIENT_USER_ID:-contentsummary}"
-          cat > "${BUNDLE_DIR}/.env" <<ENVEOF
-          MYSQL_USER=lms
-          MYSQL_PASSWORD=${LMS_DB_PASSWORD}
-          APP_DB_URL=${APP_DB_URL}
-          QDRANT_API_KEY=${QDRANT_API_KEY}
-          QDRANT_COLLECTION=${QDRANT_COLLECTION_VAL}
-          GOOGLE_API_KEY=${GOOGLE_API_KEY}
-          GEMINI_API_KEY=${GEMINI_API_KEY}
-          KOSIS_CONSUMER_KEY=${KOSIS_CONSUMER_KEY:-}
-          KOSIS_CONSUMER_SECRET=${KOSIS_CONSUMER_SECRET:-}
-          WORK24_AUTH_KEY=${WORK24_AUTH_KEY:-}
-          JOBKOREA_API_KEY=${JOBKOREA_API_KEY:-}
-          JOBKOREA_OEM_CODE=${JOBKOREA_OEM_CODE:-}
-          STATISTICS_AI_API_KEY=${STATISTICS_AI_API_KEY:-}
-          KOLLUS_ACCESS_TOKEN=${KOLLUS_ACCESS_TOKEN:-}
-          KOLLUS_SECURITY_KEY=${KOLLUS_SECURITY_KEY:-}
-          KOLLUS_CHANNEL_KEY=${KOLLUS_CHANNEL_KEY:-}
-          KOLLUS_CLIENT_USER_ID=${KOLLUS_CLIENT_USER_ID_VAL}
-          ENVEOF
-          # 왜: heredoc 들여쓰기를 제거합니다.
-          sed -i 's/^          //' "${BUNDLE_DIR}/.env"
+          {
+            echo "MYSQL_USER=lms"
+            echo "MYSQL_PASSWORD=${LMS_DB_PASSWORD}"
+            echo "APP_DB_URL=${APP_DB_URL}"
+            echo "QDRANT_API_KEY=${QDRANT_API_KEY}"
+            echo "QDRANT_COLLECTION=${QDRANT_COLLECTION_VAL}"
+            echo "GOOGLE_API_KEY=${GOOGLE_API_KEY}"
+            echo "GEMINI_API_KEY=${GEMINI_API_KEY}"
+            echo "KOSIS_CONSUMER_KEY=${KOSIS_CONSUMER_KEY:-}"
+            echo "KOSIS_CONSUMER_SECRET=${KOSIS_CONSUMER_SECRET:-}"
+            echo "WORK24_AUTH_KEY=${WORK24_AUTH_KEY:-}"
+            echo "JOBKOREA_API_KEY=${JOBKOREA_API_KEY:-}"
+            echo "JOBKOREA_OEM_CODE=${JOBKOREA_OEM_CODE:-}"
+            echo "STATISTICS_AI_API_KEY=${STATISTICS_AI_API_KEY:-}"
+            echo "KOLLUS_ACCESS_TOKEN=${KOLLUS_ACCESS_TOKEN:-}"
+            echo "KOLLUS_SECURITY_KEY=${KOLLUS_SECURITY_KEY:-}"
+            echo "KOLLUS_CHANNEL_KEY=${KOLLUS_CHANNEL_KEY:-}"
+            echo "KOLLUS_CLIENT_USER_ID=${KOLLUS_CLIENT_USER_ID_VAL}"
+          } > "${BUNDLE_DIR}/.env"
 
           echo "WAS 번들 생성 완료: ${BUNDLE_DIR}"
           ls -la "${BUNDLE_DIR}"
