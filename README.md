@@ -86,6 +86,56 @@ Code Push → Build & Test → Security Scan (Trivy) → Docker Build
 
 ---
 
+## Firebase Hosting 현황 (as-is) - polytech-lms
+
+### 서비스 기본 정보
+
+| 항목 | 내용 |
+|------|------|
+| **URL** | https://epoly-kopo.web.app |
+| **호스팅** | Firebase Hosting |
+| **서비스명** | 한국폴리텍대학 학습관리시스템 |
+| **브랜드** | PLISM - 미래형 직업교육 플랫폼 |
+| **원본 저장소** | [sh-jang-code/polytech-lms](https://github.com/sh-jang-code/polytech-lms) |
+| **배포 워크플로우** | `deploy-lms-gcp.yml` |
+| **상태** | 정상 운영 중 |
+
+### 기술 스택
+
+| 구분 | 내용 |
+|------|------|
+| **프론트엔드** | 순수 JavaScript + JSP (SPA 프레임워크 미사용) |
+| **UI** | Bootstrap Icons, CSS Grid/Flexbox |
+| **반응형** | 992px / 576px 브레이크포인트 |
+| **영상 플랫폼** | Kollus 비디오 플레이어 + YouTube Shorts 연동 |
+| **외부 연동** | 교보문고 / YES24 전자도서관 |
+
+### 주요 기능
+
+| 기능 | 설명 |
+|------|------|
+| 추천 동영상 | 중독예방, 성폭력예방 등 교양 영상 |
+| 강의 | 재료공학, 모션그래픽, 패션테크, 3D모델링 등 |
+| 숏폼 | YouTube 통합 영상 콘텐츠 |
+| 계속 학습하기 | 진행 중인 과정 추적 |
+| AI 추천 프롬프트 | 개인화 추천 영상 기능 |
+
+### 주요 API 엔드포인트
+
+```
+/api/youtube_shorts.jsp?maxResults=6
+/mypage/new_main/reco_prompt.jsp (GET/POST)
+/mypage/new_main/reco_video_list.jsp
+/kollus/preview.jsp
+```
+
+### 인증
+
+- 모달 기반 로그인 (아이디/비밀번호)
+- 테스트 계정: `kopo_st01` / `Growai!2026`
+
+---
+
 ## NCP 전환 계획 (to-be)
 
 > TODO: NCP 전환 설계 및 구현 내용 추가 예정
