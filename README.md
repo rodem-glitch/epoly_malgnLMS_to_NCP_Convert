@@ -134,7 +134,10 @@ Code Push → Build & Test → Security Scan (Trivy) → Docker Build
 - 모달 기반 로그인 (아이디/비밀번호)
 - 테스트 계정: `kopo_st01` / `Growai!2026`
 
-### 배포 워크플로우 상세 (deploy-lms-gcp.yml)
+### 배포 워크플로우 상세 (deploy-lms-gcp.yml) - 비활성화됨
+
+> **참고**: GCP 배포 워크플로우는 NCP 전환에 따라 비활성화되었습니다 (`deploy-lms-gcp.yml.disabled`).
+> 현재 활성 워크플로우: `deploy-lms-ncp.yml`
 
 | 항목 | 값 |
 |------|-----|
@@ -289,28 +292,50 @@ Code Push → Build & Test → Security Scan (Trivy) → Docker Build
                                   └─────────────────────────────────┘
 ```
 
+### NCP 배포 워크플로우 (deploy-lms-ncp.yml) - 활성
+
+| 항목 | 값 |
+|------|-----|
+| **워크플로우명** | Deploy LMS to NCP |
+| **트리거** | `main` 브랜치 push + workflow_dispatch (수동) |
+| **타임아웃** | 30분 |
+| **WEB 서버** | newkl-web01 (192.168.1.6) |
+| **WAS 서버** | newkl-was01 (192.168.2.6) |
+| **Cloud DB** | mysql 8.0.42 (Private) |
+
 ### NCP 배포 파이프라인
 
 ```
 1. Code Push → GitHub
 2. GitHub Actions 트리거
-3. Build (Gradle / npm)
-4. SSH → newkl-web01: 정적 파일 + Nginx 설정 배포
-5. SSH → newkl-was01: JAR/WAR 배포 + 서비스 재시작
-6. Health Check
+3. Java 17 설정 + Gradle 빌드 (bootJar)
+4. SSH 키 설정 (WAS/WEB)
+5. WAS 번들 생성 (JAR + docker-compose + .env + legacy + 통계)
+6. SCP/SSH → newkl-was01: 번들 전송 + deploy-was.sh 실행
+7. SCP/SSH → newkl-web01: Nginx 설정 전송 + deploy-web.sh 실행
+8. 스모크 테스트 (/actuator/health + /)
 ```
 
 ### GitHub Secrets (NCP용)
 
 | 시크릿 | 용도 |
 |--------|------|
-| `NCP_ACCESS_KEY` | NCP API 인증 Access Key |
-| `NCP_SECRET_KEY` | NCP API 인증 Secret Key |
-| `NCP_WEB_SERVER_IP` | WEB 서버 IP (192.168.1.6) |
+| `NCP_WAS_SSH_KEY` | WAS 서버 SSH 프라이빗 키 |
+| `NCP_WEB_SSH_KEY` | WEB 서버 SSH 프라이빗 키 |
 | `NCP_WAS_SERVER_IP` | WAS 서버 IP (192.168.2.6) |
-| `NCP_SSH_KEY` | 서버 접속 SSH 프라이빗 키 |
+| `NCP_WEB_SERVER_IP` | WEB 서버 IP (192.168.1.6) |
 | `NCP_DB_HOST` | Cloud DB for MySQL 엔드포인트 |
 | `NCP_DB_PASSWORD` | Cloud DB 비밀번호 |
+| `LMS_DB_PASSWORD` | 앱 DB 비밀번호 |
+| `QDRANT_API_KEY` | Qdrant 벡터DB 키 |
+| `GOOGLE_API_KEY` | Google API 키 |
+| `GEMINI_API_KEY` | Gemini AI 키 |
+| `WEB_DOMAIN` | 웹 도메인 (선택) |
+| `LETSENCRYPT_EMAIL` | SSL 인증서 이메일 (선택) |
+
+### NCP 배포 도구
+
+상세 가이드: [`tools/ncp/README.md`](tools/ncp/README.md)
 
 ---
 
@@ -340,13 +365,18 @@ src/ + public_html/         → Legacy (JSP + eGovFrame)
 
 ```
 .github/workflows/
-└── deploy-lms-gcp.yml      → Firebase Hosting + GCP VM 배포
+├── deploy-lms-ncp.yml              → NCP WEB/WAS 분리 배포 (활성)
+└── deploy-lms-gcp.yml.disabled     → GCP+Firebase 배포 (비활성)
 
-polytech-lms-api/           → Spring Boot API
-tools/gcp/
-├── one-click-setup.ps1     → VM 원클릭 배포 스크립트
-└── firebase-proxy-deploy/  → Firebase vmproxy 함수 + Hosting
-src/ + public_html/         → Legacy (JSP)
+polytech-lms-api/                   → Spring Boot API
+tools/gcp/                          → GCP 배포 도구 (참조용 보존)
+├── one-click-setup.ps1             → VM 원클릭 배포 스크립트
+└── firebase-proxy-deploy/          → Firebase vmproxy 함수 + Hosting
+tools/ncp/                          → NCP 배포 도구 (활성)
+├── templates/                      → Nginx, Docker Compose, 배포 스크립트
+├── migrate-db.sh                   → Cloud DB 마이그레이션
+└── README.md                       → NCP 배포 가이드
+src/ + public_html/                 → Legacy (JSP)
 ```
 
 ---
