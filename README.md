@@ -134,6 +134,59 @@ Code Push → Build & Test → Security Scan (Trivy) → Docker Build
 - 모달 기반 로그인 (아이디/비밀번호)
 - 테스트 계정: `kopo_st01` / `Growai!2026`
 
+### 배포 워크플로우 상세 (deploy-lms-gcp.yml)
+
+| 항목 | 값 |
+|------|-----|
+| **워크플로우명** | Deploy LMS to GCP + Firebase |
+| **트리거** | `main` 브랜치 push + workflow_dispatch (수동) |
+| **타임아웃** | 90분 |
+| **VM 이름** | `polytech-lms-vm` |
+| **VM Zone** | `asia-northeast3-a` (서울) |
+| **Region** | `asia-northeast3` |
+| **고정 IP** | `polytech-lms-vm-ip` |
+| **Firebase Site** | `epoly-kopo` |
+| **Firebase URL** | https://epoly-kopo.web.app |
+| **API 도메인** | `api.example.com` |
+
+### 필수 GitHub Secrets
+
+| 시크릿 | 용도 |
+|--------|------|
+| `GCP_SA_KEY` | GCP 서비스 계정 키 |
+| `GCP_PROJECT_ID` | GCP 프로젝트 ID |
+| `FIREBASE_TOKEN` | Firebase 배포 토큰 (없으면 ADC 사용) |
+| `LMS_DB_PASSWORD` | DB 비밀번호 |
+| `LMS_DB_ROOT_PASSWORD` | DB root 비밀번호 |
+| `QDRANT_API_KEY` | Qdrant 벡터DB 키 |
+| `GOOGLE_API_KEY` | Google API 키 |
+| `GEMINI_API_KEY` | Gemini AI 키 |
+| `GCP_VM_SSH_USER` | VM SSH 사용자 (선택) |
+| `LETSENCRYPT_EMAIL` | SSL 인증서 이메일 |
+
+### 배포 파이프라인 흐름
+
+```
+1. 체크아웃 + 시크릿 사전 점검
+2. Node 20 + Java 17 설정
+3. GCP 인증 (SA Key)
+4. VM SSH 권한 사전 점검 (후보: secret → gcloud계정 → newkl → ubuntu → root)
+5. 원클릭 배포 실행 (one-click-setup.ps1 → VM에 Docker 스택 배포)
+6. 실패 시 진단 (JAR 존재, SSH/sudo 재확인, 원격 스크립트 존재)
+7. VM IP 동기화 → Firebase proxy 함수의 TARGET URL 갱신
+8. Firebase vmproxy 함수 + Hosting 배포
+9. 스모크 테스트 (https://epoly-kopo.web.app/actuator/health + /)
+```
+
+### 아키텍처 (VM + Firebase Proxy)
+
+```
+사용자 → epoly-kopo.web.app (Firebase Hosting)
+         → Firebase Functions (vmproxy)
+           → GCP VM (polytech-lms-vm, asia-northeast3-a)
+             → Docker 스택 (Spring Boot API + DB + Qdrant)
+```
+
 ---
 
 ## NCP 전환 계획 (to-be)
@@ -149,6 +202,10 @@ Code Push → Build & Test → Security Scan (Trivy) → Docker Build
 | Cloud SQL (MySQL) | NCP Cloud DB for MySQL |
 | Cloud Logging | NCP Cloud Log Analytics |
 | Google-managed SSL | NCP Certificate Manager |
+| Firebase Hosting | NCP Object Storage + CDN+ |
+| Firebase Functions (vmproxy) | NCP Cloud Functions 또는 API Gateway |
+| GCP Compute Engine (VM) | NCP Server (VPC) |
+| Qdrant (Docker on VM) | NCP Server 또는 NKS 내 Qdrant |
 
 ---
 
