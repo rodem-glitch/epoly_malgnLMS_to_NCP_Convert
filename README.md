@@ -1,88 +1,120 @@
-# GrowAILMS
+# epoly_malgnLMS_to_NCP_Convert
 
-> 한국폴리텍대학 AI 기반 학습관리시스템 (Legacy → GrowAILMS 마이그레이션)
+> MalgnLMS(GrowAILMS) GCP Cloud Run 서비스를 NCP(Naver Cloud Platform)로 전환하기 위한 프로젝트
 
-## 📋 프로젝트 개요
+## 원본 저장소
 
-GrowAILMS는 한국폴리텍대학의 e-poly 학습관리시스템 레거시 코드베이스입니다.
-현재 **GrowAILMS**로의 현대화 마이그레이션이 진행 중입니다.
-
-## 🛠 기술 스택
-
-| 구분     | Legacy (GrowAILMS)            | Target (GrowAILMS)                      |
-| -------- | ---------------------------- | --------------------------------------- |
-| Backend  | Java 8, Malgnsoft DataObject | Java 17, Spring Boot 3.2, eGovFrame 4.2 |
-| ORM      | Custom DAO Pattern           | MyBatis 3.5                             |
-| Frontend | JSP + jQuery                 | React 18 + TypeScript + Vite            |
-| 인증     | Session 기반                 | JWT + Keycloak                          |
-| 인프라   | 단일 서버                    | Docker + GCP/NCP 하이브리드             |
-
-## 📁 주요 구조
-
-```
-GrowAILMS/
-├── src/
-│   ├── dao/          # 170개 DAO 클래스
-│   └── ...
-├── web/              # 1,223개 JSP 파일
-└── config/           # 설정 파일
-```
-
-## 🚀 마이그레이션 현황
-
-- [X] Phase 1: 분석 단계 완료
-- [X] Phase 2: 설계 단계 완료
-- [ ] Phase 3: 구현 단계 (진행 중)
-  - [X] src/ (Genkit 백엔드)
-  - [X] docker-compose/ (인프라)
-  - [ ] scripts/ (자동화)
-  - [ ] terraform/ (클라우드 리소스)
-
-## 📦 관련 저장소
-
-- **GrowAILMS**: [GrowAILMS Repository](https://github.com/rodem-glitch/GrowAILMS) - 마이그레이션 타겟
-
-## 🔧 로컬 개발 환경
-
-### 사전 요구사항
-
-- JDK 17+
-- Node.js 20 LTS
-- Docker Desktop
-- Git
-
-### 실행 방법
-
-```bash
-# 저장소 클론
-git clone -b dev https://github.com/sh-jang-code/GrowAILMS.git
-cd GrowAILMS
-
-# Docker 컨테이너 실행
-docker-compose up -d
-
-# 백엔드 빌드
-./gradlew clean build -x test
-
-# 프론트엔드 실행
-cd frontend && npm install && npm run dev
-```
-
-
-
-## 🔐 보안 준수사항
-
-- 행정안전부 시큐어코딩 가이드라인 준수
-- SQL Injection 방지: MyBatis `#{}` 바인딩
-- XSS 방지: 입력값 검증 및 HTML 이스케이프
-- 민감정보 로그 출력 금지
-
-
-
-## 📄 라이선스
-
-이 프로젝트는 한국폴리텍대학 내부 사용 목적으로 개발되었습니다.
+- **Source**: [sh-jang-code/MalgnLMS (dev branch)](https://github.com/sh-jang-code/MalgnLMS/tree/dev)
+- **CI/CD**: [GitHub Actions](https://github.com/sh-jang-code/MalgnLMS/actions)
 
 ---
 
-**© 2026 NEWKL - AI 기반 교육 솔루션**
+## GCP Cloud Run 현황 (as-is)
+
+### 서비스 구성 (리전: `asia-northeast1`)
+
+| 서비스 | 워크플로우 | 트리거 경로 | 트리거 브랜치 | 스택 | 리소스 |
+|--------|-----------|------------|-------------|------|--------|
+| **growailms-frontend** | `frontend-deploy.yml` | `project/**` | main, feature/securecoding_backend | React 18 + Vite + Nginx | CPU 1 / Mem 512Mi / max 5 |
+| **growailms-api** | `gcp-deploy.yml` | `growailms-api/**` | main, feature/securecoding_backend | Spring Boot 3.2 (Java 17) | CPU 1 / Mem 1Gi / max 10 |
+| **growailms-backend** (Legacy) | `backend-deploy.yml` | `growailms-backend/**` | main, develop | eGovFrame (Java 8) + Tomcat 9 | CPU 2 / Mem 2Gi / max 10 |
+
+### 배포 파이프라인 (공통)
+
+```
+Code Push → Build & Test → Security Scan (Trivy) → Docker Build
+→ Artifact Registry Push → Cloud Run Deploy → Health Check → Notify
+```
+
+- 이미지 저장소: `asia-northeast1-docker.pkg.dev/{PROJECT_ID}/growailms/`
+- 인증: GitHub Secrets (`GCP_SA_KEY`, `GCP_PROJECT_ID`)
+- 모든 서비스 `--allow-unauthenticated`, `gen2` 실행 환경
+
+### 도메인 매핑
+
+| 도메인 | 서비스 |
+|--------|--------|
+| growai.co.kr / www.growai.co.kr | growailms-frontend |
+| api.growai.co.kr | growailms-api |
+| legacy.growai.co.kr (선택) | growailms-legacy |
+
+### 시스템 아키텍처
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    GrowAILMS System (GCP)                    │
+│                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Legacy     │  │  Backend API │  │  Frontend    │      │
+│  │  (구 시스템)  │  │  (신규 API)   │  │ (교수자 LMS)  │      │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
+│         │                 │                  │              │
+│  ┌──────▼───────┐  ┌──────▼───────┐  ┌──────▼───────┐      │
+│  │ Cloud Run    │  │ Cloud Run    │  │ Cloud Run    │      │
+│  │ (Tomcat 9)   │  │ (Spring Boot)│  │ (Nginx/React)│      │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
+│         └─────────────────┼──────────────────┘              │
+│                           ▼                                 │
+│                  ┌─────────────────┐                        │
+│                  │   Cloud SQL     │                        │
+│                  │    (MySQL)      │                        │
+│                  └─────────────────┘                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 워크플로우 관련 주요 커밋 이력
+
+| 커밋 | 내용 |
+|------|------|
+| `8443acf` | Phase 1~4: Legacy migration complete |
+| `4fc0a75` | MalgnLMS → GrowAILMS 리브랜딩 완료 |
+| `64669c2` | Legacy 서비스 배포 파이프라인 추가 |
+| `1109423` | CI 환경 테스트 단계 임시 비활성화 |
+| `f99da21` | 배포 리전을 `asia-northeast1`로 변경 (도메인 매핑 지원) |
+| `e23d150` | 프론트엔드 Cloud Run 배포 설정 추가 |
+| `a89aa42` | GCP Cloud Run CI/CD 파이프라인 최초 추가 |
+
+### 월 예상 비용 (GCP)
+
+| 서비스 | CPU | Memory | 월 비용 (예상) |
+|--------|-----|--------|---------------|
+| growailms-legacy | 2 core | 2 Gi | $30-50 |
+| growailms-api | 1 core | 1 Gi | $15-25 |
+| growailms-frontend | 1 core | 512 Mi | $10-15 |
+| Artifact Registry + LB + etc | - | - | ~$25 |
+| **합계** | - | - | **$80-120** |
+
+---
+
+## NCP 전환 계획 (to-be)
+
+> TODO: NCP 전환 설계 및 구현 내용 추가 예정
+
+### 전환 대상 매핑 (예정)
+
+| GCP 서비스 | NCP 대응 서비스 |
+|-----------|----------------|
+| Cloud Run | NCP Container Registry + NKS 또는 Cloud Functions |
+| Artifact Registry | NCP Container Registry |
+| Cloud SQL (MySQL) | NCP Cloud DB for MySQL |
+| Cloud Logging | NCP Cloud Log Analytics |
+| Google-managed SSL | NCP Certificate Manager |
+
+---
+
+## 프로젝트 구조
+
+```
+.github/workflows/
+├── frontend-deploy.yml     → growailms-frontend (GCP)
+├── gcp-deploy.yml          → growailms-api (GCP)
+└── backend-deploy.yml      → growailms-backend (GCP)
+
+growailms-api/              → Spring Boot 3.2 백엔드 API
+project/                    → React 18 프론트엔드
+src/ + public_html/         → Legacy (JSP + eGovFrame)
+```
+
+---
+
+**© 2026 NEWKL - epoly MalgnLMS to NCP Convert**
