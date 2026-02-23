@@ -7,6 +7,14 @@ services:
     image: qdrant/qdrant:v1.15.3
     container_name: lms-qdrant
     restart: unless-stopped
+    # 왜: Qdrant가 정상 응답하는지 주기적으로 확인하여, 비정상 시 자동 재시작합니다.
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    stop_grace_period: 30s
     environment:
       QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
       QDRANT__SERVICE__GRPC_PORT: 6334
@@ -14,6 +22,17 @@ services:
       QDRANT__LOG_LEVEL: INFO
     volumes:
       - qdrant_data:/qdrant/storage
+    # 왜: WAS 4Core/16GB 기준, 벡터 DB에 2GB/1코어를 할당합니다.
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
       - lms_net
 
@@ -23,7 +42,16 @@ services:
     restart: unless-stopped
     depends_on:
       qdrant:
-        condition: service_started
+        # 왜: Qdrant가 healthy여야 임베딩 검색이 정상 동작합니다.
+        condition: service_healthy
+    # 왜: Spring Boot actuator health로 컨테이너 상태를 확인합니다.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    stop_grace_period: 30s
     env_file:
       - .env
     environment:
@@ -46,6 +74,10 @@ services:
       SPRING_AI_VECTORSTORE_QDRANT_USE_TLS: "false"
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # 왜: 학사 Oracle DB(VPN 경유) 접속 정보를 Spring Boot에 전달합니다.
+      HAKSA_ORACLE_URL: ${HAKSA_ORACLE_URL:-}
+      HAKSA_ORACLE_USERNAME: ${HAKSA_ORACLE_USERNAME:-}
+      HAKSA_ORACLE_PASSWORD: ${HAKSA_ORACLE_PASSWORD:-}
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: 8081
       CONTENTSUMMARY_WORKER_ENABLED: "false"
@@ -54,13 +86,27 @@ services:
       STATISTICS_EMPLOYMENT_FILE: /data/statistics/2024.02_학위과정 졸업자 취업률_집계배포_251204.xlsx
       STATISTICS_ADMISSION_FILE: /data/statistics/입시율관리.xlsx
       STATISTICS_STUDENT_POPULATION_FILE: /data/statistics/재학생_인구_가데이터_20260120.xlsx
+      # 왜: 컨테이너 메모리 제한(6g)에 맞춘 JVM 옵션. G1GC + UseContainerSupport로 안정성 확보.
+      JAVA_TOOL_OPTIONS: "-Xms2g -Xmx4g -XX:+UseG1GC -XX:+UseContainerSupport"
     command: ["java", "-jar", "/app/polytech-lms-api.jar"]
     volumes:
       - ./app/polytech-lms-api.jar:/app/polytech-lms-api.jar:ro
       - ./statistics_data:/data/statistics:ro
+      - ./logs/api:/app/logs
     # 왜: 0.0.0.0 바인딩으로 WEB 서버(192.168.1.6)에서 접근을 허용합니다.
     ports:
       - "0.0.0.0:8081:8081"
+    # 왜: Spring Boot + AI + 통계에 6GB/2코어를 할당합니다.
+    deploy:
+      resources:
+        limits:
+          memory: 6g
+          cpus: "2.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
       - lms_net
 
@@ -68,15 +114,39 @@ services:
     image: expertsystems/resin:latest
     container_name: lms-resin
     restart: unless-stopped
+    depends_on:
+      api:
+        # 왜: Resin의 추천 JSP가 API를 호출하므로, API가 healthy여야 합니다.
+        condition: service_healthy
+    # 왜: Resin 메인 페이지로 컨테이너 상태를 확인합니다.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
     environment:
       # 왜: JSP 추천 엔드포인트가 내부 Spring API를 항상 같은 서비스명으로 바라보게 고정합니다.
       POLYTECH_LMS_API_BASE: http://api:8081
     volumes:
       - ./legacy/public_html:/var/resin/webapps/ROOT
       - ./legacy/src:/opt/polytech-lms/legacy/src:ro
+      - ./logs/resin:/var/resin/log
     # 왜: 0.0.0.0 바인딩으로 WEB 서버(192.168.1.6)에서 접근을 허용합니다.
     ports:
       - "0.0.0.0:8080:8080"
+    # 왜: 레거시 JSP + 파일 업로드에 4GB/2코어를 할당합니다.
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: "2.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     networks:
       - lms_net
 

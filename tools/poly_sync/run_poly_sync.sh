@@ -7,7 +7,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON_BIN="${POLY_SYNC_PYTHON:-python3}"
-BASE_URL="${POLY_SYNC_BASE_URL:-http://127.0.0.1}"
+# 왜: NCP Docker 환경에서 Resin이 8080 포트에서 구동되므로 기본값을 변경합니다.
+BASE_URL="${POLY_SYNC_BASE_URL:-http://127.0.0.1:8080}"
 ENDPOINT="${POLY_SYNC_ENDPOINT:-/main/poly_sync.jsp}"
 
 ARGS=(

@@ -37,6 +37,11 @@ KOLLUS_SECURITY_KEY="${KOLLUS_SECURITY_KEY:-}"
 KOLLUS_CHANNEL_KEY="${KOLLUS_CHANNEL_KEY:-}"
 KOLLUS_CLIENT_USER_ID="${KOLLUS_CLIENT_USER_ID:-contentsummary}"
 
+# 왜: 학사 Oracle DB 접속 정보 (VPN 터널 경유)
+HAKSA_ORACLE_URL="${HAKSA_ORACLE_URL:-jdbc:oracle:thin:@172.28.5.34:61521/KOPO}"
+HAKSA_ORACLE_USERNAME="${HAKSA_ORACLE_USERNAME:-KOPO_LMS}"
+HAKSA_ORACLE_PASSWORD="${HAKSA_ORACLE_PASSWORD:-}"
+
 log() {
   echo "[pull-deploy-was] $(date '+%H:%M:%S') $*"
 }
@@ -52,7 +57,8 @@ install_prerequisites() {
   log "필수 패키지를 설치합니다."
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -y
-  apt-get install -y ca-certificates curl gnupg lsb-release jq rsync git openjdk-17-jdk-headless
+  # 왜: python3는 학사 동기화 배치(run_poly_sync.py) 실행에 필수입니다.
+  apt-get install -y ca-certificates curl gnupg lsb-release jq rsync git openjdk-17-jdk-headless python3
 
   # 왜: Docker 설치
   if ! command -v docker >/dev/null 2>&1; then
@@ -137,8 +143,30 @@ assemble_bundle() {
     log "통계 데이터 복사 완료."
   fi
 
+  # 왜: 학사 동기화 배치 스크립트를 번들에 포함하여 WAS에서 cron으로 실행할 수 있게 합니다.
+  if [[ -d "${REPO_DIR}/tools/poly_sync" ]]; then
+    cp -r "${REPO_DIR}/tools/poly_sync" "${BUNDLE_DIR}/tools/poly_sync"
+    chmod +x "${BUNDLE_DIR}/tools/poly_sync/run_poly_sync.sh"
+    log "poly_sync 배치 스크립트 복사 완료."
+  fi
+
+  # 왜: 학사 DDL을 번들에 포함하여 배포 시 자동으로 테이블을 생성합니다.
+  mkdir -p "${BUNDLE_DIR}/sql"
+  for ddl in ddl_poly_mirror.sql ddl_poly_haksa_settings.sql; do
+    if [[ -f "${REPO_DIR}/public_html/${ddl}" ]]; then
+      cp "${REPO_DIR}/public_html/${ddl}" "${BUNDLE_DIR}/sql/${ddl}"
+    fi
+  done
+
+  # 왜: 학사 초기화 원스탑 스크립트를 번들에 포함합니다.
+  if [[ -f "${REPO_DIR}/tools/ncp/setup-haksa-sync.sh" ]]; then
+    cp "${REPO_DIR}/tools/ncp/setup-haksa-sync.sh" "${BUNDLE_DIR}/setup-haksa-sync.sh"
+    chmod +x "${BUNDLE_DIR}/setup-haksa-sync.sh"
+  fi
+
   # 왜: Cloud DB URL에서 mysql 컨테이너 대신 NCP Cloud DB 호스트를 사용합니다.
-  local app_db_url="jdbc:mysql://${NCP_DB_HOST}:3306/lms?useSSL=false&allowPublicKeyRetrieval=true"
+  # 왜: NCP Cloud DB에서 한글이 깨지지 않도록 useUnicode + characterEncoding을 명시합니다.
+  local app_db_url="jdbc:mysql://${NCP_DB_HOST}:3306/lms?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8mb4"
   local app_db_url_xml
   # 왜: sed 치환에서 &는 "매칭된 텍스트" 특수문자이므로 \\&로 이스케이프합니다.
   app_db_url_xml=$(echo "${app_db_url}" | sed 's/&/\\&amp;/g')
@@ -172,6 +200,9 @@ assemble_bundle() {
     echo "KOLLUS_SECURITY_KEY=${KOLLUS_SECURITY_KEY}"
     echo "KOLLUS_CHANNEL_KEY=${KOLLUS_CHANNEL_KEY}"
     echo "KOLLUS_CLIENT_USER_ID=${KOLLUS_CLIENT_USER_ID}"
+    echo "HAKSA_ORACLE_URL=${HAKSA_ORACLE_URL}"
+    echo "HAKSA_ORACLE_USERNAME=${HAKSA_ORACLE_USERNAME}"
+    echo "HAKSA_ORACLE_PASSWORD=${HAKSA_ORACLE_PASSWORD}"
   } > "${BUNDLE_DIR}/.env"
   log ".env 생성 완료."
 

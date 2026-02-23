@@ -57,6 +57,8 @@ dependencies {
     testCompileOnly "org.projectlombok:lombok"
     testAnnotationProcessor "org.projectlombok:lombok"
     runtimeOnly "com.mysql:mysql-connector-j"
+    // 왜: 폴리텍 학사 Oracle DB(172.28.5.34:61521/KOPO) 직접 연동을 위해 Oracle JDBC 드라이버가 필요합니다.
+    runtimeOnly "com.oracle.database.jdbc:ojdbc11:23.5.0.24.07"
     testImplementation "org.springframework.boot:spring-boot-starter-test"
     // 왜: Gradle 9 테스트 실행기에서 JUnit Platform Launcher가 런타임 클래스패스에 없으면 테스트 자체가 시작되지 않습니다.
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"

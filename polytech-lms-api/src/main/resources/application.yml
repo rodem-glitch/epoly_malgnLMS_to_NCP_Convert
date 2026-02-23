@@ -1,11 +1,16 @@
 ﻿server:
   port: 8081
+  # 왜: 배포 시 처리 중인 요청이 완료될 때까지 대기한 뒤 종료합니다.
+  shutdown: graceful
   error:
     # 왜: 에러 응답에 stacktrace가 포함되면 민감정보(키/시크릿/경로)가 노출될 수 있어 차단합니다.
     include-stacktrace: never
     include-exception: false
 
 spring:
+  lifecycle:
+    # 왜: graceful shutdown 시 최대 25초 동안 진행 중 요청 완료를 기다립니다.
+    timeout-per-shutdown-phase: 25s
   config:
     # 왜: 개인 PC별(DB/키) 설정을 Git에 올리지 않기 위해 local 파일을 선택적으로 불러옵니다.
     # - `application-local.yml`은 .gitignore로 제외하고, 각자 환경에 맞게 작성합니다.
@@ -15,7 +20,8 @@ spring:
   datasource:
     # 왜: DB 비밀번호는 코드에 두지 않고(프라이빗 Git이어도) 환경변수로 주입하는 게 안전합니다.
     # - 로컬 개발은 .env(IDE Run Configuration) 또는 OS 환경변수로 설정해 주세요.
-    url: ${DB_URL:jdbc:mysql://localhost:3306/lms?useSSL=false&allowPublicKeyRetrieval=true}
+    # 왜: NCP Cloud DB에서 한글이 깨지지 않도록 useUnicode + characterEncoding을 명시합니다.
+    url: ${DB_URL:jdbc:mysql://localhost:3306/lms?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8mb4}
     username: ${DB_USERNAME:lms}
     password: ${DB_PASSWORD:}
   jpa:
@@ -27,6 +33,29 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+# 왜: 폴리텍 학사 Oracle DB(172.28.5.34:61521/KOPO)에 직접 연결하여 뷰테이블 8종을 조회합니다.
+# - 읽기 전용(SELECT만) DataSource이며, MySQL(primary)과 분리하여 운영합니다.
+# - VPN 터널 경유: NCP WAS → IPSec VPN → 폴리텍 IDC Oracle DB
+haksa:
+  oracle:
+    # 왜: 접속 정보는 환경변수로 주입하여 Git에 노출되지 않게 합니다.
+    url: ${HAKSA_ORACLE_URL:jdbc:oracle:thin:@172.28.5.34:61521/KOPO}
+    username: ${HAKSA_ORACLE_USERNAME:KOPO_LMS}
+    password: ${HAKSA_ORACLE_PASSWORD:}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      # 왜: 읽기 전용이므로 풀 크기를 작게 유지합니다.
+      maximum-pool-size: ${HAKSA_ORACLE_POOL_SIZE:5}
+      minimum-idle: ${HAKSA_ORACLE_POOL_MIN:2}
+      connection-timeout: ${HAKSA_ORACLE_CONN_TIMEOUT:30000}
+      # 왜: VPN 터널 장애 시 빠르게 감지하기 위해 validation 쿼리를 설정합니다.
+      connection-test-query: SELECT 1 FROM DUAL
+      # 왜: Oracle 커넥션이 VPN 끊김 등으로 stale 상태가 될 수 있어 5분마다 확인합니다.
+      keepalive-time: 300000
+      max-lifetime: 1800000
+      read-only: true
+      pool-name: haksa-oracle-pool
 
   devtools:
     restart:
@@ -205,3 +234,28 @@ vector:
     # 왜: 학생 검색/추천에서 후보를 너무 적게 가져오면(상한이 낮으면) 정확한 콘텐츠가 topK 밖으로 밀려 "엉뚱한 결과"가 나올 수 있습니다.
     # - 운영에서 실측하면서 200~500 사이로 조정하는 것을 권장합니다.
     max-top-k: ${VECTOR_SEARCH_MAX_TOP_K:300}
+
+# 왜: 운영 환경에서 actuator health/metrics로 서비스 상태를 모니터링합니다.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+
+# 왜: 운영 로그를 파일로 남기고 자동 롤링하여 디스크 부족을 방지합니다.
+logging:
+  level:
+    root: INFO
+    kr.polytech: INFO
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:INFO}
+  file:
+    name: /app/logs/polytech-lms-api.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 7
+      total-size-cap: 1GB

@@ -27,7 +27,7 @@ public class JobRepository {
 
         StringBuilder sql = new StringBuilder("""
             SELECT idx, depth1, depth2, depth3
-            FROM REGIONCODE
+            FROM regioncode
             WHERE 1=1
             """);
 
@@ -58,7 +58,7 @@ public class JobRepository {
 
         StringBuilder sql = new StringBuilder("""
             SELECT idx, code, parent_code, depth1, depth2, depth3
-            FROM OCCUPATIONCODE
+            FROM occupationcode
             WHERE 1=1
             """);
 
@@ -119,7 +119,7 @@ public class JobRepository {
         try {
             return jdbcTemplate.query("""
                 SELECT jobkorea_code
-                FROM JOB_WORK24_JOBKOREA_OCCUPATION_MAP
+                FROM job_work24_jobkorea_occupation_map
                 WHERE work24_code = ?
                 ORDER BY jobkorea_code
                 """, new Object[]{code}, (rs, rowNum) -> rs.getString("jobkorea_code"));
@@ -144,8 +144,8 @@ public class JobRepository {
                     d3.depth1 AS depth1_name,
                     d3.depth2 AS depth2_name,
                     d3.depth3 AS depth3_name
-                FROM OCCUPATIONCODE d3
-                LEFT JOIN OCCUPATIONCODE d2 ON d2.code = d3.parent_code
+                FROM occupationcode d3
+                LEFT JOIN occupationcode d2 ON d2.code = d3.parent_code
                 WHERE d3.depth3 IS NOT NULL AND d3.depth3 <> ''
                 ORDER BY d3.code
                 """, (rs, rowNum) -> new OccupationDepth3VectorRow(
@@ -169,7 +169,7 @@ public class JobRepository {
         try {
             List<OccupationLookupRow> rows = jdbcTemplate.query("""
                 SELECT code, parent_code, depth1, depth2, depth3
-                FROM OCCUPATIONCODE
+                FROM occupationcode
                 WHERE code = ?
                 """, new Object[]{code}, (rs, rowNum) -> new OccupationLookupRow(
                 rs.getString("code"),
@@ -189,7 +189,7 @@ public class JobRepository {
         try {
             List<JobRecruitCacheRow> rows = jdbcTemplate.query("""
                 SELECT total, start_page, `display`, payload_json, updated_at
-                FROM JOB_RECRUIT_CACHE
+                FROM job_recruit_cache
                 WHERE query_key = ? AND provider = ?
                 """, new Object[]{queryKey, normalizeProvider(provider)}, (rs, rowNum) -> new JobRecruitCacheRow(
                 rs.getInt("total"),
@@ -204,7 +204,7 @@ public class JobRepository {
             try {
                 List<JobRecruitCacheRow> rows = jdbcTemplate.query("""
                     SELECT total, start_page, `display`, payload_json, updated_at
-                    FROM JOB_RECRUIT_CACHE
+                    FROM job_recruit_cache
                     WHERE query_key = ?
                     """, new Object[]{queryKey}, (rs, rowNum) -> new JobRecruitCacheRow(
                     rs.getInt("total"),
@@ -224,7 +224,7 @@ public class JobRepository {
         try {
             return jdbcTemplate.query("""
                 SELECT query_key, provider, region_code, occupation_code, start_page, `display`
-                FROM JOB_RECRUIT_CACHE
+                FROM job_recruit_cache
                 """, (rs, rowNum) -> new JobRecruitCacheKey(
                 rs.getString("query_key"),
                 rs.getString("provider"),
@@ -238,7 +238,7 @@ public class JobRepository {
             try {
                 return jdbcTemplate.query("""
                     SELECT query_key, region_code, occupation_code, start_page, `display`
-                    FROM JOB_RECRUIT_CACHE
+                    FROM job_recruit_cache
                     """, (rs, rowNum) -> new JobRecruitCacheKey(
                     rs.getString("query_key"),
                     "WORK24",
@@ -256,7 +256,7 @@ public class JobRepository {
     public void upsertRecruitCache(JobRecruitCacheRow row, JobRecruitCacheKey key) {
         try {
             jdbcTemplate.update("""
-                INSERT INTO JOB_RECRUIT_CACHE
+                INSERT INTO job_recruit_cache
                     (query_key, provider, region_code, occupation_code, start_page, `display`, total, payload_json, updated_at)
                 VALUES
                     (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -284,7 +284,7 @@ public class JobRepository {
             // 왜: provider 컬럼이 없는 구버전 테이블도 동작할 수 있어야 합니다.
             try {
                 jdbcTemplate.update("""
-                    INSERT INTO JOB_RECRUIT_CACHE
+                    INSERT INTO job_recruit_cache
                         (query_key, region_code, occupation_code, start_page, `display`, total, payload_json, updated_at)
                     VALUES
                         (?, ?, ?, ?, ?, ?, ?, ?)
@@ -333,10 +333,10 @@ public class JobRepository {
 
     public void replaceRegionCodes(List<RegionCodeInsertRow> rows) {
         if (rows == null || rows.isEmpty()) return;
-        jdbcTemplate.update("DELETE FROM REGIONCODE");
+        jdbcTemplate.update("DELETE FROM regioncode");
 
         jdbcTemplate.batchUpdate(
-            "INSERT INTO REGIONCODE (idx, depth1, depth2, depth3) VALUES (?, ?, ?, ?)",
+            "INSERT INTO regioncode (idx, depth1, depth2, depth3) VALUES (?, ?, ?, ?)",
             rows,
             rows.size(),
             (ps, row) -> {
@@ -350,10 +350,10 @@ public class JobRepository {
 
     public void replaceOccupationCodes(List<OccupationCodeInsertRow> rows) {
         if (rows == null || rows.isEmpty()) return;
-        jdbcTemplate.update("DELETE FROM OCCUPATIONCODE");
+        jdbcTemplate.update("DELETE FROM occupationcode");
 
         jdbcTemplate.batchUpdate(
-            "INSERT INTO OCCUPATIONCODE (code, parent_code, depth1, depth2, depth3) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO occupationcode (code, parent_code, depth1, depth2, depth3) VALUES (?, ?, ?, ?, ?)",
             rows,
             rows.size(),
             (ps, row) -> {

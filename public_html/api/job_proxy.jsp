@@ -23,7 +23,8 @@ if(targetPath == null || "".equals(targetPath.trim())) {
 targetPath = targetPath.trim();
 
 // 왜: 오픈 프록시가 되지 않도록 채용 경로만 허용합니다.
-if(!("/job-test.html".equals(targetPath) || targetPath.startsWith("/job/"))) {
+// 왜: job-dept-occupation-map.json도 Spring Boot 정적 리소스이므로 프록시 허용
+if(!("/job-test.html".equals(targetPath) || "/job-dept-occupation-map.json".equals(targetPath) || targetPath.startsWith("/job/"))) {
 	response.setStatus(400);
 	response.setContentType("application/json; charset=utf-8");
 	out.print("{\"message\":\"허용되지 않은 path 입니다.\"}");
