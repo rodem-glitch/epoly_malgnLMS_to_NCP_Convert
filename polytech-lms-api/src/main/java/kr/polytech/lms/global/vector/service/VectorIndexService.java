@@ -25,14 +25,16 @@ public class VectorIndexService {
         int offset = request.offsetOrDefault();
 
         StringBuilder sql = new StringBuilder();
+        // 왜: LEFT JOIN 시 ID, SITE_ID 등이 양쪽 테이블에 존재하여 'Column ambiguous' 오류가 발생하므로
+        //     SELECT/WHERE/ORDER BY 모든 컬럼에 LM_LESSON. 접두어를 명시합니다.
         sql.append("""
             SELECT
-                ID AS lesson_id,
-                SITE_ID AS site_id,
-                CONTENT_ID AS content_id,
-                LESSON_TYPE AS lesson_type,
-                LESSON_NM AS lesson_nm,
-                DESCRIPTION AS summary_text,
+                LM_LESSON.ID AS lesson_id,
+                LM_LESSON.SITE_ID AS site_id,
+                LM_LESSON.CONTENT_ID AS content_id,
+                LM_LESSON.LESSON_TYPE AS lesson_type,
+                LM_LESSON.LESSON_NM AS lesson_nm,
+                LM_LESSON.DESCRIPTION AS summary_text,
                 c.CATEGORY_ID AS category_id,
                 c.CONTENT_NM AS content_nm
             FROM LM_LESSON
@@ -40,23 +42,23 @@ public class VectorIndexService {
               ON c.ID = LM_LESSON.CONTENT_ID
              AND c.SITE_ID = LM_LESSON.SITE_ID
              AND c.STATUS = 1
-            WHERE STATUS = 1
-              AND USE_YN = 'Y'
-              AND DESCRIPTION IS NOT NULL
-              AND DESCRIPTION <> ''
+            WHERE LM_LESSON.STATUS = 1
+              AND LM_LESSON.USE_YN = 'Y'
+              AND LM_LESSON.DESCRIPTION IS NOT NULL
+              AND LM_LESSON.DESCRIPTION <> ''
             """);
 
         Map<String, Object> params = new HashMap<>();
         if (request.siteId() != null) {
-            sql.append(" AND SITE_ID = ? ");
+            sql.append(" AND LM_LESSON.SITE_ID = ? ");
             params.put("site_id", request.siteId());
         }
         if (request.lessonType() != null && !request.lessonType().isBlank()) {
-            sql.append(" AND LESSON_TYPE = ? ");
+            sql.append(" AND LM_LESSON.LESSON_TYPE = ? ");
             params.put("lesson_type", request.lessonType());
         }
 
-        sql.append(" ORDER BY ID ASC ");
+        sql.append(" ORDER BY LM_LESSON.ID ASC ");
         sql.append(" LIMIT ? OFFSET ? ");
 
         List<Object> args = new java.util.ArrayList<>();

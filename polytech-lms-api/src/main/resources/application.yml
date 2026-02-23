@@ -21,6 +21,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
+      # 왜: NCP Cloud DB는 lower_case_table_names=0이므로, Hibernate가 테이블명을 소문자로 바꾸지 않도록 표준 전략을 사용합니다.
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:
       hibernate:
         format_sql: true

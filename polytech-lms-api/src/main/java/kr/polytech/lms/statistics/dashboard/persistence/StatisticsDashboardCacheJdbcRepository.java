@@ -36,7 +36,7 @@ public class StatisticsDashboardCacheJdbcRepository {
 
         String sql = """
                 SELECT payload_json
-                FROM statistics_dashboard_cache
+                FROM STATISTICS_DASHBOARD_CACHE
                 WHERE cache_key = :cacheKey
                 """;
 
@@ -69,7 +69,7 @@ public class StatisticsDashboardCacheJdbcRepository {
         String now = LocalDateTime.now().toString();
 
         String sql = """
-                INSERT INTO statistics_dashboard_cache (
+                INSERT INTO STATISTICS_DASHBOARD_CACHE (
                     cache_key,
                     cache_type,
                     campus,
@@ -113,7 +113,7 @@ public class StatisticsDashboardCacheJdbcRepository {
 
     private void increaseHitCount(String cacheKey) {
         String sql = """
-                UPDATE statistics_dashboard_cache
+                UPDATE STATISTICS_DASHBOARD_CACHE
                 SET hit_count = hit_count + 1,
                     updated_at = :now
                 WHERE cache_key = :cacheKey
@@ -161,7 +161,7 @@ public class StatisticsDashboardCacheJdbcRepository {
     private void createTableIfNotExists() {
         // 왜: 로컬/개발 환경에서 DDL 누락으로 기능이 막히지 않도록, 캐시 테이블은 시작 시 최소 스키마를 보장합니다.
         String ddl = """
-                CREATE TABLE IF NOT EXISTS statistics_dashboard_cache (
+                CREATE TABLE IF NOT EXISTS STATISTICS_DASHBOARD_CACHE (
                     cache_key VARCHAR(128) NOT NULL,
                     cache_type VARCHAR(32) NOT NULL,
                     campus VARCHAR(255) NULL,
@@ -173,7 +173,7 @@ public class StatisticsDashboardCacheJdbcRepository {
                     created_at DATETIME NOT NULL,
                     updated_at DATETIME NOT NULL,
                     PRIMARY KEY (cache_key),
-                    KEY idx_statistics_dashboard_cache_type_year (cache_type, stats_year)
+                    KEY idx_STATISTICS_DASHBOARD_CACHE_type_year (cache_type, stats_year)
                 )
                 """;
         try {

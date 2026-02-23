@@ -1,0 +1,45 @@
+# 왜: 로컬 개발환경용 Docker Compose. NCP 운영 환경을 로컬에서 재현합니다.
+# 사용법: docker compose -f docker-compose.local.yml up -d
+# 주의: Spring Boot API는 IDE에서 직접 실행합니다 (핫리로드/디버깅 용이).
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: lms-mysql-local
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-localroot}
+      MYSQL_DATABASE: lms
+      MYSQL_USER: lms
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-localpass}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: >
+      --lower_case_table_names=1
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+
+  qdrant:
+    image: qdrant/qdrant:v1.15.3
+    container_name: lms-qdrant-local
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:-local-test-key}
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  resin:
+    image: expertsystems/resin:latest
+    container_name: lms-resin-local
+    volumes:
+      - ./public_html:/var/resin/webapps/ROOT
+      - ./src:/opt/polytech-lms/legacy/src:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  mysql_data:
+  qdrant_data:

@@ -1,6 +1,6 @@
 ﻿# RPG-라이트: 핫스팟/주의사항 (`hotspots.md`)
 
-최근 갱신: 2026-02-21
+최근 갱신: 2026-02-23
 
 ## 자동 요약(전체 스캔)
 <!-- @generated:start -->
@@ -282,6 +282,18 @@
   - 운영 확인 시 `MemberKeyPopulationJdbcRepository`의 `학번 기반 인구 SQL 시작/성공/실패` 로그를 먼저 확인하면, 뷰테이블 조회 자체 문제인지 후처리 문제인지 빠르게 분리할 수 있습니다.
   - 인구 탭 필터 연속 변경 시 학번 그래프도 비동기 충돌이 날 수 있으므로 `memberKeyPopulationAbortController`와 요청 순번 검증(`requestSeq`)을 함께 유지해야 합니다.
 
+- NCP 1-repo 패턴 + 브랜치 전략(주의):
+  - 2026-02-23부터 2-repo(sh-jang-code/polytech-lms + rodem-glitch/epoly_malgnLMS_to_NCP_Convert) → 1-repo(rodem-glitch 단일)로 전환했습니다.
+  - `pull-deploy-was.sh`의 `REPO_BRANCH` 기본값은 `prod`입니다. `main`을 지정하면 배포 대상이 달라지므로 주의해야 합니다.
+  - `deploy-lms-ncp.yml` 자동 배포 트리거가 `main` → `prod`로 바뀌었습니다. `main` push로는 NCP 배포가 트리거되지 않습니다.
+  - `ci-validate.yml`은 `dev`/`stag` push + `dev`/`stag`/`prod` PR에서만 실행됩니다.
+  - `DEPLOY_REPO_PAT` Secret은 더 이상 필요 없지만, 삭제 전 워크플로우에서 참조하지 않는지 확인해야 합니다.
+  - 관련 코드: `tools/ncp/pull-deploy-was.sh`, `tools/ncp/pull-deploy-web.sh`, `.github/workflows/deploy-lms-ncp.yml`, `.github/workflows/ci-validate.yml`
+- NCP Cloud DB `lower_case_table_names=0` 호환(주의):
+  - `PhysicalNamingStrategyStandardImpl`을 설정하여 Hibernate가 엔티티명을 소문자로 변환하지 않습니다.
+  - 네이티브 SQL(JdbcTemplate)의 테이블명은 수동으로 대문자를 유지해야 합니다: `REGIONCODE`, `OCCUPATIONCODE`, `JOB_RECRUIT_CACHE`, `JOB_WORK24_JOBKOREA_OCCUPATION_MAP`, `STATISTICS_DASHBOARD_CACHE`.
+  - `VectorIndexService.java`의 LEFT JOIN에서 `LM_LESSON.` 접두어가 빠지면 `Column 'ID' in field list is ambiguous` 오류가 재발합니다.
+  - 관련 코드: `application.yml`, `VectorIndexService.java`, `JobRepository.java`, `StatisticsDashboardCacheJdbcRepository.java`
 - NCP/GCP 배포 rsync --delete 런타임 데이터 보호(주의):
   - `deploy-was.sh.tpl`(NCP) 및 `deploy-stack.sh.tpl`(GCP)의 `sync_stack_files()`는 `rsync -av --delete`로 번들을 서버에 동기화합니다.
   - `--delete`가 런타임 데이터(`data/file/`, `data/log/`, `data/tmp/`, `WEB-INF/work/`)를 삭제하면 업로드 파일 손실, 로그 유실, JSP 재컴파일 오류가 발생합니다.

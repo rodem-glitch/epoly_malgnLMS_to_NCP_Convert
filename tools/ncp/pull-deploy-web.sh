@@ -2,16 +2,16 @@
 set -euo pipefail
 
 # 왜: NCP WEB 서버(newkl-web01)에서 직접 실행하는 Pull 방식 배포 스크립트입니다.
-# deploy-repo에서 Nginx 템플릿을 가져와 렌더링 → deploy-web.sh 실행
+# 1-repo 패턴: 저장소에서 Nginx 템플릿을 가져와 렌더링 → deploy-web.sh 실행
 # WEB 서버에는 앱 소스가 불필요합니다 (Nginx 설정 템플릿만 사용).
 # 사용법: sudo bash pull-deploy-web.sh
 
 # ─── 설정 ───────────────────────────────────────────────────────────
-# 왜: 배포 스크립트 저장소. WEB에서는 Nginx 템플릿만 필요합니다.
-DEPLOY_REPO_URL="${DEPLOY_REPO_URL:-https://github.com/rodem-glitch/epoly_malgnLMS_to_NCP_Convert.git}"
-DEPLOY_REPO_BRANCH="${DEPLOY_REPO_BRANCH:-main}"
+# 왜: 1-repo 패턴으로 단일 저장소에서 Nginx 템플릿을 가져옵니다.
+REPO_URL="${REPO_URL:-https://github.com/rodem-glitch/epoly_malgnLMS_to_NCP_Convert.git}"
+REPO_BRANCH="${REPO_BRANCH:-prod}"
 WORK_DIR="/opt/deploy-workspace"
-DEPLOY_REPO_DIR="${WORK_DIR}/deploy-repo"
+REPO_DIR="${WORK_DIR}/repo"
 CONF_DIR="${WORK_DIR}/nginx-conf"
 
 # 왜: WAS 서버의 사설 IP. Nginx가 이 IP로 reverse proxy합니다.
@@ -37,18 +37,18 @@ install_prerequisites() {
   apt-get install -y ca-certificates curl git
 }
 
-clone_or_pull_deploy_repo() {
-  if [[ -d "${DEPLOY_REPO_DIR}/.git" ]]; then
-    log "deploy-repo: 기존 저장소를 pull합니다."
-    cd "${DEPLOY_REPO_DIR}"
+clone_or_pull_repo() {
+  if [[ -d "${REPO_DIR}/.git" ]]; then
+    log "기존 저장소를 pull합니다."
+    cd "${REPO_DIR}"
     git fetch origin
-    git checkout "${DEPLOY_REPO_BRANCH}"
-    git reset --hard "origin/${DEPLOY_REPO_BRANCH}"
+    git checkout "${REPO_BRANCH}"
+    git reset --hard "origin/${REPO_BRANCH}"
   else
-    log "deploy-repo: 저장소를 clone합니다."
+    log "저장소를 clone합니다."
     mkdir -p "${WORK_DIR}"
-    rm -rf "${DEPLOY_REPO_DIR}"
-    git clone --branch "${DEPLOY_REPO_BRANCH}" --depth 1 "${DEPLOY_REPO_URL}" "${DEPLOY_REPO_DIR}"
+    rm -rf "${REPO_DIR}"
+    git clone --branch "${REPO_BRANCH}" --depth 1 "${REPO_URL}" "${REPO_DIR}"
   fi
 }
 
@@ -61,11 +61,11 @@ render_nginx_config() {
   sed \
     -e "s|__WAS_IP__|${WAS_IP}|g" \
     -e "s|__WEB_DOMAIN__|${WEB_DOMAIN:-_}|g" \
-    "${DEPLOY_REPO_DIR}/tools/ncp/templates/nginx-web.conf.tpl" \
+    "${REPO_DIR}/tools/ncp/templates/nginx-web.conf.tpl" \
     > "${CONF_DIR}/lms-web.conf"
 
   # 배포 스크립트 복사
-  cp "${DEPLOY_REPO_DIR}/tools/ncp/templates/deploy-web.sh.tpl" "${CONF_DIR}/deploy-web.sh"
+  cp "${REPO_DIR}/tools/ncp/templates/deploy-web.sh.tpl" "${CONF_DIR}/deploy-web.sh"
   chmod +x "${CONF_DIR}/deploy-web.sh"
 
   log "Nginx 설정 렌더링 완료."
@@ -106,7 +106,7 @@ main() {
   require_root
   log "=== NCP WEB Pull 배포 시작 ==="
   install_prerequisites
-  clone_or_pull_deploy_repo
+  clone_or_pull_repo
   render_nginx_config
   run_deploy
   verify

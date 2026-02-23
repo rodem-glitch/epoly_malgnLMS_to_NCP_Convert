@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - prod
 
 permissions:
   contents: read
 
 jobs:
   deploy:
-    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/prod' || github.ref == 'refs/heads/stag'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 

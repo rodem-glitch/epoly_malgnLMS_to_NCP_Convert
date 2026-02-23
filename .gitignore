@@ -53,6 +53,7 @@ tools/gcp/generated/
 
 # 로컬 개발환경 (커밋 금지)
 .env.local
+docker-compose.local.override.yml
 
 # 설정파일
 config.xml
