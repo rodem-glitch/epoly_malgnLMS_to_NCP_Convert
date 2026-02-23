@@ -2,17 +2,24 @@
 set -euo pipefail
 
 # 왜: NCP WAS 서버(newkl-was01)에서 직접 실행하는 Pull 방식 배포 스크립트입니다.
-# GitHub에서 소스를 clone → JAR 빌드 → 번들 조립 → deploy-was.sh 실행
+# 2-repo 패턴: app-repo(앱 소스) + deploy-repo(배포 템플릿)를 분리 관리합니다.
 # 사용법: sudo bash pull-deploy-was.sh
 
-# ─── 설정 ───────────────────────────────────────────────────────────
-REPO_URL="${REPO_URL:-https://github.com/rodem-glitch/epoly_malgnLMS_to_NCP_Convert.git}"
-REPO_BRANCH="${REPO_BRANCH:-main}"
+# ─── 저장소 설정 ──────────────────────────────────────────────────
+# 왜: 앱 소스와 배포 스크립트를 별도 저장소로 분리하여 역할을 명확히 합니다.
+APP_REPO_URL="${APP_REPO_URL:-https://github.com/sh-jang-code/polytech-lms.git}"
+APP_REPO_BRANCH="${APP_REPO_BRANCH:-main}"
+
+DEPLOY_REPO_URL="${DEPLOY_REPO_URL:-https://github.com/rodem-glitch/epoly_malgnLMS_to_NCP_Convert.git}"
+DEPLOY_REPO_BRANCH="${DEPLOY_REPO_BRANCH:-main}"
+
 WORK_DIR="/opt/deploy-workspace"
+APP_REPO_DIR="${WORK_DIR}/app-repo"
+DEPLOY_REPO_DIR="${WORK_DIR}/deploy-repo"
 BUNDLE_DIR="${WORK_DIR}/ncp-was-bundle"
 
 # 왜: Cloud DB 접속 정보. 서버에서 직접 실행하므로 여기서 설정합니다.
-NCP_DB_HOST="${NCP_DB_HOST:-growai-db.vpc-cdb.ntruss.com}"
+NCP_DB_HOST="${NCP_DB_HOST:-192.168.3.6}"
 DB_USER="${DB_USER:-lms}"
 LMS_DB_PASSWORD="${LMS_DB_PASSWORD:-}"
 
@@ -73,24 +80,35 @@ install_prerequisites() {
   fi
 }
 
-clone_or_pull_repo() {
-  if [[ -d "${WORK_DIR}/repo/.git" ]]; then
-    log "기존 저장소를 pull합니다."
-    cd "${WORK_DIR}/repo"
+# 왜: 범용 clone/pull 함수. 두 저장소에 동일한 로직을 적용합니다.
+clone_or_pull() {
+  local repo_dir="$1"
+  local repo_url="$2"
+  local repo_branch="$3"
+  local label="$4"
+
+  if [[ -d "${repo_dir}/.git" ]]; then
+    log "${label}: 기존 저장소를 pull합니다."
+    cd "${repo_dir}"
     git fetch origin
-    git checkout "${REPO_BRANCH}"
-    git reset --hard "origin/${REPO_BRANCH}"
+    git checkout "${repo_branch}"
+    git reset --hard "origin/${repo_branch}"
   else
-    log "저장소를 clone합니다."
-    mkdir -p "${WORK_DIR}"
-    rm -rf "${WORK_DIR}/repo"
-    git clone --branch "${REPO_BRANCH}" --depth 1 "${REPO_URL}" "${WORK_DIR}/repo"
+    log "${label}: 저장소를 clone합니다."
+    mkdir -p "$(dirname "${repo_dir}")"
+    rm -rf "${repo_dir}"
+    git clone --branch "${repo_branch}" --depth 1 "${repo_url}" "${repo_dir}"
   fi
+}
+
+sync_repos() {
+  clone_or_pull "${APP_REPO_DIR}" "${APP_REPO_URL}" "${APP_REPO_BRANCH}" "app-repo"
+  clone_or_pull "${DEPLOY_REPO_DIR}" "${DEPLOY_REPO_URL}" "${DEPLOY_REPO_BRANCH}" "deploy-repo"
 }
 
 build_jar() {
   log "Spring Boot JAR을 빌드합니다."
-  cd "${WORK_DIR}/repo/polytech-lms-api"
+  cd "${APP_REPO_DIR}/polytech-lms-api"
   chmod +x ./gradlew
   ./gradlew bootJar -x test
   log "JAR 빌드 완료."
@@ -98,7 +116,9 @@ build_jar() {
 
 assemble_bundle() {
   log "WAS 배포 번들을 조립합니다."
-  local repo="${WORK_DIR}/repo"
+  # 왜: 앱 소스는 app-repo, 배포 템플릿은 deploy-repo에서 가져옵니다.
+  local app="${APP_REPO_DIR}"
+  local deploy="${DEPLOY_REPO_DIR}"
   local app_dir="${BUNDLE_DIR}/app"
   local legacy_dir="${BUNDLE_DIR}/legacy"
   local stats_dir="${BUNDLE_DIR}/statistics_data"
@@ -106,41 +126,42 @@ assemble_bundle() {
   rm -rf "${BUNDLE_DIR}"
   mkdir -p "${app_dir}" "${legacy_dir}" "${stats_dir}"
 
-  # JAR 복사
+  # JAR 복사 (app-repo에서)
   local jar_file
-  jar_file=$(find "${repo}/polytech-lms-api/build/libs" -name "*.jar" ! -name "*plain*" | head -1)
+  jar_file=$(find "${app}/polytech-lms-api/build/libs" -name "*.jar" ! -name "*plain*" | head -1)
   cp "${jar_file}" "${app_dir}/polytech-lms-api.jar"
   log "JAR 복사: ${jar_file}"
 
-  # Docker Compose 복사
-  cp "${repo}/tools/ncp/templates/docker-compose-was.yml.tpl" "${BUNDLE_DIR}/docker-compose.yml"
+  # Docker Compose 복사 (deploy-repo 템플릿)
+  cp "${deploy}/tools/ncp/templates/docker-compose-was.yml.tpl" "${BUNDLE_DIR}/docker-compose.yml"
 
-  # 배포 스크립트 복사
-  cp "${repo}/tools/ncp/templates/deploy-was.sh.tpl" "${BUNDLE_DIR}/deploy-was.sh"
+  # 배포 스크립트 복사 (deploy-repo 템플릿)
+  cp "${deploy}/tools/ncp/templates/deploy-was.sh.tpl" "${BUNDLE_DIR}/deploy-was.sh"
   chmod +x "${BUNDLE_DIR}/deploy-was.sh"
 
-  # 레거시 소스 복사
-  cp -r "${repo}/public_html" "${legacy_dir}/public_html"
-  cp -r "${repo}/src" "${legacy_dir}/src"
+  # 레거시 소스 복사 (app-repo에서)
+  cp -r "${app}/public_html" "${legacy_dir}/public_html"
+  cp -r "${app}/src" "${legacy_dir}/src"
 
-  # 통계 데이터 복사
-  if [[ -d "${repo}/통계" ]]; then
-    cp -r "${repo}/통계/"* "${stats_dir}/"
+  # 통계 데이터 복사 (app-repo에서)
+  if [[ -d "${app}/통계" ]]; then
+    cp -r "${app}/통계/"* "${stats_dir}/"
     log "통계 데이터 복사 완료."
   fi
 
   # 왜: Cloud DB URL에서 mysql 컨테이너 대신 NCP Cloud DB 호스트를 사용합니다.
   local app_db_url="jdbc:mysql://${NCP_DB_HOST}:3306/lms?useSSL=false&allowPublicKeyRetrieval=true"
   local app_db_url_xml
-  app_db_url_xml=$(echo "${app_db_url}" | sed 's/&/\&amp;/g')
+  # 왜: sed 치환에서 &는 "매칭된 텍스트" 특수문자이므로 \\&로 이스케이프합니다.
+  app_db_url_xml=$(echo "${app_db_url}" | sed 's/&/\\&amp;/g')
 
-  # resin-web.xml 렌더링
+  # resin-web.xml 렌더링 (deploy-repo 템플릿 + app-repo 출력 경로)
   sed \
     -e "s|__APP_DB_URL__|${app_db_url_xml}|g" \
     -e "s|__DB_USER__|${DB_USER}|g" \
     -e "s|__DB_PASSWORD__|${LMS_DB_PASSWORD}|g" \
     -e "s|__LEGACY_SOURCE_DIR__|/opt/polytech-lms/legacy/src|g" \
-    "${repo}/tools/ncp/templates/resin-web.xml.tpl" \
+    "${deploy}/tools/ncp/templates/resin-web.xml.tpl" \
     > "${legacy_dir}/public_html/WEB-INF/resin-web.xml"
   log "resin-web.xml 렌더링 완료."
 
@@ -200,9 +221,9 @@ verify() {
 
 main() {
   require_root
-  log "=== NCP WAS Pull 배포 시작 ==="
+  log "=== NCP WAS Pull 배포 시작 (2-repo 패턴) ==="
   install_prerequisites
-  clone_or_pull_repo
+  sync_repos
   build_jar
   assemble_bundle
   run_deploy

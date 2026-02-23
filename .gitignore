@@ -51,6 +51,9 @@ node_modules/
 project/.vite/
 tools/gcp/generated/
 
+# 로컬 개발환경 (커밋 금지)
+.env.local
+
 # 설정파일
 config.xml
 resin-web.xml

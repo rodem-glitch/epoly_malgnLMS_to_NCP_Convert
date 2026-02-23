@@ -162,7 +162,8 @@ jobs:
 
           # 왜: Cloud DB URL에서 mysql 컨테이너 대신 NCP Cloud DB 호스트를 사용합니다.
           APP_DB_URL="jdbc:mysql://${NCP_DB_HOST}:3306/lms?useSSL=false&allowPublicKeyRetrieval=true"
-          APP_DB_URL_XML=$(echo "${APP_DB_URL}" | sed 's/&/\&amp;/g')
+          # 왜: sed 치환에서 &는 "매칭된 텍스트" 특수문자이므로 \\&로 이스케이프합니다.
+          APP_DB_URL_XML=$(echo "${APP_DB_URL}" | sed 's/&/\\&amp;/g')
 
           # resin-web.xml 렌더링
           sed \
