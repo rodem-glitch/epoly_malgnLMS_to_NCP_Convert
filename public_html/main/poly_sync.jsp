@@ -132,7 +132,10 @@ result.put("rst_message", "올바른 접근이 아닙니다.");
 //보안: 서버 로컬(스케줄러)에서만 호출하도록 제한합니다.
 //왜: 외부에서 이 URL을 호출하면 DB에 대량 쓰기가 발생할 수 있어 위험합니다.
 boolean localOnly = userIp.startsWith("127.") || "0:0:0:0:0:0:0:1".equals(userIp) || "::1".equals(userIp);
-if(!localOnly) {
+// 왜: Spring Boot 스케줄러가 Docker 네트워크(172.x.x.x)에서 호출하므로, 토큰 인증을 추가합니다.
+String syncToken = SiteConfig.s("poly_sync_token");
+boolean tokenOk = !"".equals(syncToken) && syncToken.equals(m.rs("token"));
+if(!localOnly && !tokenOk) {
 	result.put("rst_code", "4030");
 	result.put("rst_message", "로컬에서만 실행할 수 있습니다.");
 	result.print();

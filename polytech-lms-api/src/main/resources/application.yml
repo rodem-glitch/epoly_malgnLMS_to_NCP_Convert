@@ -96,6 +96,26 @@ haksa:
         initialize-schema: ${QDRANT_INIT_SCHEMA:true}
 
 # =========================
+# 학사 동기화 Near Real-Time 데몬
+# =========================
+# 왜: cron(하루 1~2회) → Spring Boot @Scheduled(5~30분) 전환으로 학사 데이터 반영 지연을 24시간→5~10분으로 줄입니다.
+# - poly_sync.jsp를 Docker 내부 네트워크에서 호출하므로, 토큰 인증이 필요합니다.
+polysync:
+  scheduler:
+    enabled: ${POLYSYNC_SCHEDULER_ENABLED:true}
+    resin-base-url: ${POLYSYNC_RESIN_BASE_URL:http://resin:8080}
+    sync-endpoint: /main/poly_sync.jsp
+    token: ${POLY_SYNC_TOKEN:}
+    full-sync-delay-ms: ${POLYSYNC_FULL_SYNC_DELAY_MS:1800000}
+    student-sync-delay-ms: ${POLYSYNC_STUDENT_SYNC_DELAY_MS:300000}
+    connect-timeout-seconds: ${POLYSYNC_CONNECT_TIMEOUT:10}
+    read-timeout-seconds: ${POLYSYNC_READ_TIMEOUT:300}
+    start-year-offset: ${POLYSYNC_START_YEAR_OFFSET:0}
+    end-year-offset: ${POLYSYNC_END_YEAR_OFFSET:1}
+    max-consecutive-failures: ${POLYSYNC_MAX_FAILURES:3}
+    backoff-multiplier: ${POLYSYNC_BACKOFF_MULTIPLIER:2}
+
+# =========================
 # Kollus 전사(요약 전 단계)
 # =========================
 # 왜: 아래 값들은 운영/로컬 환경마다 다르고, 특히 토큰/키는 Git에 올리면 바로 사고가 납니다.

@@ -42,6 +42,14 @@
   --sidebar-accent-foreground: #101828;
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #2b58e6;
+
+  /* ePoly-KOPO GNB/LNB 컬러 */
+  --gnb-bg: #235c9f;
+  --gnb-logo: #0d4991;
+  --gnb-active: #1784f4;
+  --lnb-bg: #f8f8f8;
+  --lnb-active-bg: #e8f0fe;
+  --lnb-active-accent: #1784f4;
 }
 
 .dark {
