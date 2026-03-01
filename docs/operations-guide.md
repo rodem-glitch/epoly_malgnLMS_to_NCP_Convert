@@ -1643,6 +1643,97 @@ location /actuator/ {
 
 ---
 
+## Appendix G: GitHub Secrets 키 정보 (마스킹)
+
+> **보안 주의**: 실제 값은 GitHub → Settings → Secrets and variables → Actions에서 확인하세요.
+> 아래 값은 형식 확인용으로 일부 마스킹(*) 처리되어 있습니다.
+> 최종 갱신: 2026-03-02
+
+### G-1. NCP 인프라 (총 8개)
+
+| # | Secret | 마스킹 값 | 형식 | 설명 |
+|---|--------|----------|------|------|
+| 1 | `NCP_WAS_SSH_KEY` | `-----BEGIN OPENSSH PRIVATE KEY-----\n...` | PEM | WAS 서버(192.168.2.6) SSH 접속용 프라이빗 키. MobaXterm 또는 터미널에서 `ssh -i key ubuntu@192.168.2.6` 으로 사용. GitHub Actions에서 `~/.ssh/config`에 자동 설정됨 |
+| 2 | `NCP_WEB_SSH_KEY` | `-----BEGIN OPENSSH PRIVATE KEY-----\n...` | PEM | WEB 서버(192.168.1.6) SSH 접속용 프라이빗 키. WAS와 동일 형식. Nginx 설정 전송 및 배포에 사용 |
+| 3 | `NCP_WAS_SERVER_IP` | `192.168.*.*` | IP | WAS 서버 사설 IP. Docker Compose(API+Resin+Qdrant)가 실행되는 서버. NCP VPC 내부에서만 접근 가능 |
+| 4 | `NCP_WEB_SERVER_IP` | `192.168.*.*` | IP | WEB 서버 사설 IP. Nginx 역방향 프록시가 실행되는 서버. 공인 LB(27.96.144.249)를 통해 외부 노출 |
+| 5 | `NCP_DB_HOST` | `192.168.*.*` | IP | NCP Cloud DB for MySQL 사설 IP. `growai-db.vpc-cdb.ntruss.com` DNS가 안 될 경우 IP 직접 사용. 포트: 3306 |
+| 6 | `NCP_DB_PASSWORD` | `2026****100*` | 문자열 | NCP Cloud DB root 비밀번호. DB 마이그레이션, 긴급 접속, 백업 스크립트에서 사용 |
+| 7 | `LMS_DB_PASSWORD` | `y_-bF****Yz-` | 문자열 | LMS 앱 전용 DB 사용자(`lms`) 비밀번호. Spring Boot `DB_PASSWORD`, Resin JNDI에 주입됨 |
+| 8 | `WEB_DOMAIN` | `e-poly.****.ac.kr` | 도메인 | 운영 웹 도메인. Nginx `server_name`, Let's Encrypt SSL 발급, deploy-web.sh 템플릿에 사용 |
+
+### G-2. AI / 벡터 검색 (총 5개)
+
+| # | Secret | 마스킹 값 | 형식 | 설명 |
+|---|--------|----------|------|------|
+| 9 | `GOOGLE_API_KEY` | `AIzaSyD_****7mc` | Google API Key | Google GenAI 임베딩(`gemini-embedding-001`) 호출에 사용. `spring.ai.google.genai.api-key`에 주입. 콘텐츠 추천, 벡터 인덱싱의 핵심 키 |
+| 10 | `GEMINI_API_KEY` | `AIzaSyCQ****P9k` | Google API Key | Gemini LLM(`gemini-3-flash-preview`) 호출에 사용. 동영상 요약, 키워드 추출, 채용 분류, 통계 AI 분석에 활용. 미설정 시 `GOOGLE_API_KEY` 값으로 대체 |
+| 11 | `QDRANT_API_KEY` | `fRyr7B****wYz` | 랜덤 문자열 | Qdrant 벡터DB REST/gRPC 인증 키. Docker 컨테이너 `QDRANT__SERVICE__API_KEY` 환경변수 및 Spring AI `spring.ai.vectorstore.qdrant.api-key`에 주입 |
+| 12 | `QDRANT_COLLECTION` | `video_summary_vectors_gemini` | 컬렉션명 | Qdrant 벡터 컬렉션 이름. 768차원 Gemini 임베딩 저장. 변경 시 기존 벡터 데이터 접근 불가 주의 |
+| 13 | `STATISTICS_AI_API_KEY` | `AIzaSyBp****nh8` | Google API Key | 통계 대시보드 AI 분석 전용 키. `GOOGLE_API_KEY`와 별도 할당량 관리를 위해 분리. 미설정 시 `GOOGLE_API_KEY`로 대체 |
+
+### G-3. Kollus 동영상 플랫폼 (총 4개)
+
+| # | Secret | 마스킹 값 | 형식 | 설명 |
+|---|--------|----------|------|------|
+| 14 | `KOLLUS_ACCESS_TOKEN` | `vlfp****pzblupz` | 토큰 | Kollus REST API 인증 토큰. 동영상 목록 조회, 업로드 URL 생성, 트랜스크립션에 사용. `https://api.kr.kollus.com` 엔드포인트 호출 시 필수 |
+| 15 | `KOLLUS_SECURITY_KEY` | `n****l` | 문자열 | Kollus 미디어 토큰 서명 키. 동영상 재생 URL 생성 시 HMAC 서명에 사용. 플레이어 보안 인증 |
+| 16 | `KOLLUS_CHANNEL_KEY` | `u8p6****emiy` | 문자열 | Kollus 채널 식별 키. 동영상 업로드 대상 채널 지정. 채널별 콘텐츠 분류에 사용 |
+| 17 | `KOLLUS_CLIENT_USER_ID` | `contentsummary` | 고정값 | Kollus 클라이언트 사용자 식별자. 콘텐츠 요약 서비스의 API 호출자 식별용. 변경 불필요 |
+
+### G-4. 통계 API — KOSIS/SGIS (총 2개)
+
+| # | Secret | 마스킹 값 | 형식 | 설명 |
+|---|--------|----------|------|------|
+| 18 | `KOSIS_CONSUMER_KEY` | `3466****4d7caf6a` | 20자리 Hex | 통계청 SGIS OpenAPI 소비자 키. 인구 통계, 산업 코드, 사업체 통계 조회에 사용. `https://sgisapi.mods.go.kr` 인증 토큰 발급 시 필수 |
+| 19 | `KOSIS_CONSUMER_SECRET` | `7e15****4410d993f` | 20자리 Hex | 통계청 SGIS OpenAPI 소비자 시크릿. `KOSIS_CONSUMER_KEY`와 쌍으로 OAuth 인증에 사용 |
+
+### G-5. SSO 연동 (총 2개)
+
+| # | Secret | 마스킹 값 | 형식 | 설명 |
+|---|--------|----------|------|------|
+| 20 | `SSO_SP_ID` | `ep****` | 문자열 | SSO Service Provider 식별자. 폴리텍 통합 인증 시스템과의 연동에 사용. 로그인 시 SP 식별 |
+| 21 | `SSO_SP_SECRET` | `wc3/fH****nw==` | Base64 | SSO Service Provider 시크릿. SSO 토큰 검증 및 서명에 사용. Base64 인코딩된 암호화 키 |
+
+### G-6. 채용 연동 — 미연동 (총 3개)
+
+| # | Secret | 마스킹 값 | 형식 | 설명 |
+|---|--------|----------|------|------|
+| 22 | `WORK24_AUTH_KEY` | (빈 값) | API Key | Work24(워크넷) 채용 공고 API 인증키. `https://www.work24.go.kr` 공공데이터 조회. 키 발급 후 등록 필요 |
+| 23 | `JOBKOREA_API_KEY` | (빈 값) | API Key | JobKorea(잡코리아) 채용 공고 XML API 키. 키 발급 후 등록 필요. `JOBKOREA_ENABLED=false`로 비활성화 가능 |
+| 24 | `JOBKOREA_OEM_CODE` | (빈 값) | OEM Code | JobKorea OEM 파트너 코드. API 키와 함께 필수. 잡코리아 담당자에게 발급 요청 |
+
+### G-7. sh-jang-code 레포에만 존재 (NCP 배포에 불필요, 참고용)
+
+| # | Secret | 형식 | 설명 |
+|---|--------|------|------|
+| 25 | `GCP_PROJECT_ID` | 문자열 | GCP 프로젝트 ID (`gen-lang-client-0343478566`). GCP VM 배포 전용 |
+| 26 | `GCP_SA_KEY` | JSON | GCP 서비스 계정 키. Compute Engine, Cloud Storage 접근 권한. GitHub Actions에서 `gcloud auth` 인증 |
+| 27 | `GCP_VM_SSH_USER` | 문자열 | GCP VM SSH 사용자 (기본: `newkl`). VM 배포 시 SSH 접속 계정 |
+| 28 | `FIREBASE_TOKEN` | 토큰 | `firebase login:ci`로 생성한 CI 토큰. GitHub Actions에서 Firebase Hosting + Functions 배포 시 인증 |
+| 29 | `LMS_DB_ROOT_PASSWORD` | 문자열 | GCP Docker MySQL root 비밀번호. NCP는 Cloud DB 사용으로 불필요 |
+| 30 | `LETSENCRYPT_EMAIL` | 이메일 | Let's Encrypt SSL 인증서 발급 이메일. `certbot --nginx` 실행 시 사용 |
+| 31 | `GDRIVE_REFRESH_TOKEN` | 토큰 | Google Drive OAuth refresh 토큰. 통계 데이터 파일 동기화에 사용 |
+| 32 | `DEPLOY_REPO_PAT` | GitHub PAT | 배포 스크립트 저장소 접근 토큰. 1-repo 전환으로 불필요 |
+
+### G-8. 시크릿 등록/변경 명령어 참고
+
+```bash
+# 시크릿 등록 (rodem-glitch 레포)
+printf '%s' '값' | gh secret set SECRET_NAME --repo rodem-glitch/epoly_malgnLMS_to_NCP_Convert
+
+# 시크릿 목록 확인
+gh secret list --repo rodem-glitch/epoly_malgnLMS_to_NCP_Convert
+
+# 시크릿 삭제
+gh secret delete SECRET_NAME --repo rodem-glitch/epoly_malgnLMS_to_NCP_Convert
+
+# 주의: 값에 !, %, & 등 특수문자가 포함된 경우 반드시 printf '%s' 사용 (echo 금지)
+# 주의: heredoc 사용 시 <<'EOF' (따옴표 필수, 변수 확장 방지)
+```
+
+---
+
 > **문서 끝**
 > 본 문서는 `polytech-lms` 프로젝트의 전체 시스템 구성, 배포 파이프라인, 운영 절차를 포함합니다.
 > 인수인계 시 이 문서와 함께 GitHub Secrets, SSH 키, API 키를 별도로 전달해야 합니다.
